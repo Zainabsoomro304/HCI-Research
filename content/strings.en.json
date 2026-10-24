@@ -165,5 +165,6 @@
   "rank.moveDown": "Move {name} down",
   "rank.why": "Why? (optional, one line)",
   "rank.submit": "Submit ranking",
-  "end.sessionB": "You have completed the session. Thank you very much for taking part."
+  "end.sessionB": "You have completed the session. Thank you very much for taking part.",
+  "home.body": "Please use the personal link you received to take part."
 }

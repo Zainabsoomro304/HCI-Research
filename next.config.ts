@@ -30,6 +30,8 @@ const nextConfig: NextConfig = {
   // The E2E test server uses its own build directory so it can run next to `pnpm dev`.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   poweredByHeader: false,
+  // Consent text and questionnaires are read from content/ at runtime; make sure serverless bundles include them.
+  outputFileTracingIncludes: { "/**": ["./content/**/*"] },
   devIndicators: false,
   async rewrites() {
     return mediaRewrites(ALL_IDS);
