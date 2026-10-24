@@ -14,9 +14,11 @@ export async function fastVideos(page: Page) {
 }
 
 export async function doConsentAndBackground(page: Page) {
+  await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled(); // hydrated
   await page.getByLabel("I agree to take part").check();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "About you" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
   await page.getByLabel("How old are you?").fill("29");
   await page.getByLabel("Woman", { exact: true }).check();
   await page.getByLabel("Student", { exact: true }).check();

@@ -13,6 +13,7 @@ import {
   SHOPPING_FREQUENCIES,
 } from "@/lib/questionnaire/background";
 import type { StringKey } from "@/lib/strings";
+import { useHydrated } from "@/lib/useHydrated";
 import { PrefIllustration } from "./PrefIllustration";
 import { Button, Card, Markdown, StudyPage, useT } from "./ui";
 
@@ -20,6 +21,7 @@ export function ConsentStep({ markdown, hash, onAgree }: { markdown: string; has
   const t = useT();
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState(false);
+  const hydrated = useHydrated();
   return (
     <StudyPage>
       <Card>
@@ -38,7 +40,9 @@ export function ConsentStep({ markdown, hash, onAgree }: { markdown: string; has
         </label>
         {error && <p className="mt-2 text-[14px] text-[var(--c-warning)]">{t("consent.mustAgree")}</p>}
         <div className="mt-6 flex justify-end">
-          <Button onClick={() => (agreed ? onAgree(hash) : setError(true))}>{t("common.continue")}</Button>
+          <Button disabled={!hydrated} onClick={() => (agreed ? onAgree(hash) : setError(true))}>
+            {t("common.continue")}
+          </Button>
         </div>
       </Card>
     </StudyPage>
@@ -140,6 +144,7 @@ function useDraft(key: string) {
 export function BackgroundStep({ token, onSubmit }: { token: string; onSubmit: (answers: unknown) => Promise<boolean> }) {
   const t = useT();
   const [a, setA, clearDraft] = useDraft(`bg-draft:${token}`);
+  const hydrated = useHydrated();
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const set = (k: string) => (v: string) => {
     setA((prev) => ({ ...prev, [k]: v }));
@@ -279,7 +284,9 @@ export function BackgroundStep({ token, onSubmit }: { token: string; onSubmit: (
 
           {errors.size > 0 && <p className="text-[15px] font-semibold text-[var(--c-warning)]">{t("bg.fixErrors")}</p>}
           <div className="flex justify-end">
-            <Button type="submit">{t("bg.submit")}</Button>
+            <Button type="submit" disabled={!hydrated}>
+              {t("bg.submit")}
+            </Button>
           </div>
         </form>
       </Card>
