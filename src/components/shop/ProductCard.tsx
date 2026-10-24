@@ -100,6 +100,8 @@ export function ProductCard({ product }: { product: Product }) {
   const { config } = useShop();
   const { layout, density } = config;
   const vtName = { viewTransitionName: `p-${product.id}` } as React.CSSProperties;
+  // Price + button morph as their own element in every layout, so the card box never clips them mid-transition.
+  const vtAction = { viewTransitionName: `act-${product.id}`, viewTransitionClass: "act" } as React.CSSProperties;
 
   if (layout === "list") {
     return (
@@ -118,7 +120,7 @@ export function ProductCard({ product }: { product: Product }) {
             </>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-5">
+        <div className="flex shrink-0 items-center gap-5" style={vtAction}>
           {density === "summary" ? (
             <HoverPrice product={product} className="min-w-[4ch] text-right text-title" />
           ) : (
@@ -153,7 +155,7 @@ export function ProductCard({ product }: { product: Product }) {
             <p className="line-clamp-2 text-small text-muted">{product.description}</p>
           </>
         )}
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2" style={vtAction}>
           {density !== "summary" && <span className="text-title font-semibold tabular-nums">{formatPrice(product.price)}</span>}
           <AddToCartButton product={product} source="card" />
         </div>

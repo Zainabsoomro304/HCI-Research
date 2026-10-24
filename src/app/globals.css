@@ -107,6 +107,16 @@ body {
   object-fit: none;
   object-position: top left;
 }
+/* Card action areas (price + "Add to cart") are never clipped: their box does not clip, and the snapshots scale
+   within it instead of being cropped. Applies identically to every layout. */
+::view-transition-group(*.act) {
+  overflow: visible;
+}
+::view-transition-old(*.act),
+::view-transition-new(*.act) {
+  object-fit: contain;
+}
+
 /* Staggered cross-fade inside each morphing box: old content leaves quickly, new content arrives. */
 ::view-transition-old(*) {
   animation: vt-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
