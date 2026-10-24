@@ -1,0 +1,287 @@
+// Adaptive-UI preference study. PostgreSQL only (hosted: Neon / Supabase; tests: embedded Postgres).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ParticipantGroup {
+  cs
+  nonCs
+  unknown
+}
+
+enum SessionType {
+  phase1
+  p3_sessionA
+  p3_sessionB
+}
+
+enum SessionStatus {
+  not_started
+  in_progress
+  completed
+}
+
+model Participant {
+  id           String           @id @default(cuid())
+  /// Generated code, e.g. P1-017 / P3-004. Never a personal name.
+  code         String           @unique
+  studyPhase   Int
+  /// Sequence number within the phase (017 -> 17). Used for Latin-square rows.
+  number       Int
+  group        ParticipantGroup @default(unknown)
+  /// "self" when derived from the questionnaire, "admin" when set by a researcher.
+  groupSource  String?
+  language     String           @default("en")
+  /// Seed for every random draw for this participant (trial schedule, side assignment, ...).
+  seed         Int
+  notes        String?
+  /// Admin overrides for Phase 3 Latin-square rows (0-3). Null = derived from `number`.
+  conditionRowOverride Int?
+  taskRowOverride      Int?
+  completionCode String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  sessions        Session[]
+  consents        ConsentRecord[]
+  questionnaires  QuestionnaireResponse[]
+  trials          ComparisonTrial[]
+  breaks          BreakRecord[]
+  taskBlocks      TaskBlock[]
+  plans           AdaptationPlan[]
+  rankings        Ranking[]
+  events          Event[]
+
+  @@unique([studyPhase, number])
+}
+
+model Session {
+  id            String        @id @default(cuid())
+  participantId String
+  participant   Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  type          SessionType
+  /// Secret token in the participant link /s/<token>. Reusable until the session is completed (for resume).
+  token         String        @unique
+  status        SessionStatus @default(not_started)
+  /// Current step pointer: consent | background | instructions | practice | trials | break | end | sb_* ...
+  currentStep   String        @default("consent")
+  /// Position (seq) of the next comparison trial / index of the current task block.
+  currentIndex  Int           @default(0)
+  /// Exact build (git commit) the participant used, captured when the session started.
+  appVersion    String?
+  userAgent     String?
+  viewportW     Int?
+  viewportH     Int?
+  /// Phase 3 Session B Latin-square rows actually used.
+  conditionRow  Int?
+  taskRow       Int?
+  /// Set when the researcher unlocks Session B from the admin panel.
+  unlockedAt    DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  lastSeenAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  consent        ConsentRecord?
+  questionnaires QuestionnaireResponse[]
+  trials         ComparisonTrial[]
+  breaks         BreakRecord[]
+  taskBlocks     TaskBlock[]
+  rankings       Ranking[]
+  events         Event[]
+
+  @@unique([participantId, type])
+  @@index([participantId])
+}
+
+model ConsentRecord {
+  id            String      @id @default(cuid())
+  sessionId     String      @unique
+  session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the consent text shown, so we know exactly which version was agreed to.
+  consentTextHash String
+  language      String
+  consentedAt   DateTime    @default(now())
+  clientTs      DateTime?
+
+  @@index([participantId])
+}
+
+model QuestionnaireResponse {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  sessionId     String
+  session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// background | quis | ues_sf
+  instrument    String
+  /// Version / hash of the item file the responses refer to.
+  instrumentVersion String?
+  taskBlockId   String?
+  taskBlock     TaskBlock?  @relation(fields: [taskBlockId], references: [id], onDelete: Cascade)
+  /// Structured answers: { itemId: value }.
+  responses     Json
+  clientTs      DateTime?
+  submittedAt   DateTime    @default(now())
+
+  @@unique([sessionId, instrument, taskBlockId])
+  @@index([participantId])
+  @@index([sessionId])
+}
+
+model ComparisonTrial {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  sessionId     String
+  session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// Overall presentation order within the session, 0-based, practice first.
+  seq           Int
+  /// 1-based trial number shown to the participant ("Trial X of N"); practice trials are numbered separately.
+  trialIndex    Int
+  isPractice    Boolean     @default(false)
+  isRepeat      Boolean     @default(false)
+  repeatOfTrialId String?
+  repeatOf      ComparisonTrial?  @relation("RepeatOf", fields: [repeatOfTrialId], references: [id])
+  repeats       ComparisonTrial[] @relation("RepeatOf")
+  isAttentionCheck Boolean  @default(false)
+  /// Clip IDs are target config IDs.
+  leftClipId    String
+  rightClipId   String
+  // ---- response (filled when answered) ----
+  choice        String?     // "left" | "right"
+  chosenClipId  String?
+  /// Reaction time from the moment both clips first finished playing.
+  rtMs          Int?
+  replayCount   Int?
+  /// Client timestamps (epoch ms converted to DateTime).
+  clientShownAt     DateTime?
+  clientBothEndedAt DateTime?
+  clientRespondedAt DateTime?
+  serverRespondedAt DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@unique([sessionId, seq])
+  @@index([participantId])
+  @@index([sessionId])
+}
+
+model BreakRecord {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  sessionId     String
+  session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// Break shown after this analysis trial number.
+  afterTrialIndex Int
+  startedAt     DateTime
+  endedAt       DateTime?
+  durationMs    Int?
+
+  @@unique([sessionId, afterTrialIndex])
+  @@index([participantId])
+}
+
+model TaskBlock {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  sessionId     String
+  session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// 0-3 for the four task blocks; -1 for the practice task.
+  blockIndex    Int
+  isPractice    Boolean     @default(false)
+  /// static | global | cluster5 | personalFull | practice
+  condition     String
+  taskId        String
+  /// The adaptation plan steps used for this block, frozen at block creation.
+  planSnapshot  Json
+  /// Config IDs actually applied, in order, with timestamps.
+  appliedConfigs Json?
+  finalConfigId String?
+  /// Final cart contents [{productId, quantity, price}].
+  cart          Json?
+  startedAt     DateTime?
+  firstInteractionAt DateTime?
+  finishedAt    DateTime?
+  // ---- scores (computed server-side on finish) ----
+  requiredItemsFound Int?
+  withinBudget  Boolean?
+  totalSpent    Int?
+  durationMs    Int?
+  extraItems    Int?
+
+  questionnaires QuestionnaireResponse[]
+
+  @@unique([sessionId, blockIndex])
+  @@index([participantId])
+  @@index([sessionId])
+}
+
+model AdaptationPlan {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  condition     String
+  /// Validated steps array [{ trigger: {type, value}, config }].
+  steps         Json
+  sourceFileName String?
+  uploadedAt    DateTime    @default(now())
+
+  @@unique([participantId, condition])
+  @@index([participantId])
+}
+
+model Ranking {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  sessionId     String
+  session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// "Interface N" as shown = blockIndex + 1.
+  blockIndex    Int
+  condition     String
+  taskId        String
+  finalConfigId String
+  /// 1 = most preferred.
+  rank          Int
+  reason        String?
+  submittedAt   DateTime    @default(now())
+
+  @@unique([sessionId, blockIndex])
+  @@index([participantId])
+}
+
+model Event {
+  id            BigInt      @id @default(autoincrement())
+  /// Client-generated UUID; makes retried / late batches idempotent.
+  clientEventId String      @unique
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  sessionId     String
+  session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// Task block ID or comparison trial ID the event belongs to.
+  trialId       String?
+  configId      String?
+  type          String
+  clientTs      DateTime
+  /// Raw client epoch ms (exact, for analysis).
+  clientTsMs    BigInt
+  serverTs      DateTime    @default(now())
+  payload       Json?
+  isPractice    Boolean     @default(false)
+
+  @@index([participantId])
+  @@index([sessionId])
+  @@index([trialId])
+}
