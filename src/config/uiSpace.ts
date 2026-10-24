@@ -81,3 +81,8 @@ export function allConfigs(): UIConfig[] {
 }
 
 export const ALL_CONFIG_IDS: readonly string[] = allConfigs().map(toConfigId);
+
+/** Number of settings in which `config` differs from `base` (0-5). Used to balance transition "busyness" across clips. */
+export function numChangedSettings(config: UIConfig, base: UIConfig = DEFAULT_CONFIG): number {
+  return SETTING_KEYS.reduce((n, k) => n + (config[k] === base[k] ? 0 : 1), 0);
+}

@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "seed": 20261025,
+  "baseConfigId": "list-default-detailed-light-sidebar",
+  "allowedChanges": [
+    2,
+    3,
+    4
+  ],
+  "clips": [
+    {
+      "id": "grid2-default-partial-light-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "grid2-large-detailed-light-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "grid2-small-detailed-light-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "grid3-default-detailed-dark-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "grid3-default-detailed-light-dropdown",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "grid3-small-detailed-light-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "list-default-partial-dark-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "list-default-summary-light-dropdown",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "list-large-detailed-dark-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "list-large-partial-light-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "grid2-default-partial-light-dropdown",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "grid2-default-summary-dark-sidebar",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "grid2-large-summary-light-sidebar",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "grid3-default-summary-dark-sidebar",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "grid3-default-summary-light-dropdown",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "grid3-small-summary-light-sidebar",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "list-large-partial-dark-sidebar",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "list-large-summary-light-dropdown",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "list-small-detailed-dark-dropdown",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "list-small-partial-light-dropdown",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "list-small-summary-dark-sidebar",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "grid2-default-summary-dark-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid2-large-detailed-dark-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid2-large-partial-light-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid2-small-detailed-dark-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid2-small-partial-dark-sidebar",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid3-default-summary-dark-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid3-large-detailed-dark-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid3-large-partial-dark-sidebar",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid3-large-partial-light-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "grid3-small-partial-light-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "list-small-summary-dark-dropdown",
+      "numChangedSettings": 4
+    }
+  ],
+  "practiceClips": [
+    {
+      "id": "grid3-default-summary-light-sidebar",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "grid2-large-partial-light-sidebar",
+      "numChangedSettings": 3
+    },
+    {
+      "id": "grid3-small-detailed-dark-dropdown",
+      "numChangedSettings": 4
+    },
+    {
+      "id": "list-large-summary-dark-dropdown",
+      "numChangedSettings": 4
+    }
+  ]
+}

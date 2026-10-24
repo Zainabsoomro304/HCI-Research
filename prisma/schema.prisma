@@ -158,6 +158,9 @@ model ComparisonTrial {
   /// Clip IDs are target config IDs.
   leftClipId    String
   rightClipId   String
+  /// Number of settings each clip changes from the base config (transition busyness), frozen at scheduling time.
+  leftNumChangedSettings  Int
+  rightNumChangedSettings Int
   // ---- response (filled when answered) ----
   choice        String?     // "left" | "right"
   chosenClipId  String?

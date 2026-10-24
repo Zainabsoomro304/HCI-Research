@@ -6,6 +6,7 @@ import {
   allConfigs,
   fromConfigId,
   isConfigId,
+  numChangedSettings,
   toConfigId,
 } from "@/config/uiSpace";
 
@@ -36,5 +37,20 @@ describe("uiSpace", () => {
       expect(isConfigId(bad)).toBe(false);
       expect(() => fromConfigId(bad)).toThrow();
     }
+  });
+});
+
+describe("numChangedSettings", () => {
+  it("counts settings that differ from the base", () => {
+    expect(numChangedSettings(DEFAULT_CONFIG)).toBe(0);
+    expect(numChangedSettings(fromConfigId("grid3-large-partial-dark-dropdown"))).toBe(5);
+    expect(numChangedSettings(fromConfigId("list-default-detailed-dark-sidebar"))).toBe(1);
+    expect(numChangedSettings(fromConfigId("grid2-small-detailed-light-dropdown"))).toBe(3);
+  });
+
+  it("matches the combinatorial distribution over the 108 configs", () => {
+    const dist = [0, 0, 0, 0, 0, 0];
+    for (const c of allConfigs()) dist[numChangedSettings(c)]!++;
+    expect(dist).toEqual([1, 8, 25, 38, 28, 8]);
   });
 });

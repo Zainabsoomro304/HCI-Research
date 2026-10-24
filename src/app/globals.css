@@ -138,6 +138,16 @@ body {
   }
 }
 
+/* Clip mode: no scrollbars (identical frame width for every layout). */
+html.clip-mode,
+html.clip-mode body {
+  overflow: hidden;
+  scrollbar-width: none;
+}
+html.clip-mode::-webkit-scrollbar {
+  display: none;
+}
+
 /* Clip / screenshot mode: hide the cursor and caret entirely. */
 .no-cursor,
 .no-cursor * {
