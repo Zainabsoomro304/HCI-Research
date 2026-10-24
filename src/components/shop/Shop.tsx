@@ -40,6 +40,10 @@ export interface ShopProps {
   onTransitionStart?: (vt: ViewTransition) => void;
   /** Disable the animated transition (screenshots). */
   instantTransitions?: boolean;
+  /** Cart restored when resuming an interrupted task. */
+  initialCart?: CartLine[];
+  /** Extra fields merged into each adaptation_applied event (e.g. plan step index). */
+  adaptationMeta?: () => Record<string, unknown>;
 }
 
 export function Shop(props: ShopProps) {
@@ -75,7 +79,7 @@ export function Shop(props: ShopProps) {
       apply();
     }
     sink.setContext({ configId: targetId });
-    sink.log("adaptation_applied", { from, to: targetId });
+    sink.log("adaptation_applied", { from, to: targetId, ...cb.current.adaptationMeta?.() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetId]);
 
@@ -150,7 +154,7 @@ export function Shop(props: ShopProps) {
   );
 
   // ---- cart ----
-  const [lines, setLines] = useState<CartLine[]>([]);
+  const [lines, setLines] = useState<CartLine[]>(() => props.initialCart ?? []);
   const linesRef = useRef(lines);
   const commitLines = useCallback((next: CartLine[]) => {
     linesRef.current = next;

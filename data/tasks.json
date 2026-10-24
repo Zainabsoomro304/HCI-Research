@@ -1,0 +1,71 @@
+{
+  "tasks": [
+    {
+      "id": "picnic",
+      "title": "Picnic for 4 people",
+      "instructions": "You are organising a picnic in the park for four people. Buy everything on the shopping list below. Try to stay within your budget.",
+      "budget": 110,
+      "requiredItems": [
+        { "id": "blanket", "description": "a picnic blanket", "candidateProductIds": ["po-01", "po-02", "po-03"] },
+        { "id": "cooler", "description": "a bag or box to keep food cool", "candidateProductIds": ["po-04", "po-05", "po-06"] },
+        { "id": "tableware", "description": "reusable plates for four people", "candidateProductIds": ["po-07", "kt-01", "kt-02"] },
+        { "id": "drinks", "description": "cold drinks to share", "candidateProductIds": ["fs-01", "fs-02"] },
+        { "id": "snacks", "description": "snacks to share", "candidateProductIds": ["fs-03", "fs-04"] },
+        { "id": "game", "description": "an outdoor game", "candidateProductIds": ["sp-10", "sp-11", "gf-12"] }
+      ]
+    },
+    {
+      "id": "homeoffice",
+      "title": "Home office setup",
+      "instructions": "You are setting up a small desk at home for working and studying. Buy everything on the shopping list below. Try to stay within your budget.",
+      "budget": 88,
+      "requiredItems": [
+        { "id": "lamp", "description": "a desk lamp", "candidateProductIds": ["ho-01", "ho-02", "ho-03"] },
+        { "id": "notebook", "description": "something to write notes in", "candidateProductIds": ["ho-04", "ho-05", "ho-06"] },
+        { "id": "organiser", "description": "a holder for pens and desk supplies", "candidateProductIds": ["ho-07", "ho-08", "ho-09"] },
+        { "id": "mug", "description": "a mug for hot drinks", "candidateProductIds": ["kt-03", "kt-04", "kt-05"] },
+        { "id": "hotdrink", "description": "coffee or tea", "candidateProductIds": ["fs-05", "fs-06", "fs-07"] },
+        { "id": "plant", "description": "a small plant for the desk", "candidateProductIds": ["ho-10", "gf-10", "gf-11"] }
+      ]
+    },
+    {
+      "id": "giftbasket",
+      "title": "Birthday gift basket",
+      "instructions": "A friend's birthday is coming up and you want to put together a gift basket. Buy everything on the shopping list below. Try to stay within your budget.",
+      "budget": 80,
+      "requiredItems": [
+        { "id": "container", "description": "a basket or box to put the gifts in", "candidateProductIds": ["gf-01", "gf-02", "gf-03"] },
+        { "id": "chocolate", "description": "chocolates", "candidateProductIds": ["fs-08", "fs-09", "fs-10"] },
+        { "id": "candle", "description": "a scented candle", "candidateProductIds": ["gf-04", "gf-05", "gf-06"] },
+        { "id": "card", "description": "a birthday card", "candidateProductIds": ["gf-07", "gf-08", "gf-09"] },
+        { "id": "biscuits", "description": "biscuits or cookies", "candidateProductIds": ["fs-11", "fs-12"] },
+        { "id": "teapot", "description": "a teapot", "candidateProductIds": ["kt-06", "kt-07", "kt-08"] }
+      ]
+    },
+    {
+      "id": "runner",
+      "title": "Sports kit for a beginner runner",
+      "instructions": "You have decided to start running and need some basic equipment. Buy everything on the shopping list below. Try to stay within your budget.",
+      "budget": 128,
+      "requiredItems": [
+        { "id": "shoes", "description": "a pair of running shoes", "candidateProductIds": ["sp-01", "sp-02", "sp-03"] },
+        { "id": "bottle", "description": "a water bottle", "candidateProductIds": ["sp-04", "kt-09", "po-08"] },
+        { "id": "socks", "description": "running socks", "candidateProductIds": ["sp-05", "sp-06"] },
+        { "id": "energy", "description": "an energy snack for after running", "candidateProductIds": ["fs-13", "fs-14", "fs-15"] },
+        { "id": "phoneholder", "description": "something to carry your phone while running", "candidateProductIds": ["sp-07", "sp-08"] },
+        { "id": "towel", "description": "a quick-drying towel", "candidateProductIds": ["sp-09", "po-09"] }
+      ]
+    }
+  ],
+  "practiceTask": {
+    "id": "practice",
+    "title": "Practice: breakfast for one",
+    "instructions": "This is a practice task to get to know the shop. Buy the three things on the shopping list below, then click Finish task.",
+    "budget": 30,
+    "requiredItems": [
+      { "id": "hotdrink", "description": "coffee or tea", "candidateProductIds": ["fs-05", "fs-06", "fs-07"] },
+      { "id": "mug", "description": "a mug", "candidateProductIds": ["kt-03", "kt-05"] },
+      { "id": "biscuits", "description": "biscuits or cookies", "candidateProductIds": ["fs-11", "fs-12"] }
+    ]
+  }
+}

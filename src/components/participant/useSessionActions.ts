@@ -58,5 +58,8 @@ export function useSessionActions(token: string, initial: ParticipantState) {
     [token],
   );
 
-  return { state, act, status, fatal };
+  /** Adopts a state fetched from the server (e.g. after polling) without a page reload. */
+  const replaceState = useCallback((next: ParticipantState) => setState(next), []);
+
+  return { state, act, status, fatal, replaceState };
 }

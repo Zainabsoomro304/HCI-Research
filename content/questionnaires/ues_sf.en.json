@@ -1,0 +1,249 @@
+{
+  "instrument": "ues_sf",
+  "version": "placeholder-0",
+  "placeholder": true,
+  "title": "[PLACEHOLDER – replace before study] Your experience",
+  "instructions": "[PLACEHOLDER – replace before study] Instructions for the UES short form go here.",
+  "items": [
+    {
+      "id": "ues_01",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 1",
+      "section": "[PLACEHOLDER] Subscale A",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_02",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 2",
+      "section": "[PLACEHOLDER] Subscale A",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_03",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 3",
+      "section": "[PLACEHOLDER] Subscale A",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_04",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 4",
+      "section": "[PLACEHOLDER] Subscale B",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": true
+    },
+    {
+      "id": "ues_05",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 5",
+      "section": "[PLACEHOLDER] Subscale B",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": true
+    },
+    {
+      "id": "ues_06",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 6",
+      "section": "[PLACEHOLDER] Subscale B",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": true
+    },
+    {
+      "id": "ues_07",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 7",
+      "section": "[PLACEHOLDER] Subscale C",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_08",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 8",
+      "section": "[PLACEHOLDER] Subscale C",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_09",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 9",
+      "section": "[PLACEHOLDER] Subscale C",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_10",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 10",
+      "section": "[PLACEHOLDER] Subscale D",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_11",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 11",
+      "section": "[PLACEHOLDER] Subscale D",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_12",
+      "text": "[PLACEHOLDER – replace before study] Dummy UES-SF item 12",
+      "section": "[PLACEHOLDER] Subscale D",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[PLACEHOLDER] Strongly disagree",
+        "rightAnchor": "[PLACEHOLDER] Strongly agree",
+        "labels": [
+          "[PLACEHOLDER] 1",
+          "[PLACEHOLDER] 2",
+          "[PLACEHOLDER] 3",
+          "[PLACEHOLDER] 4",
+          "[PLACEHOLDER] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    }
+  ]
+}

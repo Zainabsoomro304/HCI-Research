@@ -1,0 +1,79 @@
+{
+  "instrument": "quis",
+  "version": "placeholder-0",
+  "placeholder": true,
+  "title": "[PLACEHOLDER – replace before study] Satisfaction with the interface",
+  "instructions": "[PLACEHOLDER – replace before study] Instructions for the licensed QUIS items go here. Please rate the shop you just used.",
+  "items": [
+    {
+      "id": "quis_01",
+      "text": "[PLACEHOLDER – replace before study] Dummy QUIS item 1",
+      "section": "[PLACEHOLDER] Section A",
+      "scale": {
+        "min": 0,
+        "points": 10,
+        "leftAnchor": "[PLACEHOLDER] left anchor",
+        "rightAnchor": "[PLACEHOLDER] right anchor"
+      },
+      "allowNA": true,
+      "naLabel": "N/A",
+      "reverse": false
+    },
+    {
+      "id": "quis_02",
+      "text": "[PLACEHOLDER – replace before study] Dummy QUIS item 2",
+      "section": "[PLACEHOLDER] Section A",
+      "scale": {
+        "min": 0,
+        "points": 10,
+        "leftAnchor": "[PLACEHOLDER] left anchor",
+        "rightAnchor": "[PLACEHOLDER] right anchor"
+      },
+      "allowNA": true,
+      "naLabel": "N/A",
+      "reverse": false
+    },
+    {
+      "id": "quis_03",
+      "text": "[PLACEHOLDER – replace before study] Dummy QUIS item 3",
+      "section": "[PLACEHOLDER] Section A",
+      "scale": {
+        "min": 0,
+        "points": 10,
+        "leftAnchor": "[PLACEHOLDER] left anchor",
+        "rightAnchor": "[PLACEHOLDER] right anchor"
+      },
+      "allowNA": true,
+      "naLabel": "N/A",
+      "reverse": false
+    },
+    {
+      "id": "quis_04",
+      "text": "[PLACEHOLDER – replace before study] Dummy QUIS item 4",
+      "section": "[PLACEHOLDER] Section B",
+      "scale": {
+        "min": 0,
+        "points": 10,
+        "leftAnchor": "[PLACEHOLDER] left anchor",
+        "rightAnchor": "[PLACEHOLDER] right anchor"
+      },
+      "allowNA": true,
+      "naLabel": "N/A",
+      "reverse": false
+    },
+    {
+      "id": "quis_05",
+      "text": "[PLACEHOLDER – replace before study] Dummy QUIS item 5",
+      "section": "[PLACEHOLDER] Section B",
+      "scale": {
+        "min": 0,
+        "points": 10,
+        "leftAnchor": "[PLACEHOLDER] left anchor",
+        "rightAnchor": "[PLACEHOLDER] right anchor"
+      },
+      "allowNA": true,
+      "naLabel": "N/A",
+      "reverse": false
+    }
+  ]
+}

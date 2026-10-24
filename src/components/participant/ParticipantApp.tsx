@@ -22,7 +22,7 @@ export function ParticipantApp({
   studyPhase: StudyPhase;
 }) {
   const t = useMemo(() => makeT(initialState.lang), [initialState.lang]);
-  const { state, act, status, fatal } = useSessionActions(token, initialState);
+  const { state, act, status, fatal, replaceState } = useSessionActions(token, initialState);
   const sink = useMemo(() => new EventLogger(token), [token]);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export function ParticipantApp({
   if (fatal) {
     content = <MessagePage title={t("study.error.title")} body={t("study.error.body")} action={{ label: t("study.reload"), onClick: () => location.reload() }} />;
   } else if (state.kind === "sessionB") {
-    content = <SessionBView token={token} state={state} act={act} sink={sink} saving={status !== "idle"} />;
+    content = <SessionBView token={token} state={state} act={act} sink={sink} saving={status !== "idle"} onRefresh={replaceState} />;
   } else {
     content = <ComparisonView token={token} state={state} act={act} sink={sink} saving={status !== "idle"} studyPhase={studyPhase} />;
   }

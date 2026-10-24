@@ -70,7 +70,9 @@ export function EndStep({ variant, completionCode }: { variant: "phase1" | "sess
           </>
         ) : variant === "sessionA" ? (
           <p className="mt-4 text-[17px]">{t("end.sessionA")}</p>
-        ) : null}
+        ) : (
+          <p className="mt-4 text-[17px]">{t("end.sessionB")}</p>
+        )}
         <p className="mt-6 text-[15px] text-[var(--c-muted)]">{t("end.close")}</p>
       </Card>
     </StudyPage>

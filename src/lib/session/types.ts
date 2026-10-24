@@ -1,6 +1,7 @@
-/** State sent to the participant's browser. Contains no config IDs, condition names or design flags. */
+/** State sent to the participant browser: no condition names or design flags (Session B plan steps carry only the config IDs the shop needs to render). */
 import { z } from "zod";
 import { BackgroundSchema } from "../questionnaire/background";
+import type { SessionBState } from "./sessionBTypes";
 
 export const COMPARISON_STEPS = ["consent", "background", "instructions", "practice", "main_intro", "trials", "break", "end"] as const;
 export type ComparisonStep = (typeof COMPARISON_STEPS)[number];
@@ -30,7 +31,7 @@ export interface ComparisonState {
   end?: { completionCode: string | null; variant: "phase1" | "sessionA" };
 }
 
-export type ParticipantState = ComparisonState | import("./sessionBTypes").SessionBState;
+export type ParticipantState = ComparisonState | SessionBState;
 
 const ts = z.number().int().positive();
 
