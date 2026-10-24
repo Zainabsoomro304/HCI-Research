@@ -9,6 +9,7 @@
  */
 import EmbeddedPostgres from "embedded-postgres";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 
 export const LOCAL_DB_PORT = Number(process.env.LOCAL_DB_PORT ?? 54329);
@@ -37,21 +38,37 @@ export async function startLocalDb(opts: { dataDir: string; fresh?: boolean; por
   return { pg, url: `postgresql://postgres:postgres@localhost:${port}/${LOCAL_DB_NAME}` };
 }
 
+function portInUse(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const sock = net.connect(port, "127.0.0.1");
+    sock.once("connect", () => (sock.destroy(), resolve(true)));
+    sock.once("error", () => resolve(false));
+  });
+}
+
+async function main() {
+  if (await portInUse(LOCAL_DB_PORT)) {
+    console.log(`Something is already listening on port ${LOCAL_DB_PORT} (probably the local database).
+  DATABASE_URL="${LOCAL_DB_URL}"`);
+    return;
+  }
+  const { pg, url } = await startLocalDb({ dataDir: path.resolve(".pgdata"), fresh: process.argv.includes("--fresh") });
+  console.log(`Local PostgreSQL running.
+  DATABASE_URL="${url}"
+  DIRECT_URL="${url}"
+Press Ctrl+C to stop.`);
+  const stop = async () => {
+    await pg.stop();
+    process.exit(0);
+  };
+  process.on("SIGINT", stop);
+  process.on("SIGTERM", stop);
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]).includes("local-db");
 if (isMain) {
-  const fresh = process.argv.includes("--fresh");
-  startLocalDb({ dataDir: path.resolve(".pgdata"), fresh })
-    .then(({ pg, url }) => {
-      console.log(`Local PostgreSQL running.\n  DATABASE_URL="${url}"\n  DIRECT_URL="${url}"\nPress Ctrl+C to stop.`);
-      const stop = async () => {
-        await pg.stop();
-        process.exit(0);
-      };
-      process.on("SIGINT", stop);
-      process.on("SIGTERM", stop);
-    })
-    .catch((e) => {
-      console.error(e);
-      process.exit(1);
-    });
+  main().catch((e: unknown) => {
+    console.error("Could not start the local database:", e instanceof Error ? e.message : JSON.stringify(e));
+    process.exit(1);
+  });
 }

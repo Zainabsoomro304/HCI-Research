@@ -624,7 +624,7 @@ export function renderProductSvg(imageId: string, category: Category): string {
   const tile = CATEGORY_TILE[category];
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" width="160" height="120" role="img">`,
-    R(0, 0, 160, 120, 14, tile),
+    R(0, 0, 160, 120, 0, tile),
     E(80, 100, 44, 5, "#000000", 'opacity="0.07"'),
     draw(pal),
     `</svg>`,
