@@ -10,3 +10,4 @@ screenshots/
 test-results/
 playwright-report/
 tmp/
+.next-e2e/
