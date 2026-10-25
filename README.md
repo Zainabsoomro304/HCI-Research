@@ -99,10 +99,10 @@ Trial schedule (identical for Phase 1 and Session A; generated from the particip
 
 - **70 main trials** – unique pairs of the 32 analysis clips; each clip appears equally often (max − min ≤ 1, i.e. 4 or 5 times), never in two consecutive trials, and on the left about half the time.
 - **10 repeats** – copies of main trials from trials 1–50, each placed at least 20 trials after its original with sides swapped. They are spread across the session: 5 fall in the first half (trials 21–41) and 5 in the second half (trials 42–82).
-- **2 attention checks** – the same clip on both sides with "please choose B", at random positions in trials 30–82.
+- **2 attention checks** – the same clip on both sides with "please choose B", at random positions in trials 25–75, at least 20 trials apart, and never on the last trial before a break or the first trial after one (so never trials 27, 28, 54 or 55).
 - **Breaks** after analysis trials 27 and 54.
 
-All of these (counts, repeat source range, spacing, first-half share, attention positions, break positions, attention-failure threshold) are constants in `src/config/study.ts`, settable per phase.
+All of these (counts, repeat source range, spacing, first-half share, attention range and spacing, break positions, attention-failure threshold) are constants in `src/config/study.ts`, settable per phase.
 
 ### Between sessions: adaptation plans
 
@@ -142,7 +142,7 @@ On the participant's admin page click **Start Session B** (enabled once all 4 pl
 |---|---|
 | `participants.csv` | One row per participant: group, seed, Latin-square rows, session status/times/app version, attention and self-consistency metrics |
 | `questionnaire_background.csv` | One row per participant session, one column per item |
-| `comparison_trials.csv` | One row per trial incl. both clips' five setting values (`left_layout` … `right_menu`) and `*_numChangedSettings`, choice, RT, replays, flags |
+| `comparison_trials.csv` | One row per trial incl. both clips' five setting values (`left_layout` … `right_menu`) and `*_numChangedSettings`, choice, RT, replays, flags; repeats also carry `repeat_of_trial_index` and `repeat_gap` (trials since the original) |
 | `breaks.csv` | Break durations |
 | `task_trials.csv` | Session B blocks: condition, task, scores (`required_items_found`, `within_budget`, `total_spent`, `duration_ms`, `extra_items`), applied adaptations |
 | `questionnaire_task.csv` | QUIS / UES-SF in long format (participant, block, condition, task, instrument, item_id, value, N/A, reverse flag) |
@@ -161,7 +161,7 @@ pnpm test          # unit tests + integration tests (throwaway embedded PostgreS
 pnpm test:e2e      # Playwright: full Phase 1 session, resume after closing, full Session B, admin + export ZIP
 ```
 
-Unit tests cover config IDs, the trial schedule generator (counts, no duplicate pairs, balance, no consecutive clips, repeat source range/spacing/side swap, repeats spread across both halves, attention positions, break positions, reproducibility), Latin squares, task scoring, catalogue/task validators, clip selection, theme contrast, media URLs and admin auth. E2E tests start their own database (port 54331) and Next server (port 3210), so they can run next to `pnpm dev`.
+Unit tests cover config IDs, the trial schedule generator (counts, no duplicate pairs, balance, no consecutive clips, repeat source range/spacing/side swap, repeats spread across both halves, attention range/spacing/break-adjacency, break positions, reproducibility), Latin squares, task scoring, catalogue/task validators, clip selection, theme contrast, media URLs and admin auth. E2E tests start their own database (port 54331) and Next server (port 3210), so they can run next to `pnpm dev`.
 
 ---
 

@@ -110,6 +110,7 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
   }));
 
   // comparison_trials.csv
+  const trialIndexById = new Map(allTrials.map((t) => [t.id, t.trialIndex]));
   const trialRows = allTrials
     .filter((t) => sById.has(t.sessionId))
     .map((t) => {
@@ -126,6 +127,8 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
         is_practice: t.isPractice,
         is_repeat: t.isRepeat,
         repeat_of_trial_id: t.repeatOfTrialId,
+        repeat_of_trial_index: t.repeatOfTrialId ? trialIndexById.get(t.repeatOfTrialId) : null,
+        repeat_gap: t.repeatOfTrialId ? t.trialIndex - trialIndexById.get(t.repeatOfTrialId)! : null,
         is_attention_check: t.isAttentionCheck,
         left_clip_id: t.leftClipId,
         ...configSettings("left", t.leftClipId),

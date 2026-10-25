@@ -121,6 +121,23 @@ describe("export", () => {
     expect(tables["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code)).toHaveLength(84);
   });
 
+  it("gives repeat trials the gap to their original (and leaves it empty for other trials)", async () => {
+    const rows = (await buildTables({ studyPhase: 1 }))["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code);
+    const byId = new Map(rows.map((r) => [r.trial_id, r]));
+    const repeats = rows.filter((r) => r.is_repeat === true);
+    expect(repeats).toHaveLength(10);
+    for (const r of repeats) {
+      const orig = byId.get(r.repeat_of_trial_id)!;
+      expect(r.repeat_of_trial_index).toBe(orig.trial_index);
+      expect(r.repeat_gap).toBe((r.trial_index as number) - (orig.trial_index as number));
+      expect(r.repeat_gap as number).toBeGreaterThanOrEqual(20);
+    }
+    for (const r of rows.filter((r) => r.is_repeat !== true)) {
+      expect(r.repeat_gap).toBeNull();
+      expect(r.repeat_of_trial_index).toBeNull();
+    }
+  });
+
   it("escapes commas and quotes in CSV", async () => {
     const tables = await buildTables({ studyPhase: 1 });
     const csv = toCsv("questionnaire_background.csv", tables["questionnaire_background.csv"]!);

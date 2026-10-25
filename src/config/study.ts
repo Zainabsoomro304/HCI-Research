@@ -24,7 +24,9 @@ export interface ComparisonDesign {
   /** Attention checks are inserted at positions in [min, max] (1-based, inclusive; limited to the session length). */
   attentionCheckMinPosition: number;
   attentionCheckMaxPosition: number;
-  /** A break screen is shown after each of these analysis trial numbers. */
+  /** Minimum distance (in trial positions) between two attention checks. */
+  attentionCheckMinSpacing: number;
+  /** A break screen is shown after each of these analysis trial numbers (attention checks avoid the trials right before and after). */
   breakAfter: readonly number[];
   /** Number of practice trials (each uses a distinct pair of practice clips). */
   practiceTrials: number;
@@ -38,8 +40,9 @@ const STANDARD_DESIGN: ComparisonDesign = {
   repeatMinSpacing: 20,
   repeatsInFirstHalf: 5,
   attentionChecks: 2,
-  attentionCheckMinPosition: 30,
-  attentionCheckMaxPosition: 100,
+  attentionCheckMinPosition: 25,
+  attentionCheckMaxPosition: 75,
+  attentionCheckMinSpacing: 20,
   breakAfter: [27, 54],
   practiceTrials: 2,
 };

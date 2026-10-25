@@ -7,7 +7,8 @@
  *  - repeats: copies of main trials from positions <= repeatSourceMaxPosition, placed >= repeatMinSpacing
  *    positions after their original, with sides swapped; repeatsInFirstHalf of them fall in the first half of the
  *    session (positions <= floor(N/2)) and the rest in the second half, so consistency is sampled throughout;
- *  - attention checks: the same clip on both sides, at positions in [min, max];
+ *  - attention checks: the same clip on both sides, at positions in [min, max], at least attentionCheckMinSpacing
+ *    apart, never on the last trial before a break or the first trial after one;
  *  - no clip appears in two consecutive trials anywhere in the sequence.
  * Practice trials (each a distinct pair of practice clips) come first and are numbered separately.
  */
@@ -140,10 +141,15 @@ export function generateSchedule(opts: {
 
     // Slot types for positions 1..N.
     const slot: ("main" | "repeat" | "attention")[] = new Array(N + 1).fill("main");
-    const attnCandidates = [];
-    for (let p = design.attentionCheckMinPosition; p <= Math.min(design.attentionCheckMaxPosition, N); p++) attnCandidates.push(p);
-    const attnPos = rng.shuffle(attnCandidates).slice(0, design.attentionChecks);
-    if (attnPos.length < design.attentionChecks) throw new Error("Not enough positions for attention checks");
+    const nearBreak = new Set(design.breakAfter.flatMap((b) => [b, b + 1]));
+    const attnCandidates: number[] = [];
+    for (let p = design.attentionCheckMinPosition; p <= Math.min(design.attentionCheckMaxPosition, N); p++) if (!nearBreak.has(p)) attnCandidates.push(p);
+    const attnPos: number[] = [];
+    for (const p of rng.shuffle(attnCandidates)) {
+      if (attnPos.length === design.attentionChecks) break;
+      if (attnPos.every((q) => Math.abs(p - q) >= design.attentionCheckMinSpacing)) attnPos.push(p);
+    }
+    if (attnPos.length < design.attentionChecks) continue; // spacing not satisfiable with this draw: retry
     attnPos.forEach((p) => (slot[p] = "attention"));
     // Repeats: a fixed number in each half. The earliest possible repeat position is 1 + repeatMinSpacing.
     const half = Math.floor(N / 2);

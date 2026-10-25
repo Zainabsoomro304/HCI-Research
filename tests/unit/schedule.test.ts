@@ -86,12 +86,16 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
     expect(repeats.length - firstHalf).toBe(5);
   });
 
-  it("places attention checks in positions 30-82 (the 30-100 rule limited to the session) with identical clips", () => {
+  it("places attention checks in trials 25-75, >= 20 apart, not next to a break, with identical clips", () => {
+    expect(design).toMatchObject({ attentionCheckMinPosition: 25, attentionCheckMaxPosition: 75, attentionCheckMinSpacing: 20 });
     for (const a of attention) {
-      expect(a.trialIndex).toBeGreaterThanOrEqual(30);
-      expect(a.trialIndex).toBeLessThanOrEqual(82);
+      expect(a.trialIndex).toBeGreaterThanOrEqual(25);
+      expect(a.trialIndex).toBeLessThanOrEqual(75);
+      // Not the last trial before a break (27, 54) or the first trial after one (28, 55).
+      expect([27, 28, 54, 55]).not.toContain(a.trialIndex);
       expect(a.left).toBe(a.right);
     }
+    expect(Math.abs(attention[0]!.trialIndex - attention[1]!.trialIndex)).toBeGreaterThanOrEqual(20);
   });
 
   it("uses two distinct practice pairs from the practice clips", () => {
