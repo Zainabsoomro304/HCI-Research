@@ -11,3 +11,7 @@ test-results/
 playwright-report/
 tmp/
 .next-e2e/
+.env.*
+!.env.example
+.vercel/
+.next-prod/
