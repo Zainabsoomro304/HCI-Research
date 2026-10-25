@@ -117,7 +117,7 @@
   "instr.p4": "First you will do {count} practice comparisons.",
   "instr.start": "Start practice",
   "mainIntro.title": "Practice complete",
-  "mainIntro.body": "Now the real comparisons begin. There are {count} comparisons, with a short break every {every}. Please answer based on which shop you would rather use.",
+  "mainIntro.body": "Now the real comparisons begin. There are {count} comparisons, with {breaks} short breaks along the way. Please answer based on which shop you would rather use.",
   "mainIntro.start": "Start",
   "trial.question": "Which version of the shop would you rather use?",
   "trial.questionChooseB": "For this trial, please choose B.",

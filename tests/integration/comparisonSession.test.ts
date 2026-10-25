@@ -37,7 +37,7 @@ async function answerCurrent(token: string, choice: "left" | "right" = "left") {
 }
 
 describe("Phase 1 comparison session", () => {
-  it("runs consent -> background -> practice -> 117 trials with breaks -> end", async () => {
+  it("runs consent -> background -> practice -> 82 trials with breaks after 27 and 54 -> end", async () => {
     const [p] = await createParticipants({ studyPhase: 1, count: 1 });
     expect(p!.code).toMatch(/^P1-\d{3}$/);
     const token = p!.sessions[0]!.token;
@@ -50,7 +50,7 @@ describe("Phase 1 comparison session", () => {
     st = await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
     expect(st.step).toBe("background");
     // Full schedule stored before trial 1.
-    expect(await prisma.comparisonTrial.count({ where: { session: { token } } })).toBe(119);
+    expect(await prisma.comparisonTrial.count({ where: { session: { token } } })).toBe(84);
 
     st = await act(token, { type: "background", answers: background, clientTs: Date.now() });
     expect(st.step).toBe("instructions");
@@ -68,14 +68,14 @@ describe("Phase 1 comparison session", () => {
     expect(st.trial!.trialIndex).toBe(1);
 
     const breaks: number[] = [];
-    for (let i = 1; i <= 117; i++) {
+    for (let i = 1; i <= 82; i++) {
       st = await answerCurrent(token, i % 2 ? "left" : "right");
       if (st.step === "break") {
         breaks.push(st.breakInfo!.afterTrialIndex);
         st = await act(token, { type: "break_end", clientTs: Date.now() });
       }
     }
-    expect(breaks).toEqual([35, 70, 105]);
+    expect(breaks).toEqual([27, 54]);
     expect(st.step).toBe("end");
     expect(st.end!.completionCode).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
 
@@ -85,7 +85,7 @@ describe("Phase 1 comparison session", () => {
     expect(session!.appVersion).toBeTruthy();
     expect(await prisma.comparisonTrial.count({ where: { session: { token }, choice: null } })).toBe(0);
     const br = await prisma.breakRecord.findMany({ where: { session: { token } } });
-    expect(br).toHaveLength(3);
+    expect(br).toHaveLength(2);
     for (const b of br) expect(b.durationMs).not.toBeNull();
     const t = await prisma.comparisonTrial.findFirst({ where: { session: { token }, isPractice: false } });
     expect(t!.leftNumChangedSettings).toBeGreaterThanOrEqual(2);
@@ -125,7 +125,7 @@ describe("Phase 1 comparison session", () => {
     const st = (await buildState((await getSessionByToken(token))!)) as ComparisonState;
     expect(st.step).toBe("trials");
     expect(st.trial!.trialIndex).toBe(6);
-    expect(st.progress).toEqual({ done: 5, total: 117 });
+    expect(st.progress).toEqual({ done: 5, total: 82 });
   });
 
   it("rejects actions in the wrong step and invalid payloads", async () => {

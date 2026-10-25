@@ -4,8 +4,9 @@
  * Analysis phase (positions 1..N, N = main + repeats + attention checks):
  *  - main trials: unique pairs of analysis clips; each clip appears equally often (max - min <= 1);
  *    each clip is on the left within +/-1 of half its main appearances (Euler-circuit orientation);
- *  - repeats: copies of main trials from positions <= repeatSourceMaxPosition, inserted at positions
- *    >= repeatInsertMinPosition and >= original + repeatMinSpacing, with sides swapped;
+ *  - repeats: copies of main trials from positions <= repeatSourceMaxPosition, placed >= repeatMinSpacing
+ *    positions after their original, with sides swapped; repeatsInFirstHalf of them fall in the first half of the
+ *    session (positions <= floor(N/2)) and the rest in the second half, so consistency is sampled throughout;
  *  - attention checks: the same clip on both sides, at positions in [min, max];
  *  - no clip appears in two consecutive trials anywhere in the sequence.
  * Practice trials (each a distinct pair of practice clips) come first and are numbered separately.
@@ -140,12 +141,22 @@ export function generateSchedule(opts: {
     // Slot types for positions 1..N.
     const slot: ("main" | "repeat" | "attention")[] = new Array(N + 1).fill("main");
     const attnCandidates = [];
-    for (let p = design.attentionCheckMinPosition; p <= design.attentionCheckMaxPosition; p++) attnCandidates.push(p);
+    for (let p = design.attentionCheckMinPosition; p <= Math.min(design.attentionCheckMaxPosition, N); p++) attnCandidates.push(p);
     const attnPos = rng.shuffle(attnCandidates).slice(0, design.attentionChecks);
+    if (attnPos.length < design.attentionChecks) throw new Error("Not enough positions for attention checks");
     attnPos.forEach((p) => (slot[p] = "attention"));
-    const repCandidates = [];
-    for (let p = design.repeatInsertMinPosition; p <= N; p++) if (slot[p] === "main") repCandidates.push(p);
-    const repPos = rng.shuffle(repCandidates).slice(0, design.repeatTrials);
+    // Repeats: a fixed number in each half. The earliest possible repeat position is 1 + repeatMinSpacing.
+    const half = Math.floor(N / 2);
+    const positions = (from: number, to: number) => {
+      const out: number[] = [];
+      for (let p = from; p <= to; p++) if (slot[p] === "main") out.push(p);
+      return out;
+    };
+    const firstCount = Math.min(design.repeatsInFirstHalf, design.repeatTrials);
+    const repPos = [
+      ...rng.shuffle(positions(1 + design.repeatMinSpacing, half)).slice(0, firstCount),
+      ...rng.shuffle(positions(half + 1, N)).slice(0, design.repeatTrials - firstCount),
+    ];
     if (repPos.length < design.repeatTrials) throw new Error("Not enough positions for repeats");
     repPos.forEach((p) => (slot[p] = "repeat"));
 

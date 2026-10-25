@@ -22,13 +22,13 @@ export function InstructionsStep({ practiceCount, onStart }: { practiceCount: nu
   );
 }
 
-export function MainIntroStep({ total, every, onStart }: { total: number; every: number; onStart: () => void }) {
+export function MainIntroStep({ total, breaks, onStart }: { total: number; breaks: number; onStart: () => void }) {
   const t = useT();
   return (
     <StudyPage>
       <Card>
         <h1 className="text-[24px] font-bold">{t("mainIntro.title")}</h1>
-        <p className="mt-4 text-[17px] leading-relaxed">{t("mainIntro.body", { count: total, every })}</p>
+        <p className="mt-4 text-[17px] leading-relaxed">{t("mainIntro.body", { count: total, breaks })}</p>
         <div className="mt-8 flex justify-end">
           <Button onClick={onStart}>{t("mainIntro.start")}</Button>
         </div>

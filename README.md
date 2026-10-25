@@ -2,7 +2,7 @@
 
 Web platform for a three-phase HCI study on adaptive user interfaces:
 
-- **Phase 1** – preference dataset: consent, background questionnaire, 2 practice + 117 pairwise clip comparisons (100 unique pairs, 15 side-swapped repeats, 2 attention checks).
+- **Phase 1** – preference dataset: consent, background questionnaire, 2 practice + 82 pairwise clip comparisons (70 unique pairs, 10 side-swapped repeats, 2 attention checks).
 - **Phase 2** – offline analysis in Python (not in this codebase). The platform exports clean CSVs.
 - **Phase 3** – validation: Session A (same comparison procedure, online) and Session B (in person: 4 shopping tasks in adapted interfaces, QUIS + UES-SF after each, final ranking).
 
@@ -93,9 +93,16 @@ The participants table shows each session's status (not started / in progress wi
 
 ### Phase 1 and Session A (online)
 
-Send the link. Flow: consent → background questionnaire → instructions → 2 practice trials → 117 trials with a break every 35 → end screen (Phase 1 shows a completion code; Session A says the team will schedule Session B). The complete schedule is generated from the participant's seed and stored when consent is given. Every choice is saved immediately (the next trial appears only after the server confirms; network errors are retried with a visible banner), interaction events are batched every 2 s and on tab close, and reopening the link resumes exactly where the participant stopped. Screens narrower than 1024 px get a "please use a computer" message.
+Send the link. Flow: consent → background questionnaire → instructions → 2 practice trials → 82 trials with breaks after trials 27 and 54 → end screen (Phase 1 shows a completion code; Session A says the team will schedule Session B). The complete schedule is generated from the participant's seed and stored when consent is given. Every choice is saved immediately (the next trial appears only after the server confirms; network errors are retried with a visible banner), interaction events are batched every 2 s and on tab close, and reopening the link resumes exactly where the participant stopped. Screens narrower than 1024 px get a "please use a computer" message.
 
-Trial counts, repeat rules, attention-check positions, the break interval and the attention-failure threshold are constants in `src/config/study.ts` (settable per phase).
+Trial schedule (identical for Phase 1 and Session A; generated from the participant's seed):
+
+- **70 main trials** – unique pairs of the 32 analysis clips; each clip appears equally often (max − min ≤ 1, i.e. 4 or 5 times), never in two consecutive trials, and on the left about half the time.
+- **10 repeats** – copies of main trials from trials 1–50, each placed at least 20 trials after its original with sides swapped. They are spread across the session: 5 fall in the first half (trials 21–41) and 5 in the second half (trials 42–82).
+- **2 attention checks** – the same clip on both sides with "please choose B", at random positions in trials 30–82.
+- **Breaks** after analysis trials 27 and 54.
+
+All of these (counts, repeat source range, spacing, first-half share, attention positions, break positions, attention-failure threshold) are constants in `src/config/study.ts`, settable per phase.
 
 ### Between sessions: adaptation plans
 
@@ -154,7 +161,7 @@ pnpm test          # unit tests + integration tests (throwaway embedded PostgreS
 pnpm test:e2e      # Playwright: full Phase 1 session, resume after closing, full Session B, admin + export ZIP
 ```
 
-Unit tests cover config IDs, the trial schedule generator (counts, no duplicate pairs, balance, no consecutive clips, repeat spacing/side swap, attention positions, reproducibility), Latin squares, task scoring, catalogue/task validators, clip selection, theme contrast, media URLs and admin auth. E2E tests start their own database (port 54331) and Next server (port 3210), so they can run next to `pnpm dev`.
+Unit tests cover config IDs, the trial schedule generator (counts, no duplicate pairs, balance, no consecutive clips, repeat source range/spacing/side swap, repeats spread across both halves, attention positions, break positions, reproducibility), Latin squares, task scoring, catalogue/task validators, clip selection, theme contrast, media URLs and admin auth. E2E tests start their own database (port 54331) and Next server (port 3210), so they can run next to `pnpm dev`.
 
 ---
 

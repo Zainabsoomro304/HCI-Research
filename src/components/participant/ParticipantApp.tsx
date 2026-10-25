@@ -85,7 +85,7 @@ function ComparisonView({
     case "instructions":
       return <InstructionsStep practiceCount={design.practiceTrials} onStart={() => void act({ type: "instructions_done" })} />;
     case "main_intro":
-      return <MainIntroStep total={state.progress!.total} every={design.breakEvery} onStart={() => void act({ type: "main_intro_done" })} />;
+      return <MainIntroStep total={state.progress!.total} breaks={design.breakAfter.length} onStart={() => void act({ type: "main_intro_done" })} />;
     case "practice":
     case "trials":
       return state.trial ? (

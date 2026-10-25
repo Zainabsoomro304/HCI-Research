@@ -18,11 +18,11 @@ test("a scripted participant completes a full Phase 1 session", async ({ page })
   await page.getByRole("button", { name: "Start" }).click();
 
   let breaks = 0;
-  for (let i = 1; i <= 117; i++) {
-    await expect(page.getByText(`Trial ${i} of 117`)).toBeVisible();
+  for (let i = 1; i <= 82; i++) {
+    await expect(page.getByText(`Trial ${i} of 82`)).toBeVisible();
     const chooseB = await page.getByText("For this trial, please choose B.").isVisible();
     await answerTrial(page, chooseB ? "B" : i % 3 === 0 ? "B" : "A");
-    if (i % 35 === 0 && i < 117) {
+    if (i === 27 || i === 54) {
       await expect(page.getByRole("heading", { name: "Take a short break" })).toBeVisible();
       breaks++;
       await page.getByRole("button", { name: "Continue" }).click();
@@ -30,17 +30,17 @@ test("a scripted participant completes a full Phase 1 session", async ({ page })
   }
   await expect(page.getByRole("heading", { name: "Thank you!" })).toBeVisible();
   expect(await page.locator(".font-mono").innerText()).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
-  expect(breaks).toBe(3);
+  expect(breaks).toBe(2);
 
   const session = await prisma.session.findUnique({ where: { token }, include: { trials: true, breaks: true, consent: true } });
   expect(session!.status).toBe("completed");
   expect(session!.consent).not.toBeNull();
-  expect(session!.trials.filter((t) => t.choice)).toHaveLength(119);
+  expect(session!.trials.filter((t) => t.choice)).toHaveLength(84);
   for (const t of session!.trials.filter((t) => !t.isPractice)) {
     expect(t.rtMs).not.toBeNull();
     expect(t.clientBothEndedAt!.getTime()).toBeGreaterThanOrEqual(t.clientShownAt!.getTime());
   }
   for (const t of session!.trials.filter((t) => t.isAttentionCheck)) expect(t.choice).toBe("right");
   expect(session!.breaks.every((b) => b.durationMs !== null)).toBe(true);
-  await expect.poll(() => prisma.event.count({ where: { sessionId: session!.id, type: "trial_shown" } })).toBeGreaterThanOrEqual(119);
+  await expect.poll(() => prisma.event.count({ where: { sessionId: session!.id, type: "trial_shown" } })).toBeGreaterThanOrEqual(84);
 });

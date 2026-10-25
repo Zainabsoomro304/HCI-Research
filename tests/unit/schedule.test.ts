@@ -20,18 +20,20 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
   const repeats = analysis.filter((t) => t.isRepeat);
   const attention = analysis.filter((t) => t.isAttentionCheck);
 
-  it("has the right counts (2 practice + 100 main + 15 repeats + 2 attention = 119)", () => {
-    expect(s).toHaveLength(design.practiceTrials + totalAnalysisTrials(design));
+  it("has the right counts (2 practice + 70 main + 10 repeats + 2 attention = 84)", () => {
+    expect(design).toMatchObject({ mainTrials: 70, repeatTrials: 10, attentionChecks: 2, practiceTrials: 2 });
+    expect(totalAnalysisTrials(design)).toBe(82);
+    expect(s).toHaveLength(84);
     expect(s.filter((t) => t.isPractice)).toHaveLength(2);
-    expect(main).toHaveLength(100);
-    expect(repeats).toHaveLength(15);
+    expect(main).toHaveLength(70);
+    expect(repeats).toHaveLength(10);
     expect(attention).toHaveLength(2);
     expect(s.map((t) => t.seq)).toEqual(s.map((_, i) => i));
     expect(analysis.map((t) => t.trialIndex)).toEqual(analysis.map((_, i) => i + 1));
   });
 
   it("never repeats a pair among main trials and only uses analysis clips", () => {
-    expect(new Set(main.map(pairKey)).size).toBe(100);
+    expect(new Set(main.map(pairKey)).size).toBe(70);
     for (const t of main) {
       expect(t.left).not.toBe(t.right);
       expect(clips).toContain(t.left);
@@ -63,25 +65,31 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
     }
   });
 
-  it("places repeats correctly: originals in 1-60, repeats in 61+, spacing >= 25, sides swapped", () => {
+  it("places repeats correctly: originals in 1-50, spacing >= 20, sides swapped, each original used once", () => {
     const bySeq = new Map(s.map((t) => [t.seq, t]));
     const originals = new Set<number>();
     for (const r of repeats) {
       const o = bySeq.get(r.repeatOfSeq!)!;
       expect(o.isRepeat || o.isAttentionCheck || o.isPractice).toBe(false);
-      expect(o.trialIndex).toBeLessThanOrEqual(design.repeatSourceMaxPosition);
-      expect(r.trialIndex).toBeGreaterThanOrEqual(design.repeatInsertMinPosition);
-      expect(r.trialIndex - o.trialIndex).toBeGreaterThanOrEqual(design.repeatMinSpacing);
+      expect(o.trialIndex).toBeLessThanOrEqual(50);
+      expect(r.trialIndex - o.trialIndex).toBeGreaterThanOrEqual(20);
       expect([r.left, r.right]).toEqual([o.right, o.left]);
       originals.add(o.seq);
     }
-    expect(originals.size).toBe(15);
+    expect(originals.size).toBe(10);
   });
 
-  it("places attention checks in positions 30-100 with identical clips", () => {
+  it("spreads repeats across the session: half in the first half (trials 1-41), half in the second", () => {
+    const firstHalf = repeats.filter((r) => r.trialIndex <= 41).length;
+    expect(firstHalf).toBe(design.repeatsInFirstHalf);
+    expect(firstHalf).toBe(5);
+    expect(repeats.length - firstHalf).toBe(5);
+  });
+
+  it("places attention checks in positions 30-82 (the 30-100 rule limited to the session) with identical clips", () => {
     for (const a of attention) {
       expect(a.trialIndex).toBeGreaterThanOrEqual(30);
-      expect(a.trialIndex).toBeLessThanOrEqual(100);
+      expect(a.trialIndex).toBeLessThanOrEqual(82);
       expect(a.left).toBe(a.right);
     }
   });
@@ -91,6 +99,13 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
     const used = practice.flatMap((t) => [t.left, t.right]);
     expect(new Set(used).size).toBe(4);
     for (const c of used) expect(practiceClips).toContain(c);
+  });
+});
+
+describe("break positions", () => {
+  it("are after analysis trials 27 and 54", () => {
+    expect(design.breakAfter).toEqual([27, 54]);
+    expect(COMPARISON_DESIGN[3]).toEqual(COMPARISON_DESIGN[1]);
   });
 });
 

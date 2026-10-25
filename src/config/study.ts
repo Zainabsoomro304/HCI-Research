@@ -1,5 +1,5 @@
 /**
- * Study-design constants. Change trial counts, break interval and thresholds here.
+ * Study-design constants. Change trial counts, break positions and thresholds here.
  * Values are set per study phase so Phase 1 and Phase 3 Session A can diverge later if needed.
  */
 
@@ -12,31 +12,35 @@ export interface ComparisonDesign {
   repeatTrials: number;
   /** Repeats are copies of main trials at positions 1..repeatSourceMaxPosition. */
   repeatSourceMaxPosition: number;
-  /** Repeats are inserted at positions repeatInsertMinPosition..(end of analysis phase). */
-  repeatInsertMinPosition: number;
   /** Minimum distance (in trial positions) between an original and its repeat. */
   repeatMinSpacing: number;
+  /**
+   * How many repeats are placed in the first half of the analysis phase (positions 1..floor(N/2)); the rest go in
+   * the second half. Spreads the self-consistency measurement across the session.
+   */
+  repeatsInFirstHalf: number;
   /** Number of attention-check trials. */
   attentionChecks: number;
-  /** Attention checks are inserted at positions in [min, max] (1-based, inclusive). */
+  /** Attention checks are inserted at positions in [min, max] (1-based, inclusive; limited to the session length). */
   attentionCheckMinPosition: number;
   attentionCheckMaxPosition: number;
-  /** A break screen is shown after every N analysis-phase trials. */
-  breakEvery: number;
+  /** A break screen is shown after each of these analysis trial numbers. */
+  breakAfter: readonly number[];
   /** Number of practice trials (each uses a distinct pair of practice clips). */
   practiceTrials: number;
 }
 
+/** 70 main + 10 repeats + 2 attention checks = 82 analysis trials, breaks after 27 and 54. */
 const STANDARD_DESIGN: ComparisonDesign = {
-  mainTrials: 100,
-  repeatTrials: 15,
-  repeatSourceMaxPosition: 60,
-  repeatInsertMinPosition: 61,
-  repeatMinSpacing: 25,
+  mainTrials: 70,
+  repeatTrials: 10,
+  repeatSourceMaxPosition: 50,
+  repeatMinSpacing: 20,
+  repeatsInFirstHalf: 5,
   attentionChecks: 2,
   attentionCheckMinPosition: 30,
   attentionCheckMaxPosition: 100,
-  breakEvery: 35,
+  breakAfter: [27, 54],
   practiceTrials: 2,
 };
 

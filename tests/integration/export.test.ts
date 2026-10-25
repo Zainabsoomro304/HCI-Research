@@ -118,7 +118,7 @@ describe("export", () => {
       expect([row[`${side}_layout`], row[`${side}_fontSize`], row[`${side}_density`], row[`${side}_theme`], row[`${side}_menu`]]).toEqual(id);
       expect(row[`${side}_numChangedSettings`]).toBeGreaterThanOrEqual(2);
     }
-    expect(tables["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code)).toHaveLength(119);
+    expect(tables["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code)).toHaveLength(84);
   });
 
   it("escapes commas and quotes in CSV", async () => {
@@ -126,7 +126,9 @@ describe("export", () => {
     const csv = toCsv("questionnaire_background.csv", tables["questionnaire_background.csv"]!);
     expect(csv).toContain('"Sales, ""retail"""');
     const parsed = parseCsv(csv);
-    expect(parsed[1]![parsed[0]!.indexOf("field")]).toBe('Sales, "retail"');
+    // Other test files share the database, so find this test's participant rather than assuming row order.
+    const row = parsed.find((r) => r[parsed[0]!.indexOf("participant_code")] === p1Code)!;
+    expect(row[parsed[0]!.indexOf("field")]).toBe('Sales, "retail"');
   });
 
   it("filters by phase, completion and attention, and excludes Session B practice by default", async () => {
@@ -164,6 +166,6 @@ describe("export", () => {
     const ranks = all["rankings.csv"]!.filter((r) => r.participant_code === p3Code);
     expect(ranks.map((r) => r.rank)).toEqual([1, 2, 3, 4]);
     expect(ranks[0]!.reason).toBe("liked it, mostly");
-    expect(all["breaks.csv"]!.filter((r) => r.participant_code === p1Code)).toHaveLength(3);
+    expect(all["breaks.csv"]!.filter((r) => r.participant_code === p1Code)).toHaveLength(2);
   });
 });

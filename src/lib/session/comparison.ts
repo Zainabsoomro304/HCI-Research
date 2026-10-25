@@ -195,7 +195,7 @@ export async function applyComparisonAction(s: SessionWithParticipant, action: C
       let nextStep: ComparisonStep = s.currentStep as ComparisonStep;
       if (trial.isPractice && nextIndex >= d.practiceTrials) nextStep = "main_intro";
       else if (!trial.isPractice && trial.trialIndex >= N) nextStep = "end";
-      else if (!trial.isPractice && trial.trialIndex % d.breakEvery === 0) nextStep = "break";
+      else if (!trial.isPractice && d.breakAfter.includes(trial.trialIndex)) nextStep = "break";
       await prisma.$transaction(async (tx) => {
         const updated = await tx.comparisonTrial.updateMany({
           where: { id: trial.id, choice: null },
