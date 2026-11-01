@@ -28,6 +28,9 @@ class SeedsConfig(_Strict):
     simulate: int
     cv_folds: int
     clustering: int
+    learning_curve: int
+    bootstrap: int
+    mlp: int
 
 
 class CleaningConfig(_Strict):
@@ -58,6 +61,27 @@ class TargetsConfig(_Strict):
 class ClustersConfig(_Strict):
     candidates: list[int]
     kmeans_n_init: int
+
+
+class MlpConfig(_Strict):
+    hidden: list[int]
+    alpha: float
+    max_iter: int
+
+
+class Phase2Config(_Strict):
+    k_values: list[int]
+    n_test: int
+    n_splits: int
+    ceiling_fraction: float
+    bootstrap_samples: int
+    cluster_stability_samples: int
+    sigma_inner_folds: int
+    n_jobs: int
+    r_workers: int
+    slopes_sensitivity: bool
+    gamma_grid: list[float]
+    mlp: MlpConfig
 
 
 class PlansConfig(_Strict):
@@ -115,6 +139,7 @@ class Config(_Strict):
     model: ModelConfig
     targets: TargetsConfig
     clusters: ClustersConfig
+    phase2: Phase2Config
     plans: PlansConfig
     simulate: SimulateConfig
 

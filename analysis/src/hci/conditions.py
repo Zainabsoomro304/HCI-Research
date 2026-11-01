@@ -10,9 +10,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from hci.clustering import assign_by_likelihood, fit_choice_clusters
+from hci.clustering import assign_by_likelihood
+from hci.config import Config
 from hci.encoding import ALL_CONFIG_IDS, BASE_CONFIG_ID, eligible_mask
-from hci.model import Comparisons, Nuisance, estimate_nuisance, fit_map, fit_pooled, score_configs
+from hci.loo import build_shared
+from hci.model import Comparisons, Nuisance, estimate_nuisance, fit_map, score_configs
 
 
 @dataclass(frozen=True)
@@ -42,33 +44,29 @@ def condition_models(
     people: dict[str, Comparisons],
     *,
     sigma: float,
-    sigma_pool: float,
-    nuisance_sigma: float,
-    nuisance_rounds: int,
     use_curvature: bool,
-    candidates: list[int],
-    seed: int,
-    n_init: int,
+    config: Config,
     fine_tune_k: int = 5,
 ) -> ConditionModels:
     """Everything shared (nuisance terms, global model, clusters) is computed from `others` only."""
-    others = [data for other, data in sorted(people.items()) if other != code]
+    others = {other: data for other, data in people.items() if other != code}
     own = people[code]
-    nuisance = estimate_nuisance(others, sigma=nuisance_sigma, rounds=nuisance_rounds, use_curvature=use_curvature)
-    global_w = fit_pooled(others, sigma_pool=sigma_pool, nuisance=nuisance)
-    scratch = np.array([fit_map(p, sigma=sigma, nuisance=nuisance) for p in others])
-    clusters = fit_choice_clusters(
-        scratch, others, candidates=candidates, seed=seed, n_init=n_init, sigma_pool=sigma_pool, nuisance=nuisance
+    nuisance = estimate_nuisance(
+        [others[c] for c in sorted(others)],
+        sigma=config.model.nuisance_sigma,
+        rounds=config.model.nuisance_rounds,
+        use_curvature=use_curvature,
     )
+    shared = build_shared(others, None, sigma=sigma, nuisance=nuisance, config=config, seed=config.seeds.clustering)
     first = own.first(fine_tune_k)
-    assigned = assign_by_likelihood(first, clusters.weights, nuisance)
+    assigned = assign_by_likelihood(first, shared.choice.weights, nuisance)
     return ConditionModels(
         nuisance=nuisance,
-        global_w=global_w,
-        cluster_k=clusters.k,
-        cluster_weights=clusters.weights,
+        global_w=shared.global_w,
+        cluster_k=shared.choice.k,
+        cluster_weights=shared.choice.weights,
         cluster5_assigned=assigned,
-        cluster5_w=fit_map(first, mu=clusters.weights[assigned], sigma=sigma, nuisance=nuisance),
+        cluster5_w=fit_map(first, mu=shared.choice.weights[assigned], sigma=sigma, nuisance=nuisance),
         personal_w=fit_map(own, sigma=sigma, nuisance=nuisance),
     )
 

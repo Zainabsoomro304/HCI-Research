@@ -11,6 +11,9 @@ seeds:
   simulate: 1
   cv_folds: 11
   clustering: 21
+  learning_curve: 31
+  bootstrap: 41
+  mlp: 51
 
 cleaning:
   drop_practice: true
@@ -40,6 +43,23 @@ targets:
 clusters:
   candidates: [2, 3]
   kmeans_n_init: 20
+
+phase2:
+  k_values: [5, 10, 20, 30, 50]
+  n_test: 20
+  n_splits: 10
+  ceiling_fraction: 0.9               # k90: the smallest k reaching this share of the ceiling
+  bootstrap_samples: 2000
+  cluster_stability_samples: 200
+  sigma_inner_folds: 4                # sigma is tuned inside the others, with this many folds of participants
+  n_jobs: -1
+  r_workers: 6
+  slopes_sensitivity: true            # also fit (start | participant) per split
+  gamma_grid: [-0.5, -0.25, -0.1, 0.1, 0.25, 0.5]   # how far targets move if w contains this much busyness bias
+  mlp:                                # secondary model: one robustness table only
+    hidden: [16]
+    alpha: 1.0
+    max_iter: 500
 
 plans:
   trigger_after_ms: 8000

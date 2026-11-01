@@ -115,6 +115,20 @@ def recovery(
 
 
 @app.command()
+def phase2(
+    export: Path = typer.Option(..., help="Export ZIP from the admin panel."),
+    config: Path = typer.Option(None),
+) -> None:
+    """Full Phase 2 analysis: consistency, learning curves, starting points, clusters and CS / non-CS descriptives."""
+    from hci.phase2 import run_phase2
+
+    path = run_phase2(export, load_config(config))
+    if "SYNTHETIC" in path.name:
+        typer.echo(_BANNER)
+    typer.echo(f"Report: {path}")
+
+
+@app.command()
 def identifiability() -> None:
     """Check which busyness terms the clip set can support."""
     typer.echo(json.dumps(curvature_identifiability(), indent=1))

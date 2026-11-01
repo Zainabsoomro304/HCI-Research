@@ -21,11 +21,7 @@ def people(synthetic_zip: Path, config) -> dict[str, Comparisons]:
 
 
 def _models(code: str, people: dict[str, Comparisons], config):
-    return condition_models(
-        code, people, sigma=2.0, sigma_pool=config.model.sigma_pool, nuisance_sigma=config.model.nuisance_sigma,
-        nuisance_rounds=config.model.nuisance_rounds, use_curvature=True, candidates=config.clusters.candidates,
-        seed=config.seeds.clustering, n_init=config.clusters.kmeans_n_init,
-    )  # fmt: skip
+    return condition_models(code, people, sigma=2.0, use_curvature=True, config=config)
 
 
 def _flipped(data: Comparisons) -> Comparisons:

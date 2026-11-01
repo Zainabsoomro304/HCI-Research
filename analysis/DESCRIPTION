@@ -1,0 +1,3 @@
+Type: project
+Description: R dependencies of the analysis pipeline (mixed models and equivalence tests).
+Imports: jsonlite, lme4, lmerTest, emmeans, TOSTER, PlackettLuce

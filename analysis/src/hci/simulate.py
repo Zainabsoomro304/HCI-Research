@@ -386,12 +386,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
             }
             continue
         complete = {p.code: main_by_person[p.code] for j, p in enumerate(people) if j not in incomplete}
-        models = condition_models(
-            person.code, complete, sigma=sb.plan_sigma, sigma_pool=config.model.sigma_pool,
-            nuisance_sigma=config.model.nuisance_sigma, nuisance_rounds=config.model.nuisance_rounds,
-            use_curvature=curvature, candidates=config.clusters.candidates, seed=config.seeds.clustering,
-            n_init=config.clusters.kmeans_n_init,
-        )  # fmt: skip
+        models = condition_models(person.code, complete, sigma=sb.plan_sigma, use_curvature=curvature, config=config)
         person.plan = {
             "targets": condition_targets(models, config.targets.min_changed, config.targets.max_changed),
             "trigger_ms": config.plans.trigger_after_ms,
