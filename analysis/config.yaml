@@ -1,0 +1,91 @@
+# Every analysis constant and seed lives here. Changing this file changes the config hash in every manifest.
+
+study:
+  # One-group design: the same N participants do Session A (comparisons), then Session B.
+  # On the platform they are all Phase 3 participants (codes P3-xxx).
+  n_participants: 32
+  n_min: 16
+  comparison_session_types: [p3_sessionA]
+
+seeds:
+  simulate: 1
+  cv_folds: 11
+  clustering: 21
+
+cleaning:
+  drop_practice: true
+  require_completed_session: true
+  exclude_attention_failures: true    # primary analysis; the sensitivity analysis flips this
+  max_failed_attention_checks: 0      # must match the platform's MAX_FAILED_ATTENTION_CHECKS
+  fast_rt_ms: 300
+  exclude_fast_rt: false
+  fatigue_half_boundary: 41           # trials 1-41 = first half, matching the platform's floor(82 / 2)
+
+model:
+  # Linear busyness is removed: numChangedSettings is the exact sum of the 8 dummies, so a linear term cannot be
+  # separated from w. "auto" adds the curvature term (busy - 3)^2 only if the design supports it.
+  curvature: auto                     # auto | on | off
+  curvature_max_vif: 10.0
+  sigma_grid: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]
+  sigma_cv_folds: 5
+  sigma_pool: 10.0                    # weak prior for pooled (global and cluster) fits
+  nuisance_sigma: 2.0                 # person-level prior while estimating the nuisance terms
+  nuisance_rounds: 6
+
+targets:
+  # Adaptive targets are restricted to the range of changes participants saw in the clips.
+  min_changed: 2
+  max_changed: 4
+
+clusters:
+  candidates: [2, 3]
+  kmeans_n_init: 20
+
+plans:
+  trigger_after_ms: 8000
+
+simulate:
+  cs_share: 0.5
+  cluster_probs: [0.34, 0.33, 0.33]
+  # Weights in logit units, feature order: grid2 grid3 small large partial summary dark dropdown
+  cluster_means:
+    - [1.5, 2.2, -1.0, 0.2, 0.8, 1.6, 1.8, 0.6]
+    - [-1.5, -2.2, -1.5, 1.5, -1.0, -2.0, -1.5, -1.0]
+    - [1.0, 0.0, 1.2, -1.5, 1.5, 0.5, -0.8, 1.6]
+  weight_scale: 2.5
+  individual_sd: 1.2
+  decisiveness_log_sd: 0.5            # person-level multiplier on all weights: how strong their preferences are
+  side_bias: 0.2
+  busy_gamma: -0.1                    # linear busyness: only w + gamma is recoverable
+  busy_curvature: 0.0
+  lapse_min: 0.0
+  lapse_max: 0.08
+  fatigue_lapse_slope: 0.03           # added lapse rate at the end of the session
+  noncs_extra_lapse: 0.0
+  attention_error_rate: 0.01          # per check; one wrong answer fails the participant
+  questionnaire_informativeness: 0.6
+  questionnaire_no_preference: 0.15
+  rt_median_ms: 1800
+  rt_log_sd: 0.6
+  incomplete_participants: 0
+  session_b:
+    scenario: equivalence             # equivalence | cluster5_worse
+    scenarios:
+      equivalence: {cluster5_shift: 0.0}
+      cluster5_worse: {cluster5_shift: -1.0}
+    plan_sigma: 2.0
+    quis_mean: 5.5                    # on the 0-9 placeholder scale
+    quis_per_utility: 0.05
+    participant_sd: 0.7
+    residual_sd: 0.6
+    position_effect: -0.05
+    task_sd: 0.1
+    item_noise_sd: 0.5
+    na_rate: 0.02
+    time_median_s: 180
+    time_log_sd: 0.3
+    time_per_quis: -0.03
+    success_logit: 1.5
+    success_per_quis: 0.3
+    within_budget_rate: 0.9
+    rank_noise_sd: 0.8
