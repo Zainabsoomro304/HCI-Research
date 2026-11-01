@@ -15,3 +15,15 @@ tmp/
 !.env.example
 .vercel/
 .next-prod/
+
+# Analysis pipeline: real participant data, models and results must never be committed (public repo)
+analysis/data/
+analysis/output/
+analysis/models/
+*.zip
+analysis/.venv/
+analysis/renv/library/
+analysis/renv/staging/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
