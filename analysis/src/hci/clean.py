@@ -75,6 +75,13 @@ def clean(export: Export, config: Config, *, exclude_attention: bool | None = No
             LogEntry("no comparison trials in the analysed session type", "participants", len(ids), "excluded", ids)
         )
 
+    withdrawn = participants["withdrawn_at"].notna()
+    if withdrawn.any():
+        ids = list(participants.loc[withdrawn, "participant_code"])
+        log.append(LogEntry("withdrawn", "participants", len(ids), "excluded", ids))
+        participants = participants[~withdrawn]
+        trials = trials[trials["participant_code"].isin(participants["participant_code"])]
+
     if rules.require_completed_session:
         done = pd.Series(False, index=participants.index)
         for t in types:

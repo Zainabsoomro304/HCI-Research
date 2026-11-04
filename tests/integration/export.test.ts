@@ -56,6 +56,7 @@ beforeAll(async () => {
     },
   });
   const sb = p3!.sessions.find((s) => s.type === "p3_sessionB")!;
+  await prisma.session.updateMany({ where: { participantId: p3!.id, type: "p3_sessionA" }, data: { status: "completed" } });
   await unlockSessionB(sb.id);
   await act(sb.token, { type: "welcome_done" });
   await prisma.event.create({
@@ -100,7 +101,7 @@ describe("export", () => {
   it("produces a ZIP with every table and a codebook; headers match the codebook exactly", async () => {
     const zip = await JSZip.loadAsync(await buildExportZip());
     const names = Object.keys(zip.files).sort();
-    expect(names).toEqual([...TABLES.map((t) => t.file), "codebook.md"].sort());
+    expect(names).toEqual([...TABLES.map((t) => t.file), "codebook.md", "frozen_model.json"].sort());
     const codebook = await zip.file("codebook.md")!.async("string");
     for (const t of TABLES) {
       const csv = parseCsv(await zip.file(t.file)!.async("string"));

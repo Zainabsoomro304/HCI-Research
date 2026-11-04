@@ -41,6 +41,8 @@ describe("Session B", () => {
     const sb = p!.sessions.find((s) => s.type === "p3_sessionB")!;
     expect((await state(sb.token)).step).toBe("locked");
     await expect(act(sb.token, { type: "welcome_done" })).rejects.toBeInstanceOf(ActionError);
+    await expect(unlockSessionB(sb.id)).rejects.toThrow(/Session A is not completed/);
+    await prisma.session.updateMany({ where: { participantId: p!.id, type: "p3_sessionA" }, data: { status: "completed" } });
     await expect(unlockSessionB(sb.id)).rejects.toThrow(/Missing adaptation plans/);
     const wrong = await savePlanFile(p!.id, planFor("P3-999"));
     expect(wrong.ok).toBe(false);
@@ -50,6 +52,7 @@ describe("Session B", () => {
     const [p] = await createParticipants({ studyPhase: 3, count: 1 });
     const sb = p!.sessions.find((s) => s.type === "p3_sessionB")!;
     expect((await savePlanFile(p!.id, planFor(p!.code), "plan.json")).ok).toBe(true);
+    await prisma.session.updateMany({ where: { participantId: p!.id, type: "p3_sessionA" }, data: { status: "completed" } });
     await unlockSessionB(sb.id);
 
     const blocks = await prisma.taskBlock.findMany({ where: { sessionId: sb.id }, orderBy: { blockIndex: "asc" } });
@@ -119,6 +122,7 @@ describe("Session B", () => {
     const [p] = await createParticipants({ studyPhase: 3, count: 1 });
     const sb = p!.sessions.find((s) => s.type === "p3_sessionB")!;
     await savePlanFile(p!.id, planFor(p!.code));
+    await prisma.session.updateMany({ where: { participantId: p!.id, type: "p3_sessionA" }, data: { status: "completed" } });
     await unlockSessionB(sb.id);
     await act(sb.token, { type: "welcome_done" });
     const st = await state(sb.token);

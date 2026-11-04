@@ -8,9 +8,11 @@ from __future__ import annotations
 import difflib
 import hashlib
 import io
+import json
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -27,16 +29,20 @@ _BOOL = {
     "within_budget",
     "is_na",
     "reverse_coded",
+    "is_simulated",
+    "flag_agent_mismatch",
+    "flag_attention_failed",
+    "flag_late",
 }
-_FLOAT = {"consistency_pct", "value"}
+_FLOAT = {"consistency_pct", "value", "sigma"}
 _INT = {
     "study_phase", "number", "seed", "condition_row", "task_row", "attention_total", "attention_correct",
     "repeats_answered", "repeats_consistent", "age", "techConfidence", "seq", "trial_index", "repeat_of_trial_index",
     "repeat_gap", "left_numChangedSettings", "right_numChangedSettings", "rt_ms", "replay_count", "after_trial_index",
     "duration_ms", "block_index", "interface_number", "budget", "required_items_found", "total_spent", "extra_items",
-    "plan_steps", "applied_steps", "rank", "event_id", "client_ts_ms",
+    "plan_steps", "applied_steps", "rank", "event_id", "client_ts_ms", "frozen_version", "cluster_count", "assigned_cluster",
 }  # fmt: skip
-_DATETIME_EXACT = {"client_ts", "server_ts"}
+_DATETIME_EXACT = {"client_ts", "server_ts", "at"}
 
 _DOMAINS: dict[str, dict[str, set[str]]] = {
     "participants.csv": {"group": {"cs", "nonCs", "unknown"}},
@@ -61,6 +67,9 @@ class Export:
     questionnaire_task: pd.DataFrame
     rankings: pd.DataFrame
     events: pd.DataFrame
+    plans: pd.DataFrame
+    admin_actions: pd.DataFrame
+    frozen_model: dict[str, Any]
     codebook: str
     synthetic: bool
     path: Path
@@ -157,7 +166,7 @@ def load_export(path: Path | str) -> Export:
         raise ExportError(f"{path} is not a ZIP file") from e
     with archive:
         names = set(archive.namelist())
-        missing_files = [f for f in [*schema, "codebook.md"] if f not in names]
+        missing_files = [f for f in [*schema, "codebook.md", "frozen_model.json"] if f not in names]
         if missing_files:
             raise ExportError(f"{path.name} is missing: {', '.join(missing_files)}")
         for file, expected in schema.items():
@@ -168,7 +177,10 @@ def load_export(path: Path | str) -> Export:
             _check_domains(file, df)
             tables[file] = df
         codebook = archive.read("codebook.md").decode("utf-8")
-        synthetic = SYNTHETIC_MARKER in names
+        frozen_model = json.loads(archive.read("frozen_model.json").decode("utf-8"))
+        # Simulated participants make the whole export synthetic, whatever else it contains.
+        simulated = tables["participants.csv"]["is_simulated"].fillna(False).astype(bool).any()
+        synthetic = SYNTHETIC_MARKER in names or bool(simulated)
     _check_trials(tables["comparison_trials.csv"])
     return Export(
         participants=tables["participants.csv"],
@@ -179,6 +191,9 @@ def load_export(path: Path | str) -> Export:
         questionnaire_task=tables["questionnaire_task.csv"],
         rankings=tables["rankings.csv"],
         events=tables["events.csv"],
+        plans=tables["plans.csv"],
+        admin_actions=tables["admin_actions.csv"],
+        frozen_model=frozen_model,
         codebook=codebook,
         synthetic=synthetic,
         path=path,

@@ -34,6 +34,7 @@ test("a complete Session B with an uploaded plan", async ({ page }) => {
     },
   });
   expect(uploaded.ok).toBe(true);
+  await prisma.session.updateMany({ where: { participantId: p.id, type: "p3_sessionA" }, data: { status: "completed" } });
   await unlockSessionB(sb.id);
   // The waiting page notices the unlock by polling.
   await expect(page.getByRole("heading", { name: "Welcome to the second session" })).toBeVisible({ timeout: 20_000 });

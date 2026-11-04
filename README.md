@@ -30,6 +30,7 @@ pnpm dev                    # http://localhost:3000
 | `ADMIN_PASSWORD` | Password for `/admin`. |
 | `SESSION_SECRET` | Long random string used to sign the admin cookie (≥ 16 characters). |
 | `PUBLIC_BASE_URL` | Base URL used in participant links, e.g. `https://study.example.org` (no trailing slash). |
+| `ALLOW_TEST_TOOLS` | `true` turns on simulated participants. Local and pilot deployments only, never the study deployment. |
 
 ### Database options
 
@@ -106,7 +107,18 @@ All of these (counts, repeat source range, spacing, first-half share, attention 
 
 ### Between sessions: adaptation plans
 
-Upload one JSON file per Phase 3 participant on their admin page (format below). It is validated with clear error messages and previewed as config thumbnails. Uploading again replaces it; Session B freezes the plans when it starts.
+Plans are computed in the admin panel. Create all participants as Phase 3; everyone does Session A and then Session B.
+
+Open **Phase 3 preparation** (`/admin/phase3`). It shows who has finished Session A, lets you copy reminder links, and lets you mark someone as withdrawn. When every active participant has finished, click **Freeze models & generate plans**. It builds each participant's global and cluster models from everyone else, computes their four plans, stores them with a frozen-model record in one transaction, and shows the results with thumbnails and flags. Each adaptive condition gets one step, after 8000 ms.
+
+- Re-running replaces the computed plans, and is allowed only until any Session B starts. After that, unfreezing takes a typed phrase and a reason, is logged, and is flagged permanently in the export.
+- Participants who failed an attention check are left out of the models, and still get a flagged plan built from everyone included.
+- Someone who finishes Session A after the freeze gets nothing automatically: you either exclude them or generate a flagged late plan from the frozen models.
+- Session B needs a plan and a completed Session A, and refuses withdrawn participants.
+
+The computation lives in `src/lib/planEngine/` and runs in chunks with a progress bar, so it cannot hit a serverless time limit. `analysis/README.md` explains how it relates to the Python analysis.
+
+**Override plan (advanced)** on a participant's page still accepts a JSON file, flagged as `uploaded` in the data and kept when re-freezing. Format:
 
 ```json
 {
@@ -121,6 +133,10 @@ Upload one JSON file per Phase 3 participant on their admin page (format below).
 ```
 
 `afterMs` = ms since the task started; `afterEvents` = deliberate interactions since the previous step (category_select, search_query, product_open, add_to_cart, remove_from_cart, quantity_change, cart_open – scrolls, closes and page views do not count). Steps fire in order; every task starts in the base configuration.
+
+### Rehearsing with simulated participants
+
+Set `ALLOW_TEST_TOOLS=true` on a local or pilot deployment, **never on the study deployment**. A TEST MODE banner appears, and Phase 3 preparation gains test tools and a rehearsal checklist: create simulated `P3-Sxxx` participants, simulate their Session A and B through the real session code, and do your own sessions alongside them. With the setting off, simulated participants can't be created and freezing refuses to run if any exist. Exports leave them out unless you tick the option.
 
 ### Session B (in person)
 
@@ -147,9 +163,12 @@ On the participant's admin page click **Start Session B** (enabled once all 4 pl
 | `task_trials.csv` | Session B blocks: condition, task, scores (`required_items_found`, `within_budget`, `total_spent`, `duration_ms`, `extra_items`), applied adaptations |
 | `questionnaire_task.csv` | QUIS / UES-SF in long format (participant, block, condition, task, instrument, item_id, value, N/A, reverse flag) |
 | `rankings.csv` | Final ranking with reasons |
+| `plans.csv` | One row per participant in the active frozen model: assigned cluster, target per condition, flags |
+| `admin_actions.csv` | Freezes, unfreezes, withdrawals, late plans, uploads and test-tool use |
+| `frozen_model.json` | The active frozen model: settings, seeds, input-data hash, models and per-participant summaries |
 | `events.csv` | All interaction events with client and server timestamps |
 
-Filters: study phase; completed sessions only; exclude participants who failed attention checks; include the Session B practice task.
+Filters: study phase; completed sessions only; exclude participants who failed attention checks; include the Session B practice task; include simulated participants (left out by default).
 
 ---
 

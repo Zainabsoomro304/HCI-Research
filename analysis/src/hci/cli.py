@@ -129,6 +129,92 @@ def phase2(
 
 
 @app.command()
+def phase3(
+    export: Path = typer.Option(..., help="Export ZIP from the admin panel."),
+    config: Path = typer.Option(None),
+) -> None:
+    """Phase 3 statistics: questionnaire scores, mixed models, H4b equivalence test and rankings."""
+    from hci.phase3 import run_phase3
+
+    path = run_phase3(export, load_config(config))
+    if "SYNTHETIC" in path.name:
+        typer.echo(_BANNER)
+    typer.echo(f"Report: {path}")
+
+
+@app.command()
+def power(config: Path = typer.Option(None)) -> None:
+    """Power simulation for the H4b equivalence test, including N = 16 and 32."""
+    from hci.power import run_power
+
+    typer.echo(f"Report: {run_power(load_config(config))}")
+
+
+@app.command()
+def prereg(config: Path = typer.Option(None)) -> None:
+    """Write analysis/PREREG_DRAFT.md from the config and the power simulation."""
+    from hci.prereg import write_prereg
+
+    typer.echo(f"Wrote {write_prereg(load_config(config))}")
+
+
+@app.command()
+def parity(
+    export: Path = typer.Option(..., help="Export ZIP from the admin panel."),
+    config: Path = typer.Option(None),
+) -> None:
+    """Check that Python and the platform's plan engine agree on this export."""
+    from hci.parity import compare
+
+    cfg = load_config(config)
+    report = compare(clean(load_export(export), cfg).main, cfg)
+    typer.echo(
+        f"{report.participants} participants. Largest weight difference: {report.max_weight_difference:.2e}. "
+        f"Targets matching: {report.target_matches} of {report.target_total}. "
+        f"Assigned clusters matching: {report.assignment_matches} of {report.participants}. "
+        f"Platform engine took {report.typescript_ms / 1000:.1f} s."
+    )
+    for problem in report.problems:
+        typer.echo(f"  DISAGREES: {problem}")
+    if report.problems:
+        raise typer.Exit(1)
+
+
+@app.command()
+def report(export: Path = typer.Option(None, help="Limits the index to runs of this export.")) -> None:
+    """Build an index page linking the latest Phase 2, Phase 3 and power reports."""
+    from hci.summary import build_index
+
+    typer.echo(f"Report index: {build_index(load_export(export) if export else None)}")
+
+
+@app.command(name="all")
+def run_all(
+    export: Path = typer.Option(..., help="Export ZIP from the admin panel."),
+    config: Path = typer.Option(None),
+) -> None:
+    """Run everything the data allows, in order."""
+    from hci.phase2 import run_phase2
+    from hci.phase3 import run_phase3
+    from hci.power import run_power
+    from hci.prereg import write_prereg
+    from hci.summary import build_index
+
+    cfg = load_config(config)
+    data = load_export(export)
+    if data.synthetic:
+        typer.echo(_BANNER)
+    typer.echo(f"Phase 2: {run_phase2(export, cfg)}")
+    try:
+        typer.echo(f"Phase 3: {run_phase3(export, cfg)}")
+    except ValueError as e:
+        typer.echo(f"Phase 3 skipped: {e}")
+    typer.echo(f"Power: {run_power(cfg)}")
+    typer.echo(f"Prereg draft: {write_prereg(cfg)}")
+    typer.echo(f"Report index: {build_index(data)}")
+
+
+@app.command()
 def identifiability() -> None:
     """Check which busyness terms the clip set can support."""
     typer.echo(json.dumps(curvature_identifiability(), indent=1))

@@ -11,6 +11,9 @@
       "condition_row",
       "task_row",
       "completion_code",
+      "is_simulated",
+      "withdrawn_at",
+      "withdrawn_reason",
       "notes",
       "created_at",
       "phase1_status",
@@ -155,6 +158,33 @@
       "rank",
       "reason",
       "submitted_at"
+    ],
+    "plans.csv": [
+      "participant_code",
+      "is_simulated",
+      "frozen_version",
+      "plan_source",
+      "basis",
+      "sigma",
+      "cluster_count",
+      "assigned_cluster",
+      "target_static",
+      "target_global",
+      "target_cluster5",
+      "target_personalFull",
+      "unrestricted_personal_target",
+      "flag_identical_targets",
+      "flag_agent_mismatch",
+      "flag_near_tie",
+      "flag_equals_global",
+      "flag_attention_failed",
+      "flag_late"
+    ],
+    "admin_actions.csv": [
+      "at",
+      "action",
+      "reason",
+      "details"
     ],
     "events.csv": [
       "participant_code",

@@ -429,7 +429,11 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
     for index, row in enumerate(event_rows, start=1):
         row["event_id"] = str(index)
 
+    plan_rows = [_plan_row(person) for i, person in enumerate(people) if i not in incomplete]
     files = {
+        "plans.csv": _to_csv("plans.csv", plan_rows),
+        "admin_actions.csv": _to_csv("admin_actions.csv", []),
+        "frozen_model.json": _json({"frozen": False, "synthetic": True}),
         "participants.csv": _to_csv("participants.csv", participant_rows),
         "questionnaire_background.csv": _to_csv("questionnaire_background.csv", background_rows),
         "comparison_trials.csv": _to_csv("comparison_trials.csv", trial_rows),
@@ -470,6 +474,20 @@ def _rows_frame(rows: list[dict[str, str]]) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["left_clip_id", "right_clip_id", "choice"])
 
 
+def _plan_row(person: Person) -> dict[str, str]:
+    targets = person.plan["targets"]
+    return {
+        "participant_code": person.code,
+        "is_simulated": "1",
+        "frozen_version": "1",
+        "plan_source": "computed",
+        "basis": "loo",
+        "assigned_cluster": str(person.plan["cluster5_assigned"]),
+        "cluster_count": str(person.plan["cluster_k"]),
+        **{f"target_{condition}": target for condition, target in targets.items()},
+    }
+
+
 def _participant_row(person: Person, rows: list[dict[str, str]], item: dict[str, Any], done: bool) -> dict[str, str]:
     """Mirrors the platform's computeQuality (src/lib/admin/quality.ts)."""
     chosen = {r["trial_id"]: r["chosen_clip_id"] for r in rows if r["chosen_clip_id"]}
@@ -483,7 +501,7 @@ def _participant_row(person: Person, rows: list[dict[str, str]], item: dict[str,
     return {
         "participant_code": person.code, "study_phase": "3", "number": str(person.number), "group": person.group,
         "group_source": "self", "language": "en", "seed": str(person.seed), "condition_row": str(item["conditionRow"]),
-        "task_row": str(item["taskRow"]), "completion_code": "", "notes": "SYNTHETIC participant",
+        "task_row": str(item["taskRow"]), "completion_code": "", "is_simulated": "1", "withdrawn_at": "", "withdrawn_reason": "", "notes": "SYNTHETIC participant",
         "created_at": _iso(_EPOCH), "phase1_status": "", "phase1_started_at": "", "phase1_completed_at": "",
         "phase1_app_version": "", "sessionA_status": "completed" if done else "in_progress",
         "sessionA_started_at": _iso(start), "sessionA_completed_at": _iso(start + timedelta(hours=1)) if done else "",

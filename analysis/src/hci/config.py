@@ -31,6 +31,7 @@ class SeedsConfig(_Strict):
     learning_curve: int
     bootstrap: int
     mlp: int
+    power: int
 
 
 class CleaningConfig(_Strict):
@@ -85,6 +86,20 @@ class Phase2Config(_Strict):
     slopes_sensitivity: bool
     gamma_grid: list[float]
     mlp: MlpConfig
+
+
+class Phase3Config(_Strict):
+    equivalence_margin: float
+    full_tost_n: int
+
+
+class PowerConfig(_Strict):
+    simulations: int
+    sds: list[float]
+    correlations: list[float]
+    true_differences: list[float]
+    sample_sizes: list[int]
+    highlight_n: list[int]
 
 
 class PlansConfig(_Strict):
@@ -143,6 +158,8 @@ class Config(_Strict):
     targets: TargetsConfig
     clusters: ClustersConfig
     phase2: Phase2Config
+    phase3: Phase3Config
+    power: PowerConfig
     plans: PlansConfig
     simulate: SimulateConfig
 

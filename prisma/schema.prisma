@@ -46,6 +46,13 @@ model Participant {
   conditionRowOverride Int?
   taskRowOverride      Int?
   completionCode String?
+  /// Created by the test tools. Never allowed unless ALLOW_TEST_TOOLS=true; left out of exports by default.
+  isSimulated  Boolean          @default(false)
+  /// Test tools only: the true preferences behind a simulated participant's answers.
+  simulatedTruth Json?
+  /// Withdrawn participants are left out of the models and cannot start Session B.
+  withdrawnAt  DateTime?
+  withdrawnReason String?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
@@ -238,6 +245,9 @@ model AdaptationPlan {
   condition     String
   /// Validated steps array [{ trigger: {type, value}, config }].
   steps         Json
+  /// "computed" by the freeze step or "uploaded" by hand (the advanced override).
+  source        String      @default("uploaded")
+  frozenModelId String?
   sourceFileName String?
   uploadedAt    DateTime    @default(now())
 
@@ -287,4 +297,59 @@ model Event {
   @@index([participantId])
   @@index([sessionId])
   @@index([trialId])
+}
+
+/// One run of "Freeze models & generate plans". Only the newest record with status "active" is in force.
+model FrozenModel {
+  id            String   @id @default(cuid())
+  version       Int      @unique
+  /// active | superseded
+  status        String   @default("active")
+  appVersion    String?
+  /// SHA-256 of the exact comparisons the models were built from.
+  inputHash     String
+  /// Engine settings and seeds in force.
+  settings      Json
+  /// Models from everyone included: sigma, nuisance terms, global model, clusters. Used for late participants.
+  pool          Json
+  /// One entry per participant: leave-one-out summary, targets and flags.
+  results       Json
+  /// Participant IDs and codes in model building.
+  eligible      Json
+  /// Everyone left out of model building, with the reason.
+  excluded      Json
+  warnings      Json
+  simulatedCount Int     @default(0)
+  /// True if any "unfreeze" was ever logged: the study's freezing rule was broken.
+  compromised   Boolean  @default(false)
+  computeMs     Int?
+  createdAt     DateTime @default(now())
+}
+
+/// A freeze being computed in chunks. Plans and models are only written, in one transaction, once it has finished.
+model FreezeJob {
+  id          String   @id @default(cuid())
+  /// running | done | failed | cancelled
+  status      String   @default("running")
+  inputHash   String
+  /// Codes still to compute, in order.
+  remaining   Json
+  pool        Json?
+  results     Json
+  error       String?
+  computeMs   Int      @default(0)
+  startedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Everything a researcher does to the frozen models, for the record. Exported as admin_actions.csv.
+model AdminAction {
+  id        String   @id @default(cuid())
+  at        DateTime @default(now())
+  /// freeze | unfreeze | withdraw | reinstate | late_plan | plan_upload | test_tools
+  action    String
+  reason    String?
+  details   Json?
+
+  @@index([at])
 }

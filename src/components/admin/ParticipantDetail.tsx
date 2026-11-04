@@ -113,7 +113,7 @@ export function PlanUpload({ participantId }: { participantId: string }) {
   return (
     <div>
       <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-[#d5dbe3] bg-white px-3 py-2 text-sm font-medium hover:bg-[#f0f2f5]">
-        Upload plan JSON…
+        Override plan (advanced)…
         <input
           type="file"
           accept="application/json,.json"
@@ -158,12 +158,14 @@ export function UnlockButton({
   unlocked,
   ready,
   sessionACompleted,
+  withdrawn,
 }: {
   sessionId: string;
   link: string;
   unlocked: boolean;
   ready: boolean;
   sessionACompleted: boolean;
+  withdrawn: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -177,7 +179,7 @@ export function UnlockButton({
     <div className="flex items-center gap-3">
       <button
         type="button"
-        disabled={!ready}
+        disabled={!ready || !sessionACompleted || withdrawn}
         onClick={async () => {
           setError(null);
           const res = await fetch(`/api/admin/sessions/${sessionId}/unlock`, { method: "POST" });
@@ -189,8 +191,9 @@ export function UnlockButton({
       >
         Start Session B
       </button>
-      {!ready && <span className="text-sm text-[#566070]">Upload all 4 adaptation plans first.</span>}
-      {ready && !sessionACompleted && <span className="text-sm text-[#7a5a10]">Note: Session A is not completed yet.</span>}
+      {withdrawn && <span className="text-sm text-[#b03a27]">This participant has withdrawn.</span>}
+      {!withdrawn && !sessionACompleted && <span className="text-sm text-[#7a5a10]">Session A must be completed first.</span>}
+      {!withdrawn && sessionACompleted && !ready && <span className="text-sm text-[#566070]">Generate plans in Phase 3 preparation first.</span>}
       {error && <span className="text-sm text-[#b03a27]">{error}</span>}
     </div>
   );

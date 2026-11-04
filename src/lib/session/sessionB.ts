@@ -37,6 +37,9 @@ export async function unlockSessionB(sessionId: string) {
   const s = await prisma.session.findUnique({ where: { id: sessionId }, include: { participant: true } });
   if (!s || s.type !== "p3_sessionB") throw new ActionError("Not a Session B", 404);
   if (s.unlockedAt) return s;
+  if (s.participant.withdrawnAt) throw new ActionError(`${s.participant.code} has withdrawn`);
+  const sessionA = await prisma.session.findFirst({ where: { participantId: s.participantId, type: "p3_sessionA" } });
+  if (sessionA?.status !== "completed") throw new ActionError("Session A is not completed");
   const missing = await missingPlans(s.participantId);
   if (missing.length) throw new ActionError(`Missing adaptation plans: ${missing.join(", ")}`);
   const { conditionRow, taskRow } = latinRows(s.participant.number, {

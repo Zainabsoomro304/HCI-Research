@@ -5,6 +5,7 @@ import { prisma } from "../db";
 import { computeQuality } from "../admin/quality";
 import { latinRows } from "../latinSquare";
 import { loadInstrument } from "../questionnaire/instruments";
+import type { FrozenResult } from "../phase3/freeze";
 import { getTask } from "../tasks";
 import { TABLES, configSettings, tableDef } from "./tables";
 
@@ -16,6 +17,8 @@ export interface ExportFilters {
   excludeFailedAttention?: boolean;
   /** Include the Session B practice task and its events. */
   includePractice?: boolean;
+  /** Include simulated participants from the test tools. They are left out by default. */
+  includeSimulated?: boolean;
 }
 
 type Row = Record<string, unknown>;
@@ -43,7 +46,7 @@ const SESSION_PREFIX = { phase1: "phase1", p3_sessionA: "sessionA", p3_sessionB:
 
 export async function buildTables(filters: ExportFilters = {}): Promise<Record<string, Row[]>> {
   const participants = await prisma.participant.findMany({
-    where: filters.studyPhase ? { studyPhase: filters.studyPhase } : {},
+    where: { ...(filters.studyPhase ? { studyPhase: filters.studyPhase } : {}), ...(filters.includeSimulated ? {} : { isSimulated: false }) },
     orderBy: [{ studyPhase: "asc" }, { number: "asc" }],
     include: { sessions: true },
   });
@@ -83,6 +86,9 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
       seed: p.seed,
       ...rowsFor(p),
       completion_code: p.completionCode,
+      is_simulated: p.isSimulated,
+      withdrawn_at: p.withdrawnAt,
+      withdrawn_reason: p.withdrawnReason,
       notes: p.notes,
       created_at: p.createdAt,
       attention_total: q.attentionTotal,
@@ -258,6 +264,35 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
     payload: e.payload,
   }));
 
+  // plans.csv and admin_actions.csv
+  const frozen = await prisma.frozenModel.findFirst({ where: { status: "active" }, orderBy: { version: "desc" } });
+  const kept = new Set(keep.map((p) => p.code));
+  const planRows = ((frozen?.results ?? []) as unknown as FrozenResult[])
+    .filter((r) => kept.has(r.code))
+    .map((r) => ({
+      participant_code: r.code,
+      is_simulated: r.isSimulated,
+      frozen_version: frozen!.version,
+      plan_source: r.planSource,
+      basis: r.basis,
+      sigma: r.sigma,
+      cluster_count: r.clusterCount,
+      assigned_cluster: r.assignedCluster,
+      target_static: r.targets.static,
+      target_global: r.targets.global,
+      target_cluster5: r.targets.cluster5,
+      target_personalFull: r.targets.personalFull,
+      unrestricted_personal_target: r.unrestrictedPersonalTarget,
+      flag_identical_targets: r.flags.identicalTargets.join(" "),
+      flag_agent_mismatch: r.flags.agentMismatch,
+      flag_near_tie: r.flags.nearTie.join(" "),
+      flag_equals_global: r.flags.equalsGlobal.join(" "),
+      flag_attention_failed: r.attentionFailed,
+      flag_late: r.late,
+    }));
+  const actions = await prisma.adminAction.findMany({ orderBy: { at: "asc" } });
+  const actionRows = actions.map((a) => ({ at: a.at, action: a.action, reason: a.reason, details: a.details }));
+
   return {
     "participants.csv": participantsRows,
     "questionnaire_background.csv": backgroundRows,
@@ -266,6 +301,8 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
     "task_trials.csv": taskRows,
     "questionnaire_task.csv": questionnaireRows,
     "rankings.csv": rankingRows,
+    "plans.csv": planRows,
+    "admin_actions.csv": actionRows,
     "events.csv": eventRows,
   };
 }
@@ -277,7 +314,7 @@ export function codebook(filters: ExportFilters, counts: Record<string, number>)
     `Exported: ${new Date().toISOString()}  `,
     `App version: ${process.env.APP_VERSION ?? "unknown"}  `,
     `Filters: study phase = ${filters.studyPhase ?? "all"}; completed sessions only = ${filters.completedOnly ? "yes" : "no"}; ` +
-      `exclude failed attention = ${filters.excludeFailedAttention ? "yes" : "no"}; include Session B practice = ${filters.includePractice ? "yes" : "no"}`,
+      `exclude failed attention = ${filters.excludeFailedAttention ? "yes" : "no"}; include Session B practice = ${filters.includePractice ? "yes" : "no"}; include simulated = ${filters.includeSimulated ? "yes" : "no"}`,
     "",
     "All files are UTF-8 CSV with a header row and comma separators. Booleans are 1/0; empty cells are missing values;",
     "timestamps are ISO 8601 (UTC) unless the column name ends in `_ms` (epoch milliseconds). JSON columns hold JSON text.",
@@ -289,6 +326,8 @@ export function codebook(filters: ExportFilters, counts: Record<string, number>)
     `- A participant fails the attention criterion if more than ${MAX_FAILED_ATTENTION_CHECKS} attention check(s) are answered wrongly.`,
     "- Repeat trials copy an earlier main trial with sides swapped; consistency compares the chosen clip, not the side.",
     "- `numChangedSettings` is the number of settings (0-5) a clip's target differs from the base config (transition busyness).",
+    "- `frozen_model.json` is the active frozen model: settings and seeds, the input-data hash, the pooled models, per-participant leave-one-out summaries (sigma, nuisance terms, weights, targets, flags), who was eligible and excluded, and `compromised`, which is true if the freeze was ever broken. `{\"frozen\": false}` if nothing has been frozen.",
+    "- Simulated participants have `is_simulated` = 1, and are left out unless the export asks for them.",
     "",
   ];
   for (const t of TABLES) {
@@ -309,5 +348,7 @@ export async function buildExportZip(filters: ExportFilters = {}): Promise<Buffe
     zip.file(t.file, toCsv(t.file, rows));
   }
   zip.file("codebook.md", codebook(filters, counts));
+  const frozen = await prisma.frozenModel.findFirst({ where: { status: "active" }, orderBy: { version: "desc" } });
+  zip.file("frozen_model.json", JSON.stringify(frozen ?? { frozen: false }, null, 1));
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 }

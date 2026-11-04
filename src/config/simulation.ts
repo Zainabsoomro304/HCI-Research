@@ -1,0 +1,36 @@
+/** Simulated participants for rehearsals. Same values and logic as the `simulate` section of analysis/config.yaml. */
+export const SIMULATION = {
+  /** Weights in logit units, feature order: grid2 grid3 small large partial summary dark dropdown. */
+  clusterMeans: [
+    [1.5, 2.2, -1.0, 0.2, 0.8, 1.6, 1.8, 0.6],
+    [-1.5, -2.2, -1.5, 1.5, -1.0, -2.0, -1.5, -1.0],
+    [1.0, 0.0, 1.2, -1.5, 1.5, 0.5, -0.8, 1.6],
+  ],
+  weightScale: 2.5,
+  individualSd: 1.2,
+  decisivenessLogSd: 0.5,
+  sideBias: 0.2,
+  busyGamma: -0.1,
+  lapseMax: 0.08,
+  fatigueLapseSlope: 0.03,
+  attentionErrorRate: 0.01,
+  questionnaireInformativeness: 0.6,
+  questionnaireNoPreference: 0.15,
+  rtMedianMs: 1800,
+  rtLogSd: 0.6,
+  sessionB: {
+    quisMean: 5.5,
+    quisPerUtility: 0.05,
+    participantSd: 0.7,
+    residualSd: 0.6,
+    positionEffect: -0.05,
+    itemNoiseSd: 0.5,
+    naRate: 0.02,
+    timeMedianS: 180,
+    timeLogSd: 0.3,
+    timePerQuis: -0.03,
+    successLogit: 1.5,
+    successPerQuis: 0.3,
+    rankNoiseSd: 0.8,
+  },
+} as const;

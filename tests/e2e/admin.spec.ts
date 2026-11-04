@@ -57,6 +57,12 @@ test("admin: login, create participants, upload a plan, start Session B, export 
   await expect(page.getByText("Saved.")).toBeVisible();
   expect((await prisma.participant.findUnique({ where: { id: p.id } }))!.seed).toBe(424242);
 
+  // Session B also needs a completed Session A.
+  await expect(page.getByRole("button", { name: "Start Session B" })).toBeDisabled();
+  await prisma.session.updateMany({ where: { participantId: p.id, type: "p3_sessionA" }, data: { status: "completed" } });
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Start Session B" })).toBeEnabled();
+
   const popup = page.waitForEvent("popup");
   await page.getByRole("button", { name: "Start Session B" }).click();
   await (await popup).close();
@@ -74,7 +80,7 @@ test("admin: login, create participants, upload a plan, start Session B, export 
   expect(res.status()).toBe(200);
   expect(res.headers()["content-type"]).toContain("application/zip");
   const zip = await JSZip.loadAsync(await res.body());
-  expect(Object.keys(zip.files).sort()).toEqual([...TABLES.map((t) => t.file), "codebook.md"].sort());
+  expect(Object.keys(zip.files).sort()).toEqual([...TABLES.map((t) => t.file), "codebook.md", "frozen_model.json"].sort());
   for (const t of TABLES) {
     const header = (await zip.file(t.file)!.async("string")).split("\n")[0];
     expect(header, t.file).toBe(t.columns.map((c) => c.name).join(","));

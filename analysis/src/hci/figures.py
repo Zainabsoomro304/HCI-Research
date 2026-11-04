@@ -51,7 +51,7 @@ plt.rcParams.update(
 def _save(fig: plt.Figure, run: Run, name: str) -> None:
     run.figures.mkdir(parents=True, exist_ok=True)
     if run.synthetic:
-        fig.text(0.99, 0.005, SYNTHETIC_LABEL, ha="right", va="bottom", fontsize=8, color="#b00020", fontweight="bold")
+        fig.text(0.99, 1.02, SYNTHETIC_LABEL, ha="right", va="bottom", fontsize=8, color="#b00020", fontweight="bold")
     for extension in ("png", "pdf"):
         fig.savefig(
             run.figures / f"{run.prefix}{name}.{extension}",
@@ -89,7 +89,7 @@ def learning_curves(run: Run, summary: pd.DataFrame, ceiling: dict[str, float]) 
     ax.axhspan(ceiling["low"], ceiling["high"], color=BAND, alpha=0.7, lw=0, label="Self-consistency ceiling (95% CI)")
     ax.axhline(ceiling["corrected"], color=INK_2, ls=(0, (4, 3)), lw=1, label="Corrected ceiling (secondary)")
     ax.axhline(0.5, color=INK_2, ls=":", lw=1)
-    ax.text(x_of[0] - 0.1, 0.505, "chance", color=INK_2, fontsize=8, va="bottom")
+    ax.text(x_of[ks[-1]], 0.505, "chance", color=INK_2, fontsize=8, va="bottom", ha="right")
     ax.axvline((x_of[0] + x_of[ks[0]]) / 2, color=GRID, lw=1)
     ends = []
     for index, start in enumerate(START_ORDER):
@@ -286,3 +286,45 @@ def curves_by_group(run: Run, table: pd.DataFrame) -> None:
     ax.set_title("Scratch model by group (descriptive only)", loc="left")
     ax.legend(frameon=False, fontsize=8, loc="lower right")
     _save(fig, run, "curves_by_group")
+
+
+def condition_means(run: Run, means: pd.DataFrame) -> None:
+    """means: outcome, condition, estimate, ci_low, ci_high. One panel per outcome, since their scales differ."""
+    panels = [
+        ("quis", "QUIS"),
+        ("ues", "UES-SF"),
+        ("log_time", "log task time"),
+        ("success", "Task success (log odds)"),
+    ]
+    order = ["static", "global", "cluster5", "personalFull"]
+    fig, axes = plt.subplots(1, 4, figsize=(7.6, 2.7))
+    for ax, (outcome, title) in zip(axes, panels, strict=True):
+        rows = means[means["outcome"] == outcome].set_index("condition").reindex(order)
+        x = np.arange(len(order))
+        estimate = rows["estimate"].to_numpy(float)
+        yerr = [estimate - rows["ci_low"].to_numpy(float), rows["ci_high"].to_numpy(float) - estimate]
+        ax.errorbar(x, estimate, yerr=yerr, fmt="o", color=SERIES[0], ms=5.5, mec="white", mew=0.6, lw=1.2, capsize=0)
+        ax.set_xticks(x, order, rotation=40, ha="right", fontsize=8)
+        ax.set_title(title, loc="left", fontsize=9)
+        ax.grid(axis="y", color=GRID, lw=0.7)
+    fig.tight_layout()
+    _save(fig, run, "condition_means")
+
+
+def rank_distribution(run: Run, counts: pd.DataFrame) -> None:
+    """counts: condition, rank, count. One panel per condition."""
+    order = ["static", "global", "cluster5", "personalFull"]
+    fig, axes = plt.subplots(1, 4, figsize=(7.2, 2.3), sharey=True)
+    for ax, condition in zip(axes, order, strict=True):
+        rows = counts[counts["condition"] == condition].set_index("rank").reindex([1, 2, 3, 4]).fillna(0)
+        ax.bar([1, 2, 3, 4], rows["count"], color=SERIES[0], width=0.78)
+        for rank, count in zip([1, 2, 3, 4], rows["count"], strict=True):
+            if count:
+                ax.text(rank, count, f"{int(count)}", ha="center", va="bottom", fontsize=7, color=INK)
+        ax.set_xticks([1, 2, 3, 4])
+        ax.set_title(condition, loc="left", fontsize=9)
+        ax.grid(axis="y", color=GRID, lw=0.7)
+    axes[0].set_ylabel("Participants")
+    fig.supxlabel("Rank (1 = most preferred)", fontsize=9, color=INK_2)
+    fig.tight_layout()
+    _save(fig, run, "rank_distribution")

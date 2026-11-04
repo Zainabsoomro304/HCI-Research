@@ -12,6 +12,7 @@ export async function GET(req: Request) {
     completedOnly: q.get("completed") === "1",
     excludeFailedAttention: q.get("excludeFailed") === "1",
     includePractice: q.get("practice") === "1",
+    includeSimulated: q.get("simulated") === "1",
   };
   const zip = await buildExportZip(filters);
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);

@@ -14,6 +14,7 @@ seeds:
   learning_curve: 31
   bootstrap: 41
   mlp: 51
+  power: 61
 
 cleaning:
   drop_practice: true
@@ -63,6 +64,18 @@ phase2:
     hidden: [16]
     alpha: 1.0
     max_iter: 500
+
+phase3:
+  equivalence_margin: 0.5             # H4b, in QUIS scale points. Must be fixed and preregistered before Phase 3 data exists.
+  full_tost_n: 32                     # with fewer participants, H4b is reported as estimation, with the TOST as secondary
+
+power:
+  simulations: 5000
+  sds: [0.8, 1.0, 1.1]                # QUIS SD, from the study brief (Gaspar-Figueiredo et al., 2025)
+  correlations: [0.3, 0.5, 0.7]       # between conditions: unknown, so a range
+  true_differences: [0.0, 0.1]
+  sample_sizes: [16, 32, 48, 64, 80, 96, 128]
+  highlight_n: [16, 32, 48]
 
 plans:
   trigger_after_ms: 8000

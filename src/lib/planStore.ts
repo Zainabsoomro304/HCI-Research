@@ -15,14 +15,15 @@ export async function savePlanFile(participantId: string, data: unknown, fileNam
   if (!p) return { ok: false, errors: ["Unknown participant"] };
   if (p.studyPhase !== 3) return { ok: false, errors: ["Adaptation plans are only for Phase 3 participants"] };
   if (v.plan.participantCode !== p.code) return { ok: false, errors: [`participantCode is ${v.plan.participantCode} but this participant is ${p.code}`] };
-  await prisma.$transaction(
-    CONDITIONS.map((condition) =>
+  await prisma.$transaction([
+    ...CONDITIONS.map((condition) =>
       prisma.adaptationPlan.upsert({
         where: { participantId_condition: { participantId, condition } },
-        create: { participantId, condition, steps: v.plan.conditions[condition].steps as Prisma.InputJsonValue, sourceFileName: fileName },
-        update: { steps: v.plan.conditions[condition].steps as Prisma.InputJsonValue, sourceFileName: fileName, uploadedAt: new Date() },
+        create: { participantId, condition, steps: v.plan.conditions[condition].steps as Prisma.InputJsonValue, source: "uploaded", sourceFileName: fileName },
+        update: { steps: v.plan.conditions[condition].steps as Prisma.InputJsonValue, source: "uploaded", frozenModelId: null, sourceFileName: fileName, uploadedAt: new Date() },
       }),
     ),
-  );
+    prisma.adminAction.create({ data: { action: "plan_upload", details: { code: p.code, fileName: fileName ?? null } } }),
+  ]);
   return { ok: true };
 }

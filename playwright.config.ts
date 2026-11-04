@@ -9,6 +9,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 10 * 60_000,
+  outputDir: "test-results",
   expect: { timeout: 20_000 },
   reporter: [["list"]],
   use: {

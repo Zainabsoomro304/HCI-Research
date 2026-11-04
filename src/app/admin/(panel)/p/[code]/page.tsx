@@ -94,7 +94,7 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
         <section className="rounded-xl border border-[#dfe3e8] bg-white p-5">
           <h2 className="font-bold">Adaptation plans &amp; Session B</h2>
           <p className="mt-1 text-sm text-[#566070]">
-            Upload one JSON file with all four conditions. Uploading again replaces the plans; a started Session B keeps the snapshot it started with.
+            Plans normally come from <Link href="/admin/phase3" className="underline">Phase 3 preparation</Link>. The override replaces them with a JSON file holding all four conditions, flagged as uploaded in the data. A started Session B keeps the snapshot it started with.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-6">
             <PlanUpload participantId={p.id} />
@@ -103,6 +103,7 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
               link={sessionB.link}
               unlocked={sessionB.unlocked}
               ready={plans.length === CONDITIONS.length}
+              withdrawn={!!p.withdrawnAt}
               sessionACompleted={summary.sessions.some((s) => s.type === "p3_sessionA" && s.status === "completed")}
             />
           </div>
@@ -116,7 +117,7 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
                   <h3 className="text-sm font-semibold">
                     {c}{" "}
                     <span className="font-normal text-[#566070]">
-                      {plan ? `– ${steps.length} step(s), uploaded ${plan.uploadedAt.toLocaleString()}${plan.sourceFileName ? ` from ${plan.sourceFileName}` : ""}` : "– not uploaded"}
+                      {plan ? `– ${steps.length} step(s), ${plan.source} ${plan.uploadedAt.toLocaleString()}${plan.sourceFileName ? ` from ${plan.sourceFileName}` : ""}` : "– no plan yet"}
                       {block ? ` · block ${block.blockIndex + 1}, task ${block.taskId}` : ""}
                     </span>
                   </h3>
