@@ -48,6 +48,8 @@ class ModelConfig(_Strict):
     curvature_max_vif: float
     sigma_grid: list[float]
     sigma_cv_folds: int
+    min_people_for_sigma_cv: int
+    fallback_sigma: float
     sigma_pool: float
     nuisance_sigma: float
     nuisance_rounds: int
@@ -61,6 +63,7 @@ class TargetsConfig(_Strict):
 class ClustersConfig(_Strict):
     candidates: list[int]
     kmeans_n_init: int
+    min_eligible: int
 
 
 class MlpConfig(_Strict):

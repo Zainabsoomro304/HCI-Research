@@ -27,9 +27,6 @@ _PACKAGES = (
     "scikit-learn",
     "statsmodels",
     "matplotlib",
-    "gymnasium",
-    "stable-baselines3",
-    "torch",
 )
 _LATEX_ESCAPES = {
     "\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}",

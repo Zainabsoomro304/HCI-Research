@@ -1,13 +1,15 @@
-"""K-means over preference weights, and likelihood-based assignment of a person to a cluster."""
+"""K-means over preference weights, and likelihood-based assignment of a person to a cluster.
+
+Uses hci.kmeans, a copy of the platform's own k-means, so Python and the platform produce the same clusters.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
 
+from hci.kmeans import kmeans, silhouette
 from hci.model import Comparisons, Nuisance, fit_pooled, log_likelihood
 
 
@@ -15,26 +17,26 @@ from hci.model import Comparisons, Nuisance, fit_pooled, log_likelihood
 class ChoiceClusters:
     labels: np.ndarray
     weights: np.ndarray  # one pooled weight vector per cluster
-    silhouette: float
+    silhouette: float | None  # None with one cluster
 
     @property
     def k(self) -> int:
         return len(self.weights)
 
 
-def choose_k(points: np.ndarray, candidates: list[int], *, seed: int, n_init: int) -> tuple[int, np.ndarray, float]:
-    """Highest silhouette among the candidate cluster counts; ties go to the smaller k."""
-    best: tuple[int, np.ndarray, float] | None = None
+def choose_k(
+    points: np.ndarray, candidates: list[int], *, seed: int, n_init: int
+) -> tuple[int, np.ndarray, float | None]:
+    """Highest silhouette among the candidate cluster counts; ties go to the smaller k. One cluster if none can fit."""
+    best: tuple[int, np.ndarray, float | None] | None = None
     for k in sorted(candidates):
         if k >= len(points):
             continue
-        labels = KMeans(n_clusters=k, n_init=n_init, random_state=seed).fit_predict(points)
-        score = float(silhouette_score(points, labels))
+        labels = kmeans(points, k, seed, n_init).labels
+        score = silhouette(points, labels)
         if best is None or score > best[2]:
             best = (k, labels, score)
-    if best is None:
-        raise ValueError(f"Too few participants ({len(points)}) for cluster counts {candidates}")
-    return best
+    return best if best is not None else (1, np.zeros(len(points), dtype=int), None)
 
 
 def fit_choice_clusters(
@@ -46,8 +48,14 @@ def fit_choice_clusters(
     n_init: int,
     sigma_pool: float,
     nuisance: Nuisance,
+    use_clusters: bool = True,
 ) -> ChoiceClusters:
-    k, labels, silhouette = choose_k(weights, candidates, seed=seed, n_init=n_init)
+    """With use_clusters False (too few eligible participants), the single cluster is the global model."""
+    k, labels, score = (
+        choose_k(weights, candidates, seed=seed, n_init=n_init)
+        if use_clusters
+        else (1, np.zeros(len(people), dtype=int), None)
+    )
     pooled = np.array(
         [
             fit_pooled(
@@ -58,7 +66,7 @@ def fit_choice_clusters(
             for c in range(k)
         ]
     )
-    return ChoiceClusters(labels=labels, weights=pooled, silhouette=silhouette)
+    return ChoiceClusters(labels=labels, weights=pooled, silhouette=score)
 
 
 def assign_by_likelihood(data: Comparisons, cluster_weights: np.ndarray, nuisance: Nuisance) -> int:

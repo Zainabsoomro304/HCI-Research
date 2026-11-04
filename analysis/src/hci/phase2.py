@@ -11,7 +11,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from scipy import stats
-from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from statsmodels.stats.multitest import multipletests
 
@@ -22,6 +21,7 @@ from hci.conditions import restricted_argmax
 from hci.config import Config
 from hci.encoding import FEATURES, encode
 from hci.io import load_export
+from hci.kmeans import kmeans
 from hci.learning import (
     STARTS,
     LearningResults,
@@ -168,7 +168,10 @@ def _describe_clusters(data: CleanData, answers: dict[str, np.ndarray], config: 
         rounds=config.model.nuisance_rounds,
         use_curvature=use_curvature(config.model.curvature, config.model.curvature_max_vif),
     )
-    sigma, _ = select_sigma_nested(people, answers, nuisance=nuisance, config=config, seed=config.seeds.cv_folds)
+    use_clusters = len(people) >= config.clusters.min_eligible
+    sigma, _ = select_sigma_nested(
+        people, answers, nuisance=nuisance, config=config, seed=config.seeds.cv_folds, use_clusters=use_clusters
+    )
     scratch = np.array([fit_map(p, sigma=sigma, nuisance=nuisance) for p in parts])
     clusters = fit_choice_clusters(
         scratch,
@@ -178,23 +181,24 @@ def _describe_clusters(data: CleanData, answers: dict[str, np.ndarray], config: 
         n_init=config.clusters.kmeans_n_init,
         sigma_pool=config.model.sigma_pool,
         nuisance=nuisance,
+        use_clusters=use_clusters,
     )
     rng = np.random.default_rng(config.seeds.bootstrap)
     aris = []
-    for _ in range(config.phase2.cluster_stability_samples):
+    for _ in range(config.phase2.cluster_stability_samples if clusters.k > 1 else 0):
         sample = rng.integers(0, len(scratch), len(scratch))
         if len(np.unique(scratch[sample], axis=0)) < clusters.k:
             continue
-        model = KMeans(n_clusters=clusters.k, n_init=5, random_state=config.seeds.clustering).fit(scratch[sample])
+        model = kmeans(scratch[sample], clusters.k, config.seeds.clustering, 5)
         aris.append(adjusted_rand_score(clusters.labels, model.predict(scratch)))
     return ClusterDescription(
         k=clusters.k,
         labels=pd.Series(clusters.labels, index=codes),
         weights=clusters.weights,
-        silhouette=clusters.silhouette,
-        stability_ari=float(np.mean(aris)),
-        stability_low=float(np.quantile(aris, 0.025)),
-        stability_high=float(np.quantile(aris, 0.975)),
+        silhouette=clusters.silhouette if clusters.silhouette is not None else float("nan"),
+        stability_ari=float(np.mean(aris)) if aris else float("nan"),
+        stability_low=float(np.quantile(aris, 0.025)) if aris else float("nan"),
+        stability_high=float(np.quantile(aris, 0.975)) if aris else float("nan"),
         scratch=pd.DataFrame(scratch, index=codes, columns=list(FEATURES)),
         sigma=sigma,
         nuisance=nuisance,

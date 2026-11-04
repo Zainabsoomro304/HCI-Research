@@ -6,14 +6,13 @@ sigma, global model or clusters. `select_sigma_nested` tunes sigma the same way,
 
 from __future__ import annotations
 
-import zlib
 from dataclasses import dataclass
 
 import numpy as np
-from sklearn.cluster import KMeans
 
 from hci.clustering import ChoiceClusters, assign_by_likelihood, fit_choice_clusters
 from hci.config import Config
+from hci.kmeans import Mulberry32, hash_seed, kmeans
 from hci.model import Comparisons, Nuisance, fit_map, fit_pooled, log_likelihood
 
 
@@ -40,6 +39,7 @@ def build_shared(
     nuisance: Nuisance,
     config: Config,
     seed: int,
+    use_clusters: bool = True,
 ) -> SharedModels:
     """Questionnaire clusters use the same number of clusters as the choice-based ones, for a fair comparison."""
     codes = sorted(others)
@@ -55,16 +55,17 @@ def build_shared(
         n_init=config.clusters.kmeans_n_init,
         sigma_pool=sigma_pool,
         nuisance=nuisance,
+        use_clusters=use_clusters,
     )
     centroids, weights = None, None
     if others_answers is not None:
         points = np.array([others_answers[c] for c in codes])
-        km = KMeans(n_clusters=choice.k, n_init=config.clusters.kmeans_n_init, random_state=seed).fit(points)
-        centroids = km.cluster_centers_
+        km = kmeans(points, choice.k, seed, config.clusters.kmeans_n_init)
+        centroids = km.centroids
         weights = np.array(
             [
                 fit_pooled(
-                    [p for p, label in zip(parts, km.labels_, strict=True) if label == cluster],
+                    [p for p, label in zip(parts, km.labels, strict=True) if label == cluster],
                     sigma_pool=sigma_pool,
                     nuisance=nuisance,
                 )
@@ -74,14 +75,15 @@ def build_shared(
     return SharedModels(nuisance, sigma, global_w, choice, centroids, weights)
 
 
-def split_rng(seed: int, code: str, split: int) -> np.random.Generator:
+def split_rng(seed: int, code: str, split: int) -> Mulberry32:
     """Depends only on the seed, the participant and the split, never on who else is in the data or the run order."""
-    return np.random.default_rng([seed, zlib.crc32(code.encode()), split])
+    return Mulberry32(hash_seed(f"{seed}|{code}|{split}"))
 
 
-def make_split(n_main: int, n_test: int, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
+def make_split(n_main: int, n_test: int, rng: Mulberry32) -> tuple[np.ndarray, np.ndarray]:
     """Returns (test indices, training pool). The pool stays in chronological order."""
-    test = np.sort(rng.choice(n_main, size=n_test, replace=False))
+    order = rng.shuffle(list(range(n_main)))
+    test = np.array(sorted(order[:n_test]), dtype=int)
     return test, np.setdiff1d(np.arange(n_main), test)
 
 
@@ -123,6 +125,7 @@ def select_sigma_nested(
     nuisance: Nuisance,
     config: Config,
     seed: int,
+    use_clusters: bool = True,
 ) -> tuple[float, dict[float, float]]:
     """One sigma for all starting points: the lowest held-out log-loss, averaged over every starting point and k.
 
@@ -131,7 +134,10 @@ def select_sigma_nested(
     """
     settings = config.phase2
     codes = sorted(others)
-    fold_of = np.random.default_rng(seed).permutation(len(codes)) % settings.sigma_inner_folds
+    if len(codes) < config.model.min_people_for_sigma_cv:
+        return config.model.fallback_sigma, {}
+    order = Mulberry32(seed).shuffle(list(range(len(codes))))
+    fold_of = np.array(order) % settings.sigma_inner_folds
     losses: dict[float, float] = {}
     for sigma in config.model.sigma_grid:
         total, count = 0.0, 0
@@ -139,10 +145,12 @@ def select_sigma_nested(
             held = [c for c, f in zip(codes, fold_of, strict=True) if f == fold]
             rest = {c: others[c] for c, f in zip(codes, fold_of, strict=True) if f != fold}
             rest_answers = None if others_answers is None else {c: others_answers[c] for c in rest}
-            shared = build_shared(rest, rest_answers, sigma=sigma, nuisance=nuisance, config=config, seed=seed)
+            shared = build_shared(
+                rest, rest_answers, sigma=sigma, nuisance=nuisance, config=config, seed=seed, use_clusters=use_clusters
+            )
             for code in held:
                 data = others[code]
-                test, pool = make_split(len(data), settings.n_test, split_rng(seed, code, 0))
+                test, pool = make_split(len(data), min(settings.n_test, len(data) // 2), split_rng(seed, code, 0))
                 held_test = data.take(test)
                 train = data.take(pool)
                 answers = None if others_answers is None else others_answers[code]

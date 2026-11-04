@@ -91,9 +91,18 @@ def _analyse_person(
         rounds=config.model.nuisance_rounds,
         use_curvature=curvature,
     )
-    sigma, _ = select_sigma_nested(others, others_answers, nuisance=nuisance, config=config, seed=config.seeds.cv_folds)
+    use_clusters = len(people) >= config.clusters.min_eligible
+    sigma, _ = select_sigma_nested(
+        others, others_answers, nuisance=nuisance, config=config, seed=config.seeds.cv_folds, use_clusters=use_clusters
+    )
     shared = build_shared(
-        others, others_answers, sigma=sigma, nuisance=nuisance, config=config, seed=config.seeds.clustering
+        others,
+        others_answers,
+        sigma=sigma,
+        nuisance=nuisance,
+        config=config,
+        seed=config.seeds.clustering,
+        use_clusters=use_clusters,
     )
     data = people[code]
     pairs_array = np.array(pairs)

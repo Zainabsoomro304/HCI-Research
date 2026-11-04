@@ -154,7 +154,7 @@ def score_configs(w: np.ndarray) -> np.ndarray:
 
 def fit_pooled(parts: list[Comparisons], *, sigma_pool: float, nuisance: Nuisance = NO_NUISANCE) -> np.ndarray:
     """A group's pooled weights: one model fitted to all of the group's comparisons, under a weak prior."""
-    return fit_map(concat(parts), sigma=sigma_pool, nuisance=nuisance)
+    return fit_map(concat(parts), sigma=sigma_pool, nuisance=nuisance) if parts else np.zeros(N_FEATURES)
 
 
 def _fit_offset_terms(data: Comparisons, person_eta: np.ndarray, use_curvature: bool) -> Nuisance:
@@ -175,6 +175,8 @@ def estimate_nuisance(people: list[Comparisons], *, sigma: float, rounds: int, u
     """Alternates person-level weights and the global nuisance terms, so that person-to-person differences in w
     do not attenuate beta_side and kappa as they would in a single pooled logistic fit."""
     nuisance = Nuisance()
+    if not people:
+        return nuisance
     pooled = concat(people)
     for _ in range(rounds):
         eta = np.concatenate([p.dx @ fit_map(p, sigma=sigma, nuisance=nuisance) for p in people])

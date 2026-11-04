@@ -227,6 +227,49 @@
     ],
     "practiceTrials": 2
   },
+  "planEngine": {
+    "sigmaGrid": [
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      6
+    ],
+    "sigmaInnerFolds": 4,
+    "minPeopleForSigmaCv": 4,
+    "fallbackSigma": 2,
+    "sigmaPool": 10,
+    "nuisanceSigma": 2,
+    "nuisanceRounds": 6,
+    "useCurvature": true,
+    "kValues": [
+      5,
+      10,
+      20,
+      30,
+      50
+    ],
+    "nTest": 20,
+    "clusterCandidates": [
+      2,
+      3
+    ],
+    "kmeansInits": 20,
+    "minEligibleForClusters": 8,
+    "seedFolds": 11,
+    "seedClustering": 21,
+    "minChanged": 2,
+    "maxChanged": 4,
+    "fineTuneK": 5,
+    "triggerAfterMs": 8000,
+    "agentHorizon": 6,
+    "agentStepCost": 0.000001,
+    "nearTieGap": 0.1
+  },
   "clips": [
     "grid2-default-partial-light-sidebar",
     "grid2-large-detailed-light-sidebar",

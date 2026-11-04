@@ -31,6 +31,8 @@ model:
   curvature_max_vif: 10.0
   sigma_grid: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]
   sigma_cv_folds: 5
+  min_people_for_sigma_cv: 4           # with fewer others, fallback_sigma is used
+  fallback_sigma: 2.0
   sigma_pool: 10.0                    # weak prior for pooled (global and cluster) fits
   nuisance_sigma: 2.0                 # person-level prior while estimating the nuisance terms
   nuisance_rounds: 6
@@ -43,6 +45,7 @@ targets:
 clusters:
   candidates: [2, 3]
   kmeans_n_init: 20
+  min_eligible: 8                     # below this, one cluster (cluster = global)
 
 phase2:
   k_values: [5, 10, 20, 30, 50]

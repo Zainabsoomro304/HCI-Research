@@ -57,7 +57,15 @@ def condition_models(
         rounds=config.model.nuisance_rounds,
         use_curvature=use_curvature,
     )
-    shared = build_shared(others, None, sigma=sigma, nuisance=nuisance, config=config, seed=config.seeds.clustering)
+    shared = build_shared(
+        others,
+        None,
+        sigma=sigma,
+        nuisance=nuisance,
+        config=config,
+        seed=config.seeds.clustering,
+        use_clusters=len(people) >= config.clusters.min_eligible,
+    )
     first = own.first(fine_tune_k)
     assigned = assign_by_likelihood(first, shared.choice.weights, nuisance)
     return ConditionModels(
