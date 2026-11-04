@@ -105,8 +105,7 @@ def test_an_export_with_no_marker_and_no_simulated_participants_is_real(syntheti
             return text
         frame = pd.read_csv(io.StringIO(text), dtype=str, keep_default_na=False)
         frame["is_simulated"] = "0"
-        return frame.to_csv(index=False, lineterminator="
-")
+        return frame.to_csv(index=False, lineterminator="\n")
 
     assert load_export(rewrite_zip(synthetic_zip, tmp_path / "y.zip", real_looking)).synthetic is False
 
