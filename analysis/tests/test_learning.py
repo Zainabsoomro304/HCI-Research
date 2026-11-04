@@ -255,7 +255,7 @@ def test_learning_curves_are_deterministic_and_complete(cleaned, answers, small_
     expected_combinations = (4 * 5 + 2) * 20 * 2 * 6
     assert len(first.rows) == expected_combinations
     assert first.rows.groupby(["participant", "split", "start", "k"]).size().eq(20).all()
-    assert set(first.meta["k_clusters"]) <= set(small_config.clusters.candidates)
+    assert set(first.meta["k_clusters"]) == {1}  # six people is below the minimum for clusters
     assert first.rows["correct"].isin([0, 1]).all()
 
 

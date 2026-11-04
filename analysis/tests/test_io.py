@@ -95,10 +95,20 @@ def test_not_a_zip(tmp_path: Path):
 def test_marker_decides_synthetic_even_if_the_file_is_renamed(synthetic_zip: Path, tmp_path: Path):
     renamed = rewrite_zip(synthetic_zip, tmp_path / "study-export-phase3.zip", lambda name, text: text)
     assert load_export(renamed).synthetic is True
-    unmarked = rewrite_zip(
-        synthetic_zip, tmp_path / "y.zip", lambda name, text: None if name == "SYNTHETIC.txt" else text
-    )
-    assert load_export(unmarked).synthetic is False
+
+
+def test_an_export_with_no_marker_and_no_simulated_participants_is_real(synthetic_zip: Path, tmp_path: Path):
+    def real_looking(name: str, text: str):
+        if name == "SYNTHETIC.txt":
+            return None
+        if name != "participants.csv":
+            return text
+        frame = pd.read_csv(io.StringIO(text), dtype=str, keep_default_na=False)
+        frame["is_simulated"] = "0"
+        return frame.to_csv(index=False, lineterminator="
+")
+
+    assert load_export(rewrite_zip(synthetic_zip, tmp_path / "y.zip", real_looking)).synthetic is False
 
 
 DEMO_EXPORT = ANALYSIS_DIR / "data" / "demo_export.zip"
