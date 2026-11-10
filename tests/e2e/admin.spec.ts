@@ -42,9 +42,9 @@ test("admin: login, create participants, upload a plan, start Session B, export 
     participantCode: p.code,
     conditions: {
       static: { steps: [] },
-      global: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "grid2-default-partial-light-sidebar" }] },
-      cluster5: { steps: [{ trigger: { type: "afterEvents", value: 5 }, config: "grid3-large-partial-dark-dropdown" }] },
-      personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "grid3-default-detailed-dark-dropdown" }] },
+      global: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "standard-large-flat-iconText-standard-grid3-none" }] },
+      cluster5: { steps: [{ trigger: { type: "afterEvents", value: 5 }, config: "large-large-flat-iconText-high-grid3-none" }] },
+      personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "standard-standard-flat-iconOnly-high-grid3-hints" }] },
     },
   };
   await upload.setInputFiles({ name: "plan.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(plan)) });
@@ -86,7 +86,7 @@ test("admin: login, create participants, upload a plan, start Session B, export 
     expect(header, t.file).toBe(t.columns.map((c) => c.name).join(","));
   }
   const comparisonHeader = (await zip.file("comparison_trials.csv")!.async("string")).split("\n")[0]!;
-  for (const col of ["left_layout", "left_fontSize", "left_density", "left_theme", "left_menu", "left_numChangedSettings", "right_menu", "right_numChangedSettings"])
+  for (const col of ["scene", "language", "left_textSize", "left_targetSize", "left_buttonStyle", "left_iconLabels", "left_contrast", "left_layout", "left_guidance", "left_numChangedSettings", "right_guidance", "right_numChangedSettings"])
     expect(comparisonHeader.split(",")).toContain(col);
   const participantsCsv = await zip.file("participants.csv")!.async("string");
   expect(participantsCsv).toContain(p.code);

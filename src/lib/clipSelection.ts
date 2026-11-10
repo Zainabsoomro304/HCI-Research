@@ -2,9 +2,11 @@
  * Balanced selection of clip target configurations.
  *
  * Objective (lexicographic via weights):
- *  1. every level of every setting appears as evenly as possible (max - min <= 1),
- *  2. the number of settings changed from the base config is balanced across the allowed values
+ *  1. the number of settings changed from the base config is balanced across the allowed values
  *     (transition "busyness" must not be confounded with any level),
+ *  2. every non-base level of every setting appears equally often (max - min <= 1 across all of them), so every
+ *     preference weight gets the same amount of data. With 7 settings and only 2-4 changes per clip, base levels
+ *     are necessarily more frequent: equal counts for every level would need about 4.2 changes per clip.
  *  3. equal mean busyness across the non-base levels of each setting (e.g. grid2 vs grid3), so busyness is
  *     not confounded with a particular target level (base levels are one change lower by construction),
  *  4. secondary: two-way balance between settings (level combinations spread evenly).
@@ -41,7 +43,7 @@ export interface SelectionResult {
 }
 
 const W_LEVEL = 100;
-const W_CHANGES = 100;
+const W_CHANGES = 400;
 const W_BUSY = 20;
 const W_PAIR = 1;
 
@@ -93,12 +95,15 @@ function cost(sel: readonly Encoded[], allowed: readonly number[], baseLevels: n
     const mean = nb ? nbSum / nb : 0;
     for (let l = 0; l < L; l++) if (l !== baseLevels[s]) total += W_BUSY * (sum[l]! - cnt[l]! * mean) ** 2;
   }
+  // All non-base levels, across every setting, should appear equally often.
+  const nonBase: number[] = [];
   for (let s = 0; s < NUM_LEVELS.length; s++) {
-    const L = NUM_LEVELS[s]!;
-    const counts = new Array<number>(L).fill(0);
+    const counts = new Array<number>(NUM_LEVELS[s]!).fill(0);
     for (const e of sel) counts[e.levels[s]!]!++;
-    for (const v of counts) total += W_LEVEL * (v - n / L) ** 2;
+    counts.forEach((v, l) => l !== baseLevels[s] && nonBase.push(v));
   }
+  const target = nonBase.reduce((a, b) => a + b, 0) / nonBase.length;
+  for (const v of nonBase) total += W_LEVEL * (v - target) ** 2;
   const cc = new Map<number, number>();
   for (const e of sel) cc.set(e.changes, (cc.get(e.changes) ?? 0) + 1);
   for (const a of allowed) total += W_CHANGES * ((cc.get(a) ?? 0) - n / allowed.length) ** 2;
@@ -158,6 +163,12 @@ export function selectBalancedClips(opts: SelectionOptions): SelectionResult {
   const chosen = best.map((k) => configs[k]!);
   chosen.sort((a, b) => numChangedSettings(a, base) - numChangedSettings(b, base) || toConfigId(a).localeCompare(toConfigId(b)));
   return { configs: chosen, cost: bestCost, levelCounts: levelCounts(chosen), changeCounts: changeCounts(chosen, opts.allowedChanges, base) };
+}
+
+/** Spread (max - min) of the non-base level counts across all settings. */
+export function nonBaseSpread(counts: Record<SettingKey, Record<string, number>>): number {
+  const v = SETTING_KEYS.flatMap((k) => Object.entries(counts[k]).filter(([l]) => l !== DEFAULT_CONFIG[k]).map(([, n]) => n));
+  return Math.max(...v) - Math.min(...v);
 }
 
 /** max - min of a count table. */

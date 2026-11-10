@@ -7,7 +7,7 @@
  *   Phase 3: 2 with Session B completed, 1 in Session B, 1 ready for Session B, 1 in Session A
  */
 import { CONDITIONS } from "@/config/study";
-import { SETTING_KEYS, SETTING_LEVELS, fromConfigId, type UIConfig } from "@/config/uiSpace";
+import { DEFAULT_CONFIG_ID, SETTING_KEYS, SETTING_LEVELS, fromConfigId, toConfigId, type UIConfig } from "@/config/uiSpace";
 import { prisma } from "@/lib/db";
 import { createParticipants } from "@/lib/participants";
 import { savePlanFile } from "@/lib/planStore";
@@ -18,6 +18,7 @@ import { loadConsent } from "@/lib/session/comparison";
 import { unlockSessionB } from "@/lib/session/sessionB";
 import type { SessionBState } from "@/lib/session/sessionBTypes";
 import type { ComparisonState } from "@/lib/session/types";
+import { PREF_ITEMS } from "@/lib/questionnaire/background";
 import { getTask } from "@/lib/tasks";
 
 const rng = createRng(20261025);
@@ -28,19 +29,20 @@ async function act(token: string, body: unknown) {
 }
 
 function background(r: Rng) {
+  const pick = (k: (typeof SETTING_KEYS)[number]) => r.pick([...SETTING_LEVELS[k], "noPreference"]);
   return {
-    age: r.int(19, 74),
-    gender: r.pick(["woman", "man", "woman", "man", "nonBinary", "preferNot"]),
-    occupation: r.pick(["student", "employed", "employed", "selfEmployed", "retired"]),
-    field: r.pick(["Nursing", "Accounting", "History", "Software engineering", "Marketing", "Biology", ""]),
-    csOrIt: r.next() < 0.4 ? "yes" : "no",
+    age: r.int(40, 78),
+    gender: r.pick(["woman", "man", "preferNot"]),
+    occupation: r.pick(["employed", "selfEmployed", "homemaker", "retired"]),
+    csOrIt: r.next() < 0.2 ? "yes" : "no",
     techConfidence: r.int(2, 7),
-    shoppingFrequency: r.pick(["lessThanMonthly", "monthly", "weekly", "severalPerWeek"]),
-    prefLayout: r.pick(["list", "grid2", "grid3", "noPreference"]),
-    prefTextSize: r.pick(["small", "medium", "large", "noPreference"]),
-    prefDetail: r.pick(["lots", "some", "minimal", "noPreference"]),
-    prefTheme: r.pick(["light", "dark", "noPreference"]),
-    prefMenu: r.pick(["side", "dropdown", "noPreference"]),
+    smartphoneUse: r.pick(["weekly", "daily"]),
+    computerUse: r.pick(["never", "monthly", "weekly", "daily"]),
+    shoppingFrequency: r.pick(["never", "lessThanMonthly", "monthly", "weekly"]),
+    groceriesOnline: r.pick(["yes", "no"]),
+    readingGlasses: r.pick(["yes", "no", "sometimes"]),
+    readingLanguage: r.pick(["urdu", "english", "both"]),
+    ...Object.fromEntries(SETTING_KEYS.map((k) => [PREF_ITEMS[k], pick(k)])),
   };
 }
 
@@ -56,10 +58,11 @@ function makeChooser(r: Rng) {
 }
 
 /** Runs a comparison session; stops after `stopAfter` analysis trials if given. */
-async function runComparison(token: string, r: Rng, opts: { stopAfter?: number; failAttention?: boolean } = {}) {
+async function runComparison(token: string, r: Rng, opts: { stopAfter?: number; failAttention?: boolean; lang?: "en" | "ur" } = {}) {
   const choose = makeChooser(r);
   await act(token, { type: "start", viewport: { w: 1440, h: 900 }, userAgent: "demo-seed" });
-  await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
+  await act(token, { type: "language", lang: opts.lang ?? "en" });
+  await act(token, { type: "consent", agreed: true, hash: loadConsent(opts.lang ?? "en").hash, clientTs: Date.now() });
   await act(token, { type: "background", answers: background(r), clientTs: Date.now() });
   let st = (await act(token, { type: "instructions_done" })) as ComparisonState;
   const s = (await getSessionByToken(token))!;
@@ -93,16 +96,9 @@ async function runComparison(token: string, r: Rng, opts: { stopAfter?: number; 
 }
 
 function demoPlan(code: string, r: Rng) {
-  const cfg = () => `${r.pick(["list", "grid2", "grid3"])}-${r.pick(["small", "default", "large"])}-${r.pick(["detailed", "partial", "summary"])}-${r.pick(["light", "dark"])}-${r.pick(["sidebar", "dropdown"])}`;
-  return {
-    participantCode: code,
-    conditions: {
-      static: { steps: [] },
-      global: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "grid2-default-partial-light-sidebar" }] },
-      cluster5: { steps: [{ trigger: { type: "afterEvents", value: 5 }, config: cfg() }] },
-      personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: cfg() }, { trigger: { type: "afterEvents", value: 10 }, config: cfg() }] },
-    },
-  };
+  const cfg = () => toConfigId(Object.fromEntries(SETTING_KEYS.map((k) => [k, r.pick(SETTING_LEVELS[k])])) as UIConfig);
+  const step = (config: string) => ({ steps: [{ trigger: { type: "afterMs", value: 8000 }, config }] });
+  return { participantCode: code, conditions: { static: { steps: [] }, global: step(cfg()), cluster5: step(cfg()), personalFull: step(cfg()) } };
 }
 
 /** Runs Session B up to (and excluding) block `stopAtBlock` if given. */
@@ -110,7 +106,7 @@ async function runSessionB(sessionId: string, token: string, r: Rng, stopAtBlock
   await unlockSessionB(sessionId);
   await act(token, { type: "start", viewport: { w: 1920, h: 1080 }, userAgent: "demo-seed" });
   await act(token, { type: "welcome_done" });
-  await act(token, { type: "task_finish", blockIndex: -1, cart: [{ productId: "fs-06", quantity: 1 }], firstInteractionAt: Date.now() - 60_000, finalConfigId: "list-default-detailed-light-sidebar", appliedConfigs: [], clientTs: Date.now() });
+  await act(token, { type: "task_finish", blockIndex: -1, cart: [{ productId: "fv-01", quantity: 1 }], firstInteractionAt: Date.now() - 60_000, finalConfigId: DEFAULT_CONFIG_ID, appliedConfigs: [], clientTs: Date.now() });
   const blocks = await prisma.taskBlock.findMany({ where: { sessionId, isPractice: false }, orderBy: { blockIndex: "asc" } });
   const answers = (i: "quis" | "ues_sf") => Object.fromEntries(loadInstrument(i).items.map((it) => [it.id, it.scale.min + r.int(0, it.scale.points - 1)]));
   for (const b of blocks) {
@@ -128,7 +124,7 @@ async function runSessionB(sessionId: string, token: string, r: Rng, stopAtBlock
       blockIndex: b.blockIndex,
       cart,
       firstInteractionAt: Date.now() - r.int(90, 300) * 1000,
-      finalConfigId: steps.at(-1)?.config ?? "list-default-detailed-light-sidebar",
+      finalConfigId: steps.at(-1)?.config ?? DEFAULT_CONFIG_ID,
       appliedConfigs: steps.map((s, i) => ({ step: i + 1, configId: s.config, atMs: 8000 + i * 20000 })),
       clientTs: Date.now(),
     });
@@ -150,7 +146,7 @@ async function main() {
   const p1 = await createParticipants({ studyPhase: 1, count: 8, notes: "DEMO participant" });
   for (const [i, p] of p1.entries()) {
     const token = p.sessions[0]!.token;
-    if (i < 6) await runComparison(token, rng, { failAttention: i === 5 });
+    if (i < 6) await runComparison(token, rng, { failAttention: i === 5, lang: i % 2 ? "ur" : "en" });
     else if (i === 6) await runComparison(token, rng, { stopAfter: 42 });
     console.log(`  ${p.code} ${i < 6 ? "completed" : i === 6 ? "in progress" : "not started"}`);
   }
@@ -164,7 +160,7 @@ async function main() {
       console.log(`  ${p.code} Session A in progress`);
       continue;
     }
-    await runComparison(a.token, rng);
+    await runComparison(a.token, rng, { lang: i % 2 ? "ur" : "en" });
     await savePlanFile(p.id, demoPlan(p.code, rng), "demo-plan.json");
     if (i <= 1) await runSessionB(b.id, b.token, rng);
     else if (i === 2) await runSessionB(b.id, b.token, rng, 2);

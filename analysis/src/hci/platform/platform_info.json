@@ -42,18 +42,23 @@
       "submitted_at",
       "age",
       "gender",
-      "genderSelfDescribe",
       "occupation",
       "occupationOther",
-      "field",
       "csOrIt",
       "techConfidence",
+      "smartphoneUse",
+      "computerUse",
       "shoppingFrequency",
-      "prefLayout",
+      "groceriesOnline",
+      "readingGlasses",
+      "readingLanguage",
       "prefTextSize",
-      "prefDetail",
-      "prefTheme",
-      "prefMenu"
+      "prefTargetSize",
+      "prefButtonStyle",
+      "prefIconLabels",
+      "prefContrast",
+      "prefLayout",
+      "prefGuidance"
     ],
     "comparison_trials.csv": [
       "participant_code",
@@ -69,19 +74,25 @@
       "repeat_of_trial_index",
       "repeat_gap",
       "is_attention_check",
+      "scene",
+      "language",
       "left_clip_id",
+      "left_textSize",
+      "left_targetSize",
+      "left_buttonStyle",
+      "left_iconLabels",
+      "left_contrast",
       "left_layout",
-      "left_fontSize",
-      "left_density",
-      "left_theme",
-      "left_menu",
+      "left_guidance",
       "left_numChangedSettings",
       "right_clip_id",
+      "right_textSize",
+      "right_targetSize",
+      "right_buttonStyle",
+      "right_iconLabels",
+      "right_contrast",
       "right_layout",
-      "right_fontSize",
-      "right_density",
-      "right_theme",
-      "right_menu",
+      "right_guidance",
       "right_numChangedSettings",
       "choice",
       "chosen_clip_id",
@@ -120,11 +131,13 @@
       "total_spent",
       "extra_items",
       "final_config_id",
+      "final_textSize",
+      "final_targetSize",
+      "final_buttonStyle",
+      "final_iconLabels",
+      "final_contrast",
       "final_layout",
-      "final_fontSize",
-      "final_density",
-      "final_theme",
-      "final_menu",
+      "final_guidance",
       "plan_steps",
       "applied_steps",
       "applied_configs",
@@ -202,44 +215,67 @@
     ]
   },
   "settingKeys": [
+    "textSize",
+    "targetSize",
+    "buttonStyle",
+    "iconLabels",
+    "contrast",
     "layout",
-    "fontSize",
-    "density",
-    "theme",
-    "menu"
+    "guidance"
   ],
   "settingLevels": {
-    "layout": [
-      "list",
-      "grid2",
-      "grid3"
+    "textSize": [
+      "standard",
+      "large",
+      "xlarge"
     ],
-    "fontSize": [
-      "small",
-      "default",
+    "targetSize": [
+      "standard",
       "large"
     ],
-    "density": [
-      "detailed",
-      "partial",
-      "summary"
+    "buttonStyle": [
+      "flat",
+      "outlined",
+      "raised"
     ],
-    "theme": [
-      "light",
-      "dark"
+    "iconLabels": [
+      "iconOnly",
+      "iconText"
     ],
-    "menu": [
-      "sidebar",
-      "dropdown"
+    "contrast": [
+      "standard",
+      "high"
+    ],
+    "layout": [
+      "grid3",
+      "grid2",
+      "list"
+    ],
+    "guidance": [
+      "none",
+      "hints"
     ]
   },
-  "baseConfigId": "list-default-detailed-light-sidebar",
+  "baseConfigId": "standard-standard-flat-iconOnly-standard-grid3-none",
   "conditions": [
     "static",
     "global",
     "cluster5",
     "personalFull"
   ],
+  "scenes": [
+    "fruitsVeg",
+    "grains",
+    "dairy",
+    "spices",
+    "tea",
+    "cleaning"
+  ],
+  "languages": [
+    "en",
+    "ur"
+  ],
+  "minAge": 40,
   "maxFailedAttentionChecks": 0,
   "design": {
     "mainTrials": 70,
@@ -301,64 +337,64 @@
     "nearTieGap": 0.1
   },
   "clips": [
-    "grid2-default-partial-light-sidebar",
-    "grid2-large-detailed-light-sidebar",
-    "grid2-small-detailed-light-sidebar",
-    "grid3-default-detailed-dark-sidebar",
-    "grid3-default-detailed-light-dropdown",
-    "grid3-small-detailed-light-sidebar",
-    "list-default-partial-dark-sidebar",
-    "list-default-summary-light-dropdown",
-    "list-large-detailed-dark-sidebar",
-    "list-large-partial-light-sidebar",
-    "grid2-default-partial-light-dropdown",
-    "grid2-default-summary-dark-sidebar",
-    "grid2-large-summary-light-sidebar",
-    "grid3-default-summary-dark-sidebar",
-    "grid3-default-summary-light-dropdown",
-    "grid3-small-summary-light-sidebar",
-    "list-large-partial-dark-sidebar",
-    "list-large-summary-light-dropdown",
-    "list-small-detailed-dark-dropdown",
-    "list-small-partial-light-dropdown",
-    "list-small-summary-dark-sidebar",
-    "grid2-default-summary-dark-dropdown",
-    "grid2-large-detailed-dark-dropdown",
-    "grid2-large-partial-light-dropdown",
-    "grid2-small-detailed-dark-dropdown",
-    "grid2-small-partial-dark-sidebar",
-    "grid3-default-summary-dark-dropdown",
-    "grid3-large-detailed-dark-dropdown",
-    "grid3-large-partial-dark-sidebar",
-    "grid3-large-partial-light-dropdown",
-    "grid3-small-partial-light-dropdown",
-    "list-small-summary-dark-dropdown"
+    "large-standard-flat-iconText-standard-grid3-none",
+    "large-standard-outlined-iconOnly-standard-grid3-none",
+    "standard-large-flat-iconOnly-standard-grid2-none",
+    "standard-large-flat-iconOnly-standard-list-none",
+    "standard-standard-outlined-iconOnly-high-grid3-none",
+    "standard-standard-raised-iconOnly-high-grid3-none",
+    "standard-standard-raised-iconOnly-standard-grid2-none",
+    "standard-standard-raised-iconText-standard-grid3-none",
+    "xlarge-standard-flat-iconOnly-standard-grid3-hints",
+    "xlarge-standard-flat-iconOnly-standard-list-none",
+    "large-large-flat-iconOnly-standard-grid3-hints",
+    "large-large-flat-iconOnly-standard-list-none",
+    "large-standard-outlined-iconOnly-high-grid3-none",
+    "standard-large-raised-iconOnly-high-grid3-none",
+    "standard-standard-flat-iconOnly-high-grid2-hints",
+    "standard-standard-outlined-iconOnly-standard-list-hints",
+    "standard-standard-outlined-iconText-standard-list-none",
+    "standard-standard-raised-iconOnly-standard-grid2-hints",
+    "xlarge-large-outlined-iconOnly-standard-grid3-none",
+    "xlarge-standard-flat-iconText-standard-grid2-none",
+    "xlarge-standard-outlined-iconText-standard-grid3-none",
+    "large-large-raised-iconOnly-standard-grid2-none",
+    "large-standard-flat-iconText-high-grid2-none",
+    "large-standard-outlined-iconOnly-high-grid2-none",
+    "large-standard-raised-iconOnly-standard-list-hints",
+    "standard-large-flat-iconText-high-grid3-hints",
+    "standard-large-outlined-iconText-standard-grid3-hints",
+    "standard-standard-raised-iconText-standard-list-hints",
+    "xlarge-large-raised-iconOnly-standard-list-none",
+    "xlarge-standard-flat-iconText-high-list-none",
+    "xlarge-standard-outlined-iconOnly-high-list-none",
+    "xlarge-standard-raised-iconOnly-standard-grid2-hints"
   ],
   "practiceClips": [
-    "grid3-default-summary-light-sidebar",
-    "grid2-large-partial-light-sidebar",
-    "grid3-small-detailed-dark-dropdown",
-    "list-large-summary-dark-dropdown"
+    "large-standard-raised-iconOnly-standard-grid3-none",
+    "xlarge-standard-flat-iconOnly-high-grid3-none",
+    "standard-standard-outlined-iconText-standard-grid2-none",
+    "standard-large-raised-iconOnly-standard-list-hints"
   ],
   "tasks": [
     {
-      "id": "picnic",
-      "budget": 110,
+      "id": "staples",
+      "budget": 4300,
       "requiredItems": 6
     },
     {
-      "id": "homeoffice",
-      "budget": 88,
+      "id": "breakfast",
+      "budget": 1800,
       "requiredItems": 6
     },
     {
-      "id": "giftbasket",
-      "budget": 80,
+      "id": "dinner",
+      "budget": 1550,
       "requiredItems": 6
     },
     {
-      "id": "runner",
-      "budget": 128,
+      "id": "cleaning",
+      "budget": 1700,
       "requiredItems": 6
     }
   ]

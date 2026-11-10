@@ -2,13 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Shop } from "@/components/shop/Shop";
-import { CLIP_CATEGORY, CLIP_PRODUCT_COUNT } from "@/config/shop";
+import type { Lang, Scene } from "@/config/shop";
 import { DEFAULT_CONFIG, type UIConfig } from "@/config/uiSpace";
 import { CLIP_SET } from "@/lib/clipsFile";
-import { products } from "@/lib/catalog";
-
-/** Fixed product set shown in every clip: the first N products of the clip category. */
-const CLIP_PRODUCT_IDS = products.filter((p) => p.category === CLIP_CATEGORY).slice(0, CLIP_PRODUCT_COUNT).map((p) => p.id);
+import { sceneProductIds } from "@/lib/catalog";
 
 export interface ClipController {
   /** Resolves when fonts and images are loaded and the base frame is painted. */
@@ -44,7 +41,7 @@ async function waitForAssets() {
   await nextFrame();
 }
 
-export function ClipClient({ target, seed, autoplay, isStatic }: { target: UIConfig; seed: number; autoplay: boolean; isStatic: boolean }) {
+export function ClipClient({ target, scene, lang, seed, autoplay, isStatic }: { target: UIConfig; scene: Scene; lang: Lang; seed: number; autoplay: boolean; isStatic: boolean }) {
   const [config, setConfig] = useState<UIConfig>(isStatic ? target : DEFAULT_CONFIG);
   const vtWaiter = useRef<((vt: ViewTransition) => void) | null>(null);
   const anims = useRef<Animation[]>([]);
@@ -94,13 +91,14 @@ export function ClipClient({ target, seed, autoplay, isStatic }: { target: UICon
     };
   }, [target, autoplay]);
 
-  const productIds = useMemo(() => CLIP_PRODUCT_IDS, []);
+  const productIds = useMemo(() => sceneProductIds(scene), [scene]);
   return (
     <div data-clip-seed={seed}>
       <Shop
         config={config}
         mode="clip"
-        initialCategory={CLIP_CATEGORY}
+        lang={lang}
+        initialCategory={scene}
         productIds={productIds}
         onTransitionStart={onTransitionStart}
         instantTransitions={isStatic}

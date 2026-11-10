@@ -4,25 +4,13 @@ import { createParticipants } from "@/lib/participants";
 import { ActionError, applyAction, buildState, getSessionByToken } from "@/lib/session";
 import { loadConsent } from "@/lib/session/comparison";
 import type { ComparisonState } from "@/lib/session/types";
+import { CLIP_SCENES } from "@/config/shop";
+import { background } from "./fixtures";
 
 afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const background = {
-  age: 34,
-  gender: "woman",
-  occupation: "employed",
-  field: "Nursing",
-  csOrIt: "no",
-  techConfidence: 5,
-  shoppingFrequency: "monthly",
-  prefLayout: "grid2",
-  prefTextSize: "medium",
-  prefDetail: "some",
-  prefTheme: "noPreference",
-  prefMenu: "side",
-};
 
 async function act(token: string, body: unknown) {
   const s = (await getSessionByToken(token))!;
@@ -43,10 +31,11 @@ describe("Phase 1 comparison session", () => {
     const token = p!.sessions[0]!.token;
 
     let st = (await buildState((await getSessionByToken(token))!)) as ComparisonState;
+    expect(st.step).toBe("language");
+    await act(token, { type: "start", viewport: { w: 1280, h: 800 }, userAgent: "vitest" });
+    st = await act(token, { type: "language", lang: "en" });
     expect(st.step).toBe("consent");
     expect(st.consent!.markdown).toContain("PLACEHOLDER");
-
-    await act(token, { type: "start", viewport: { w: 1280, h: 800 }, userAgent: "vitest" });
     st = await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
     expect(st.step).toBe("background");
     // Full schedule stored before trial 1.
@@ -59,7 +48,7 @@ describe("Phase 1 comparison session", () => {
     st = await act(token, { type: "instructions_done" });
     expect(st.step).toBe("practice");
     expect(st.trial!.isPractice).toBe(true);
-    expect(st.trial!.leftUrl).toMatch(/^\/m\/[0-9a-f]{16}\.mp4$/);
+    expect(st.trial!.leftUrl).toMatch(/^\/m\/[0-9a-f]{20}\.mp4$/);
     await answerCurrent(token);
     st = await answerCurrent(token);
     expect(st.step).toBe("main_intro");
@@ -95,6 +84,7 @@ describe("Phase 1 comparison session", () => {
   it("is idempotent for retried trial saves and rejects out-of-order trials", async () => {
     const [p] = await createParticipants({ studyPhase: 3, count: 1 });
     const token = p!.sessions.find((s) => s.type === "p3_sessionA")!.token;
+    await act(token, { type: "language", lang: "en" });
     await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
     await act(token, { type: "background", answers: { ...background, csOrIt: "yes" }, clientTs: Date.now() });
     let st = await act(token, { type: "instructions_done" });
@@ -115,6 +105,7 @@ describe("Phase 1 comparison session", () => {
   it("resumes at the exact trial after reloading", async () => {
     const [p] = await createParticipants({ studyPhase: 1, count: 1 });
     const token = p!.sessions[0]!.token;
+    await act(token, { type: "language", lang: "en" });
     await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
     await act(token, { type: "background", answers: background, clientTs: Date.now() });
     await act(token, { type: "instructions_done" });
@@ -132,7 +123,57 @@ describe("Phase 1 comparison session", () => {
     const [p] = await createParticipants({ studyPhase: 1, count: 1 });
     const token = p!.sessions[0]!.token;
     await expect(act(token, { type: "instructions_done" })).rejects.toBeInstanceOf(ActionError);
+    await expect(act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() })).rejects.toBeInstanceOf(ActionError);
+    await expect(act(token, { type: "language", lang: "fr" })).rejects.toMatchObject({ status: 400 });
+    await act(token, { type: "language", lang: "en" });
+    await expect(act(token, { type: "language", lang: "ur" })).rejects.toBeInstanceOf(ActionError);
     await expect(act(token, { type: "consent", agreed: false, hash: "x", clientTs: 1 })).rejects.toMatchObject({ status: 400 });
     await expect(act(token, { type: "consent", agreed: true, hash: "0".repeat(64), clientTs: Date.now() })).rejects.toBeInstanceOf(ActionError);
+  });
+
+  it("records language and scene on every trial, with both clips of a trial in one scene and language", async () => {
+    const [p] = await createParticipants({ studyPhase: 3, count: 1 });
+    const token = p!.sessions.find((s) => s.type === "p3_sessionA")!.token;
+    await act(token, { type: "language", lang: "ur" });
+    expect((await prisma.participant.findUnique({ where: { id: p!.id } }))!.language).toBe("ur");
+    const st = await act(token, { type: "consent", agreed: true, hash: loadConsent("ur").hash, clientTs: Date.now() });
+    expect(st.consent?.markdown ?? "").not.toContain("PLACEHOLDER – replace");
+    const trials = await prisma.comparisonTrial.findMany({ where: { session: { token } } });
+    expect(trials).toHaveLength(84);
+    for (const t of trials) {
+      expect(t.language).toBe("ur");
+      expect(CLIP_SCENES).toContain(t.scene);
+    }
+    expect((await prisma.session.findUnique({ where: { token } }))!.language).toBe("ur");
+  });
+});
+
+describe("eligibility screening (age 40+)", () => {
+  it("rejects a background under 40, and screen_out ends the session with only a screening record", async () => {
+    const [p] = await createParticipants({ studyPhase: 3, count: 1 });
+    const token = p!.sessions.find((s) => s.type === "p3_sessionA")!.token;
+    await act(token, { type: "language", lang: "en" });
+    await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
+    await expect(act(token, { type: "background", answers: { ...background, age: 39 }, clientTs: Date.now() })).rejects.toBeInstanceOf(ActionError);
+    await expect(act(token, { type: "screen_out", age: 45, clientTs: Date.now() })).rejects.toBeInstanceOf(ActionError);
+    const st = await act(token, { type: "screen_out", age: 39, clientTs: Date.now() });
+    expect(st.step).toBe("ineligible");
+    const participant = await prisma.participant.findUnique({ where: { id: p!.id } });
+    expect(participant!.withdrawnAt).not.toBeNull();
+    expect(participant!.withdrawnReason).toMatch(/Screened out: age 39/);
+    const responses = await prisma.questionnaireResponse.findMany({ where: { participantId: p!.id } });
+    expect(responses.map((r) => r.instrument)).toEqual(["screening"]);
+    expect(responses[0]!.responses).toEqual({ age: 39, eligible: false });
+    expect(await prisma.comparisonTrial.count({ where: { session: { token }, choice: { not: null } } })).toBe(0);
+    await expect(act(token, { type: "background", answers: background, clientTs: Date.now() })).rejects.toBeInstanceOf(ActionError);
+  });
+
+  it("accepts exactly 40", async () => {
+    const [p] = await createParticipants({ studyPhase: 3, count: 1 });
+    const token = p!.sessions.find((s) => s.type === "p3_sessionA")!.token;
+    await act(token, { type: "language", lang: "en" });
+    await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
+    const st = await act(token, { type: "background", answers: { ...background, age: 40 }, clientTs: Date.now() });
+    expect(st.step).toBe("instructions");
   });
 });

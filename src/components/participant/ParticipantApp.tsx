@@ -6,23 +6,15 @@ import { EventLogger } from "@/lib/eventLogger";
 import type { ComparisonState, ParticipantState } from "@/lib/session/types";
 import { makeT } from "@/lib/strings";
 import { BackgroundStep, ConsentStep } from "./ConsentAndBackground";
-import { BreakStep, EndStep, InstructionsStep, MainIntroStep, MessagePage } from "./SimpleSteps";
 import { SessionBView } from "./SessionBView";
+import { BreakStep, EndStep, IneligibleStep, InstructionsStep, LanguageStep, MainIntroStep, MessagePage } from "./SimpleSteps";
 import { TrialStep } from "./TrialStep";
-import { DesktopGate, SavingBanner, TContext } from "./ui";
+import { DeviceGate, SavingBanner, StudyRoot, TContext } from "./ui";
 import { useSessionActions } from "./useSessionActions";
 
-export function ParticipantApp({
-  token,
-  initialState,
-  studyPhase,
-}: {
-  token: string;
-  initialState: ParticipantState;
-  studyPhase: StudyPhase;
-}) {
-  const t = useMemo(() => makeT(initialState.lang), [initialState.lang]);
+export function ParticipantApp({ token, initialState, studyPhase }: { token: string; initialState: ParticipantState; studyPhase: StudyPhase }) {
   const { state, act, status, fatal, replaceState } = useSessionActions(token, initialState);
+  const t = useMemo(() => makeT(state.lang), [state.lang]);
   const sink = useMemo(() => new EventLogger(token), [token]);
 
   useEffect(() => {
@@ -38,9 +30,9 @@ export function ParticipantApp({
   }, [sink, token]);
 
   useEffect(() => {
-    sink.log("page_view", { step: state.step });
+    sink.log("page_view", { step: state.step, lang: state.lang });
     if (state.step !== "trials" && state.step !== "practice") sink.setContext({ trialId: null });
-  }, [sink, state.step]);
+  }, [sink, state.step, state.lang]);
 
   let content: React.ReactNode;
   if (fatal) {
@@ -52,12 +44,14 @@ export function ParticipantApp({
   }
 
   return (
-    <TContext.Provider value={t}>
-      <DesktopGate>
-        <SavingBanner status={status} />
-        {content}
-      </DesktopGate>
-    </TContext.Provider>
+    <StudyRoot lang={state.lang}>
+      <TContext.Provider value={t}>
+        <DeviceGate>
+          <SavingBanner status={status} />
+          {content}
+        </DeviceGate>
+      </TContext.Provider>
+    </StudyRoot>
   );
 }
 
@@ -78,19 +72,27 @@ function ComparisonView({
 }) {
   const design = COMPARISON_DESIGN[studyPhase];
   switch (state.step) {
+    case "language":
+      return <LanguageStep current={state.lang} onChoose={(lang) => void act({ type: "language", lang })} />;
     case "consent":
       return <ConsentStep markdown={state.consent!.markdown} hash={state.consent!.hash} onAgree={(hash) => void act({ type: "consent", agreed: true, hash, clientTs: Date.now() })} />;
     case "background":
-      return <BackgroundStep token={token} onSubmit={(answers) => act({ type: "background", answers, clientTs: Date.now() })} />;
+      return (
+        <BackgroundStep
+          token={token}
+          onSubmit={(answers) => act({ type: "background", answers, clientTs: Date.now() })}
+          onScreenOut={(age) => act({ type: "screen_out", age, clientTs: Date.now() })}
+        />
+      );
+    case "ineligible":
+      return <IneligibleStep />;
     case "instructions":
       return <InstructionsStep practiceCount={design.practiceTrials} onStart={() => void act({ type: "instructions_done" })} />;
     case "main_intro":
       return <MainIntroStep total={state.progress!.total} breaks={design.breakAfter.length} onStart={() => void act({ type: "main_intro_done" })} />;
     case "practice":
     case "trials":
-      return state.trial ? (
-        <TrialStep key={state.trial.id} trial={state.trial} sink={sink} saving={saving} onChoose={(r) => act({ type: "trial", ...r })} />
-      ) : null;
+      return state.trial ? <TrialStep key={state.trial.id} trial={state.trial} sink={sink} saving={saving} onChoose={(r) => act({ type: "trial", ...r })} /> : null;
     case "break":
       return <BreakStep done={state.breakInfo!.afterTrialIndex} total={state.breakInfo!.total} onContinue={() => void act({ type: "break_end", clientTs: Date.now() })} />;
     case "end":

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import rawClips from "@data/clips.json";
+import { CLIP_SCENES } from "@/config/shop";
 import { COMPARISON_DESIGN, totalAnalysisTrials } from "@/config/study";
 import { parseClipsFile } from "@/lib/clipsFile";
 import { generateSchedule, type ScheduledTrial } from "@/lib/schedule";
@@ -8,7 +9,7 @@ const clipsFile = parseClipsFile(rawClips);
 const clips = clipsFile.clips.map((c) => c.id);
 const practiceClips = clipsFile.practiceClips.map((c) => c.id);
 const design = COMPARISON_DESIGN[1];
-const make = (seed: number) => generateSchedule({ clips, practiceClips, design, seed });
+const make = (seed: number) => generateSchedule({ clips, practiceClips, design, seed, scenes: CLIP_SCENES });
 
 const SEEDS = [1, 2, 3, 42, 1234, 99991, 2026, 777777];
 const pairKey = (t: ScheduledTrial) => [t.left, t.right].sort().join("|");
@@ -96,6 +97,26 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
       expect(a.left).toBe(a.right);
     }
     expect(Math.abs(attention[0]!.trialIndex - attention[1]!.trialIndex)).toBeGreaterThanOrEqual(20);
+  });
+
+  it("balances scenes across analysis trials (max - min <= 1) and never runs one scene more than 2 in a row", () => {
+    const counts = new Map(CLIP_SCENES.map((c) => [c as string, 0]));
+    for (const t of analysis) counts.set(t.scene, counts.get(t.scene)! + 1);
+    expect(counts.size).toBe(CLIP_SCENES.length);
+    const v = [...counts.values()];
+    expect(Math.max(...v) - Math.min(...v)).toBeLessThanOrEqual(1);
+    for (let i = 2; i < analysis.length; i++) {
+      const run = new Set([analysis[i - 2]!.scene, analysis[i - 1]!.scene, analysis[i]!.scene]);
+      expect(run.size, `trials ${i - 1}-${i + 1}`).toBeGreaterThan(1);
+    }
+  });
+
+  it("keeps the original scene for repeats and uses one valid scene for practice", () => {
+    const bySeq = new Map(s.map((t) => [t.seq, t]));
+    for (const r of repeats) expect(r.scene).toBe(bySeq.get(r.repeatOfSeq!)!.scene);
+    const practice = s.filter((t) => t.isPractice);
+    expect(new Set(practice.map((t) => t.scene)).size).toBe(1);
+    expect(CLIP_SCENES).toContain(practice[0]!.scene);
   });
 
   it("uses two distinct practice pairs from the practice clips", () => {

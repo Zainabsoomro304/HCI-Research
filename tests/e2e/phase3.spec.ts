@@ -5,7 +5,8 @@ import JSZip from "jszip";
 import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "@/lib/db";
 import type { FrozenResult } from "@/lib/phase3/freeze";
-import { answerTrial, doConsentAndBackground, fastVideos, newParticipant } from "./helpers";
+import type { Lang } from "@/config/shop";
+import { doConsentAndBackground, fastVideos, newParticipant, runComparisons, tr, trRe } from "./helpers";
 
 /** REHEARSAL_N=31 runs the full rehearsal size. The default keeps the normal end-to-end run reasonably quick. */
 const SIMULATED = Number(process.env.REHEARSAL_N ?? 15);
@@ -19,41 +20,31 @@ async function login(page: Page) {
   await expect(page.getByRole("heading", { name: "Create participants" })).toBeVisible();
 }
 
+/** The scripted real participant does the whole study in Urdu (REAL_LANG=en for English). */
+const LANG: Lang = process.env.REAL_LANG === "en" ? "en" : "ur";
+const t = tr(LANG);
+const instrumentTitle = (name: string) =>
+  (JSON.parse(fs.readFileSync(path.resolve(`content/questionnaires/${name}.${LANG}.json`), "utf8")) as { title: string }).title;
+
 async function completeSessionA(page: Page, token: string) {
   await fastVideos(page);
   await page.goto(`/s/${token}`);
-  await doConsentAndBackground(page);
-  await page.getByRole("button", { name: "Start practice" }).click();
-  for (let i = 1; i <= 2; i++) {
-    await expect(page.getByText(`Practice ${i} of 2`)).toBeVisible();
-    await answerTrial(page, "A");
-  }
-  await expect(page.getByRole("heading", { name: "Practice complete" })).toBeVisible();
-  await page.getByRole("button", { name: "Start" }).click();
-  for (let i = 1; i <= 82; i++) {
-    await expect(page.getByText(`Trial ${i} of 82`)).toBeVisible();
-    const chooseB = await page.getByText("For this trial, please choose B.").isVisible();
-    await answerTrial(page, chooseB || i % 3 === 0 ? "B" : "A");
-    if (i === 27 || i === 54) {
-      await expect(page.getByRole("heading", { name: "Take a short break" })).toBeVisible();
-      await page.getByRole("button", { name: "Continue" }).click();
-    }
-  }
-  await expect(page.getByRole("heading", { name: "Thank you!" })).toBeVisible();
+  await doConsentAndBackground(page, LANG);
+  expect(await runComparisons(page, LANG)).toBe(2);
 }
 
-async function answerQuestionnaire(page: Page, heading: RegExp) {
-  await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+async function answerQuestionnaire(page: Page, title: string) {
+  await expect(page.getByRole("heading", { name: title })).toBeVisible();
   for (const fieldset of await page.locator("fieldset").all()) {
     const options = fieldset.locator("input[type=radio]");
     await options.nth(Math.floor((await options.count()) / 2)).check({ force: true });
   }
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: t("q.submit") }).click();
 }
 
 async function finishTask(page: Page) {
-  await page.getByRole("button", { name: "Finish task" }).click();
-  await page.getByRole("button", { name: "Yes, finish" }).click();
+  await page.getByRole("button", { name: t("task.finish") }).click();
+  await page.getByRole("button", { name: t("task.confirmYes") }).click();
 }
 
 test("the whole experiment runs from the admin panel, with one real and many simulated participants", async ({ page, context }) => {
@@ -88,6 +79,9 @@ test("the whole experiment runs from the admin panel, with one real and many sim
   await expect(page.getByRole("button", { name: "Freeze models & generate plans" })).toBeDisabled();
   const participantTab = await context.newPage();
   await completeSessionA(participantTab, sessionA.token);
+  expect((await prisma.participant.findUniqueOrThrow({ where: { id: real.id } })).language).toBe(LANG);
+  const realTrials = await prisma.comparisonTrial.findMany({ where: { sessionId: sessionA.id } });
+  expect(realTrials.every((r) => r.language === LANG && r.scene !== "")).toBe(true);
 
   // Admin clicks Freeze & generate.
   await page.reload();
@@ -105,10 +99,22 @@ test("the whole experiment runs from the admin panel, with one real and many sim
   await expect(page.getByRole("link", { name: "Download all computed plans" })).toBeVisible();
   await expect(page.getByTestId("plan-results").locator("img").first()).toBeVisible();
   await expect(page.getByText(/matched each simulated/)).toBeVisible();
+  console.log(`Plans vs truth: ${(await page.getByText(/matched each simulated/).innerText()).trim()}`);
+
   const frozen = await prisma.frozenModel.findFirstOrThrow({ where: { status: "active" } });
   expect(frozen.computeMs).toBeGreaterThan(0);
   console.log(`Freeze: ${frozen.computeMs} ms for ${SIMULATED + 1} participants`);
   const results = frozen.results as unknown as FrozenResult[];
+  const tally: Record<string, number> = {};
+  for (const r of results)
+    for (const [name, on] of [
+      ["agent mismatch", r.flags.agentMismatch],
+      ["identical targets", r.flags.identicalTargets.length > 0],
+      ["equals global", r.flags.equalsGlobal.length > 0],
+      ["near-tie", r.flags.nearTie.length > 0],
+    ] as const)
+      if (on) tally[name] = (tally[name] ?? 0) + 1;
+  console.log(`Plan flags (participants): ${JSON.stringify(tally)}`);
   expect(results.every((r) => r.agent.matches)).toBe(true);
   const mine = results.find((r) => r.code === real.code)!;
 
@@ -120,31 +126,34 @@ test("the whole experiment runs from the admin panel, with one real and many sim
   const shop = await popupEvent;
   await shop.waitForLoadState();
   expect(shop.url()).toContain(sessionB.token);
-  await expect(shop.getByRole("heading", { name: "Welcome to the second session" })).toBeVisible({ timeout: 30_000 });
-  await shop.getByRole("button", { name: "Start practice task" }).click();
-  await expect(shop.getByText("Practice", { exact: true })).toBeVisible();
-  await shop.getByRole("button", { name: "Add to cart" }).first().click();
+  await expect(shop.getByRole("heading", { name: t("sb.welcome.title") })).toBeVisible({ timeout: 30_000 });
+  await expect(shop.locator("html")).toHaveAttribute("dir", LANG === "ur" ? "rtl" : "ltr");
+  await shop.getByRole("button", { name: t("sb.welcome.start") }).click();
+  await expect(shop.getByText(t("sb.practiceBadge"), { exact: true })).toBeVisible();
+  await shop.getByRole("button", { name: trRe(LANG, "shop.addItem") }).first().click();
   await finishTask(shop);
 
   const blocks = await prisma.taskBlock.findMany({ where: { sessionId: sessionB.id, isPractice: false }, orderBy: { blockIndex: "asc" } });
   for (const block of blocks) {
-    await expect(shop.getByText(`Task ${block.blockIndex + 1} of 4`)).toBeVisible();
-    await shop.getByRole("button", { name: "Start shopping" }).click();
-    await expect(shop.getByRole("button", { name: "Finish task" })).toBeVisible();
-    await expect(shop.locator(".shop")).toHaveAttribute("data-config-id", "list-default-detailed-light-sidebar");
-    const adds = shop.getByRole("button", { name: "Add to cart" });
+    await expect(shop.getByText(t("sb.intro.taskOf", { number: block.blockIndex + 1, total: 4 }))).toBeVisible();
+    await shop.getByRole("button", { name: t("sb.intro.start") }).click();
+    await expect(shop.getByRole("button", { name: t("task.finish") })).toBeVisible();
+    await expect(shop.locator(".shop")).toHaveAttribute("data-config-id", "standard-standard-flat-iconOnly-standard-grid3-none");
+    await expect(shop.locator(".shop")).toHaveAttribute("dir", LANG === "ur" ? "rtl" : "ltr");
+    const adds = shop.getByRole("button", { name: trRe(LANG, "shop.addItem") });
     await adds.nth(0).click();
     await adds.nth(1).click();
     await adds.nth(2).click();
     const target = mine.targets[block.condition as keyof typeof mine.targets];
     await expect(shop.locator(".shop")).toHaveAttribute("data-config-id", target, { timeout: 20_000 });
     await finishTask(shop);
-    await answerQuestionnaire(shop, /Satisfaction with the interface/);
-    await answerQuestionnaire(shop, /Your experience/);
+    await answerQuestionnaire(shop, instrumentTitle("quis"));
+    await answerQuestionnaire(shop, instrumentTitle("ues_sf"));
   }
-  await expect(shop.getByRole("heading", { name: "Compare the four shops" })).toBeVisible();
-  await shop.getByRole("button", { name: "Submit ranking" }).click();
-  await expect(shop.getByRole("heading", { name: "Thank you!" })).toBeVisible();
+  await expect(shop.getByRole("heading", { name: t("rank.title") })).toBeVisible();
+  await shop.getByRole("button", { name: t("rank.submit") }).click();
+  await expect(shop.getByRole("heading", { name: t("end.title") })).toBeVisible();
+  expect((await prisma.session.findUniqueOrThrow({ where: { id: sessionB.id } })).language).toBe(LANG);
   const done = await prisma.taskBlock.findMany({ where: { sessionId: sessionB.id, isPractice: false } });
   for (const b of done) expect(b.finalConfigId).toBe(mine.targets[b.condition as keyof typeof mine.targets]);
 

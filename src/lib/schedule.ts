@@ -11,6 +11,10 @@
  *    apart, never on the last trial before a break or the first trial after one;
  *  - no clip appears in two consecutive trials anywhere in the sequence.
  * Practice trials (each a distinct pair of practice clips) come first and are numbered separately.
+ *
+ * Scenes (product categories shown in the clips): both clips of a trial always share one scene. Across the analysis
+ * trials every scene appears equally often (max - min <= 1), no scene appears in more than 2 consecutive trials, and
+ * a repeat keeps the scene of its original trial. Practice trials use one scene, not counted in the balance.
  */
 import type { ComparisonDesign } from "@/config/study";
 import { createRng, type Rng } from "./random";
@@ -27,6 +31,8 @@ export interface ScheduledTrial {
   isAttentionCheck: boolean;
   left: string;
   right: string;
+  /** Product category shown in both clips. */
+  scene: string;
 }
 
 type Pair = [string, string];
@@ -125,13 +131,48 @@ function shares(a: { left: string; right: string } | undefined, b: { left: strin
   return a.left === b.left || a.left === b.right || a.right === b.left || a.right === b.right;
 }
 
+/** Max run of one scene in consecutive analysis trials. */
+export const MAX_SCENE_RUN = 2;
+
+/**
+ * Scene per analysis position (1..N). Originals of repeats count twice, because their repeat inherits the scene, so
+ * the final counts come out balanced. Returns null if this draw could not satisfy the rules (the caller retries).
+ */
+function assignScenes(N: number, repeatOf: Map<number, number>, scenes: readonly string[], rng: Rng): string[] | null {
+  const repeated = new Set(repeatOf.values());
+  const out: string[] = new Array(N + 1);
+  const count = new Map(scenes.map((s) => [s, 0]));
+  const quota = Math.ceil(N / scenes.length);
+  for (let p = 1; p <= N; p++) {
+    const runOk = (s: string) => !(p > MAX_SCENE_RUN && Array.from({ length: MAX_SCENE_RUN }, (_, k) => out[p - 1 - k]).every((x) => x === s));
+    const origin = repeatOf.get(p);
+    if (origin !== undefined) {
+      out[p] = out[origin]!;
+      if (!runOk(out[p]!)) return null;
+      continue;
+    }
+    const weight = repeated.has(p) ? 2 : 1;
+    const allowed = rng.shuffle(scenes).filter((s) => runOk(s) && count.get(s)! + weight <= quota);
+    if (allowed.length === 0) return null;
+    const least = Math.min(...allowed.map((s) => count.get(s)!));
+    const pick = allowed.find((s) => count.get(s) === least)!;
+    out[p] = pick;
+    count.set(pick, count.get(pick)! + weight);
+  }
+  const counts = [...count.values()];
+  return Math.max(...counts) - Math.min(...counts) <= 1 ? out : null;
+}
+
 export function generateSchedule(opts: {
   clips: readonly string[];
   practiceClips: readonly string[];
   design: ComparisonDesign;
   seed: number;
+  /** Scenes to balance across the analysis trials. */
+  scenes: readonly string[];
 }): ScheduledTrial[] {
-  const { clips, practiceClips, design, seed } = opts;
+  const { clips, practiceClips, design, seed, scenes } = opts;
+  if (scenes.length === 0) throw new Error("At least one scene is needed");
   const rng = createRng(seed);
   if (practiceClips.length < design.practiceTrials * 2) throw new Error("Not enough practice clips");
   const N = design.mainTrials + design.repeatTrials + design.attentionChecks;
@@ -202,12 +243,19 @@ export function generateSchedule(opts: {
     }
     if (!ok) continue;
 
+    const repeatOf = new Map<number, number>();
+    for (let p = 1; p <= N; p++) if (seqOut[p]!.repeatOfPos !== null) repeatOf.set(p, seqOut[p]!.repeatOfPos!);
+    let sceneOf: string[] | null = null;
+    for (let tries = 0; tries < 200 && !sceneOf; tries++) sceneOf = assignScenes(N, repeatOf, scenes, rng);
+    if (!sceneOf) continue;
+    const practiceScene = rng.pick(scenes);
+
     const P = design.practiceTrials;
     const practice = rng.shuffle(practiceClips).slice(0, P * 2);
     const out: ScheduledTrial[] = [];
     for (let i = 0; i < P; i++) {
       const [a, b] = rng.next() < 0.5 ? [practice[2 * i]!, practice[2 * i + 1]!] : [practice[2 * i + 1]!, practice[2 * i]!];
-      out.push({ seq: i, trialIndex: i + 1, isPractice: true, isRepeat: false, repeatOfSeq: null, isAttentionCheck: false, left: a, right: b });
+      out.push({ seq: i, trialIndex: i + 1, isPractice: true, isRepeat: false, repeatOfSeq: null, isAttentionCheck: false, left: a, right: b, scene: practiceScene });
     }
     for (let p = 1; p <= N; p++) {
       const t = seqOut[p]!;
@@ -220,6 +268,7 @@ export function generateSchedule(opts: {
         isAttentionCheck: t.kind === "attention",
         left: t.left,
         right: t.right,
+        scene: sceneOf[p]!,
       });
     }
     return out;

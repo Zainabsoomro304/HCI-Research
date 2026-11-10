@@ -1,8 +1,8 @@
 /**
  * Export tables: column definitions (the codebook is generated from these) and row builders.
  */
-import { SETTING_KEYS, fromConfigId, isConfigId } from "@/config/uiSpace";
-import { BACKGROUND_ITEMS } from "../questionnaire/background";
+import { SETTING_KEYS, SETTING_LEVELS, fromConfigId, isConfigId } from "@/config/uiSpace";
+import { BACKGROUND_ITEMS, PREF_ITEMS } from "../questionnaire/background";
 import { COMPARISON_COLUMNS, type ColumnDef } from "./comparisonColumns";
 
 export type { ColumnDef };
@@ -40,7 +40,7 @@ export const TABLES: TableDef[] = [
       { name: "number", description: "Sequence number within the phase (used for Latin-square rows)." },
       { name: "group", description: "cs / nonCs / unknown." },
       { name: "group_source", description: "self = from the background questionnaire, admin = set by a researcher, empty = unknown." },
-      { name: "language", description: "Interface language." },
+      { name: "language", description: "Study language: en (English) or ur (Urdu). Chosen on the welcome screen or preset by the researcher." },
       { name: "seed", description: "Random seed used for this participant's trial schedule." },
       { name: "condition_row", description: "Phase 3: row of the condition Latin square used in Session B (0-3)." },
       { name: "task_row", description: "Phase 3: row of the task Latin square used in Session B (0-3)." },
@@ -63,26 +63,28 @@ export const TABLES: TableDef[] = [
   },
   {
     file: "questionnaire_background.csv",
-    description: "Background questionnaire, one row per participant session (Phase 1 / Session A).",
+    description: "Background questionnaire, one row per participant session (Session A). Screened-out participants have no row (their age is in a screening record only).",
     columns: [
       { name: "participant_code", description: "Participant code." },
       { name: "study_phase", description: "1 or 3." },
       { name: "session_type", description: "phase1 or p3_sessionA." },
       { name: "submitted_at", description: "Server time of submission." },
-      { name: "age", description: "Age in years (18-99)." },
-      { name: "gender", description: "woman / man / nonBinary / selfDescribe / preferNot." },
-      { name: "genderSelfDescribe", description: "Free text if gender = selfDescribe." },
-      { name: "occupation", description: "student / employed / selfEmployed / notWorking / retired / other." },
-      { name: "occupationOther", description: "Free text if occupation = other (optional)." },
-      { name: "field", description: "Field of study or work (free text, may be empty)." },
-      { name: "csOrIt", description: "Studies or works in computer science, software or IT: yes / no." },
-      { name: "techConfidence", description: "Confidence using computers and websites, 1 (not at all) to 7 (very)." },
-      { name: "shoppingFrequency", description: "never / lessThanMonthly / monthly / weekly / severalPerWeek." },
-      { name: "prefLayout", description: "Self-rated preference: list / grid2 / grid3 / noPreference." },
-      { name: "prefTextSize", description: "Self-rated preference: small / medium / large / noPreference." },
-      { name: "prefDetail", description: "Self-rated preference: lots / some / minimal / noPreference (maps to density detailed / partial / summary)." },
-      { name: "prefTheme", description: "Self-rated preference: light / dark / noPreference." },
-      { name: "prefMenu", description: "Self-rated preference: side / dropdown / noPreference." },
+      { name: "age", description: "Age in years. Participants must be MIN_AGE (40) or older; younger people are screened out." },
+      { name: "gender", description: "woman / man / preferNot." },
+      { name: "occupation", description: "employed / selfEmployed / homemaker / retired / notWorking / other." },
+      { name: "occupationOther", description: "Unused (kept empty)." },
+      { name: "csOrIt", description: "Studies or works in computer science, software or IT: yes / no. Recorded, not used for grouping." },
+      { name: "techConfidence", description: "Confidence using a computer, tablet or phone, 1 (not at all) to 7 (very)." },
+      { name: "smartphoneUse", description: "How often they use a smartphone: never / monthly / weekly / daily." },
+      { name: "computerUse", description: "How often they use a computer or tablet: never / monthly / weekly / daily." },
+      { name: "shoppingFrequency", description: "Online shopping: never / lessThanMonthly / monthly / weekly." },
+      { name: "groceriesOnline", description: "Has ever bought groceries online: yes / no." },
+      { name: "readingGlasses", description: "Uses reading glasses with screens: yes / no / sometimes." },
+      { name: "readingLanguage", description: "Most comfortable reading language: urdu / english / both / other." },
+      ...SETTING_KEYS.map((k) => ({
+        name: PREF_ITEMS[k] as string,
+        description: `Self-rated preference for ${k}: ${SETTING_LEVELS[k].join(" / ")} / noPreference.`,
+      })),
     ].filter((c, i) => i < 4 || (BACKGROUND_ITEMS as string[]).includes(c.name)),
   },
   { file: "comparison_trials.csv", description: "One row per scheduled comparison trial (answered or not). Practice trials are included and flagged.", columns: COMPARISON_COLUMNS },

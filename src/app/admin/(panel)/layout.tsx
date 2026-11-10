@@ -8,9 +8,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const nav = [
     ["/admin", "Participants"],
     ["/admin/phase3", "Phase 3 preparation"],
+    ["/admin/translations", "Translations"],
     ["/admin/monitor", "Live monitor"],
     ["/admin/export", "Export"],
-    ["/preview?category=Home%20%26%20Office", "Shop preview"],
+    ["/preview?category=grains", "Shop preview"],
   ];
   return (
     <div className="min-h-screen bg-[#f5f6f8] text-[#1c2430]">

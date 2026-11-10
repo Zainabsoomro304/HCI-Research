@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import rawClips from "@data/clips.json";
 import { DEFAULT_CONFIG_ID, SETTING_KEYS, fromConfigId, numChangedSettings, toConfigId } from "@/config/uiSpace";
-import { selectBalancedClips, spread } from "@/lib/clipSelection";
+import { levelCounts, nonBaseSpread, selectBalancedClips, spread } from "@/lib/clipSelection";
 import { CLIP_SET, parseClipsFile } from "@/lib/clipsFile";
 import { createRng } from "@/lib/random";
 
@@ -14,8 +14,11 @@ describe("balanced clip selection", () => {
     expect(ids).not.toContain(DEFAULT_CONFIG_ID);
   });
 
-  it("balances every level of every setting (max - min <= 1)", () => {
-    for (const k of SETTING_KEYS) expect(spread(result.levelCounts[k]), k).toBeLessThanOrEqual(1);
+  // With 2-4 changes out of 7 settings, the base level of each setting is necessarily shown more often than any
+  // single non-base level, so the selection balances the non-base levels against each other (all 10 of them).
+  it("balances every non-base level across all settings (max - min <= 1) and uses each of them", () => {
+    expect(nonBaseSpread(result.levelCounts)).toBeLessThanOrEqual(1);
+    for (const k of SETTING_KEYS) for (const n of Object.values(result.levelCounts[k])) expect(n).toBeGreaterThan(0);
   });
 
   it("balances the number of changed settings across 2/3/4 and excludes 1 and 5", () => {
@@ -41,6 +44,14 @@ describe("data/clips.json", () => {
 
   it("stores the correct numChangedSettings for every clip", () => {
     for (const c of [...file.clips, ...file.practiceClips]) expect(c.numChangedSettings).toBe(numChangedSettings(fromConfigId(c.id)));
+  });
+
+  it("is balanced: changed settings 2/3/4 within 1 and non-base levels within 1", () => {
+    const configs = file.clips.map((c) => fromConfigId(c.id));
+    expect(nonBaseSpread(levelCounts(configs))).toBeLessThanOrEqual(1);
+    const changes = { 2: 0, 3: 0, 4: 0 } as Record<number, number>;
+    for (const c of configs) changes[numChangedSettings(c)]!++;
+    expect(spread(changes)).toBeLessThanOrEqual(1);
   });
 
   it("rejects a file whose numChangedSettings is wrong", () => {

@@ -7,7 +7,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Participant, Prisma, Session } from "@prisma/client";
 import rawClips from "@data/clips.json";
-import { COMPARISON_DESIGN, totalAnalysisTrials, type StudyPhase } from "@/config/study";
+import { CLIP_SCENES, isLang, type Lang } from "@/config/shop";
+import { COMPARISON_DESIGN, MIN_AGE, totalAnalysisTrials, type StudyPhase } from "@/config/study";
 import { fromConfigId, numChangedSettings } from "@/config/uiSpace";
 import { parseClipsFile } from "../clipsFile";
 import { prisma } from "../db";
@@ -33,6 +34,12 @@ export function designFor(p: Participant) {
   return COMPARISON_DESIGN[p.studyPhase as StudyPhase] ?? COMPARISON_DESIGN[1];
 }
 
+/** The session's language: fixed on the session once chosen, otherwise the participant's (possibly preset) language. */
+export function sessionLang(s: SessionWithParticipant): Lang {
+  const l = s.language ?? s.participant.language;
+  return isLang(l) ? l : "en";
+}
+
 export function loadConsent(lang: string): { markdown: string; hash: string } {
   const dir = path.resolve(process.cwd(), "content");
   const file = fs.existsSync(path.join(dir, `consent.${lang}.md`)) ? `consent.${lang}.md` : "consent.en.md";
@@ -48,7 +55,9 @@ export async function ensureSchedule(tx: Prisma.TransactionClient, s: SessionWit
     practiceClips: clipsFile.practiceClips.map((c) => c.id),
     design: designFor(s.participant),
     seed: s.participant.seed,
+    scenes: CLIP_SCENES,
   });
+  const language = sessionLang(s);
   const ids = new Map<number, string>();
   // Insert originals before repeats so repeatOfTrialId can reference them.
   for (const t of schedule) {
@@ -62,6 +71,8 @@ export async function ensureSchedule(tx: Prisma.TransactionClient, s: SessionWit
         isRepeat: t.isRepeat,
         repeatOfTrialId: t.repeatOfSeq === null ? null : ids.get(t.repeatOfSeq)!,
         isAttentionCheck: t.isAttentionCheck,
+        scene: t.scene,
+        language,
         leftClipId: t.left,
         rightClipId: t.right,
         leftNumChangedSettings: numChangedSettings(fromConfigId(t.left)),
@@ -86,9 +97,9 @@ async function trialView(s: SessionWithParticipant, seq: number): Promise<TrialV
     total: trial.isPractice ? d.practiceTrials : totalAnalysisTrials(d),
     isPractice: trial.isPractice,
     question: trial.isAttentionCheck ? "chooseB" : "normal",
-    leftUrl: clipUrl(trial.leftClipId),
-    rightUrl: clipUrl(trial.rightClipId),
-    preloadUrls: next ? [...new Set([clipUrl(next.leftClipId), clipUrl(next.rightClipId)])] : [],
+    leftUrl: clipUrl(trial.leftClipId, trial.scene, trial.language),
+    rightUrl: clipUrl(trial.rightClipId, trial.scene, trial.language),
+    preloadUrls: next ? [...new Set([clipUrl(next.leftClipId, next.scene, next.language), clipUrl(next.rightClipId, next.scene, next.language)])] : [],
   };
 }
 
@@ -99,10 +110,10 @@ export async function buildComparisonState(s: SessionWithParticipant): Promise<C
     kind: "comparison",
     sessionType: s.type === "phase1" ? "phase1" : "p3_sessionA",
     step,
-    lang: s.participant.language,
+    lang: sessionLang(s),
   };
   const N = totalAnalysisTrials(d);
-  if (step === "consent") state.consent = loadConsent(s.participant.language);
+  if (step === "consent") state.consent = loadConsent(sessionLang(s));
   if (step === "practice" || step === "trials") state.trial = await trialView(s, s.currentIndex);
   if (step === "trials" || step === "break" || step === "main_intro")
     state.progress = { done: Math.max(0, s.currentIndex - d.practiceTrials), total: N };
@@ -136,24 +147,46 @@ export async function applyComparisonAction(s: SessionWithParticipant, action: C
       });
       return;
     }
+    case "language": {
+      expectStep(s, "language");
+      await prisma.$transaction([
+        prisma.participant.update({ where: { id: s.participantId }, data: { language: action.lang } }),
+        prisma.session.update({ where: { id: s.id }, data: { language: action.lang, currentStep: "consent", status: "in_progress", startedAt: s.startedAt ?? now } }),
+      ]);
+      return;
+    }
+    case "screen_out": {
+      expectStep(s, "background");
+      if (action.age >= MIN_AGE) throw new ActionError("Not under the minimum age", 400);
+      await prisma.$transaction([
+        prisma.questionnaireResponse.create({
+          data: { participantId: s.participantId, sessionId: s.id, instrument: "screening", instrumentVersion: `min-age-${MIN_AGE}`, responses: { age: action.age, eligible: false }, clientTs: new Date(action.clientTs) },
+        }),
+        prisma.participant.update({ where: { id: s.participantId }, data: { withdrawnAt: now, withdrawnReason: `Screened out: age ${action.age} is under ${MIN_AGE}` } }),
+        prisma.session.update({ where: { id: s.id }, data: { currentStep: "ineligible", status: "completed", completedAt: now } }),
+      ]);
+      return;
+    }
     case "consent": {
       expectStep(s, "consent");
-      const { hash } = loadConsent(s.participant.language);
+      const lang = sessionLang(s);
+      const { hash } = loadConsent(lang);
       if (action.hash !== hash) throw new ActionError("Consent text has changed; please reload the page.");
       await prisma.$transaction(async (tx) => {
         await tx.consentRecord.upsert({
           where: { sessionId: s.id },
-          create: { sessionId: s.id, participantId: s.participantId, consentTextHash: hash, language: s.participant.language, clientTs: new Date(action.clientTs) },
+          create: { sessionId: s.id, participantId: s.participantId, consentTextHash: hash, language: lang, clientTs: new Date(action.clientTs) },
           update: {},
         });
         // The full schedule is generated and stored as soon as the session starts (before trial 1).
         await ensureSchedule(tx, s);
-        await tx.session.update({ where: { id: s.id }, data: { currentStep: "background", status: "in_progress", startedAt: s.startedAt ?? now } });
+        await tx.session.update({ where: { id: s.id }, data: { currentStep: "background", status: "in_progress", language: lang, startedAt: s.startedAt ?? now } });
       }, { timeout: 30_000 });
       return;
     }
     case "background": {
       expectStep(s, "background");
+      if (action.answers.age < MIN_AGE) throw new ActionError(`Participants must be ${MIN_AGE} or older`, 400);
       await prisma.$transaction(async (tx) => {
         await tx.questionnaireResponse.create({
           data: {

@@ -26,9 +26,9 @@ console.table(
   stats.perCategory.map((c) => ({
     category: c.category,
     products: c.count,
-    "min price": formatPrice(c.minPrice),
-    "max price": formatPrice(c.maxPrice),
-    "mean price": formatPrice(Math.round(c.meanPrice)),
+    "min price": formatPrice(c.minPrice, "en"),
+    "max price": formatPrice(c.maxPrice, "en"),
+    "mean price": formatPrice(Math.round(c.meanPrice), "en"),
     "mean rating": c.meanRating.toFixed(2),
   })),
 );
@@ -36,4 +36,4 @@ if (problems.length) {
   console.error(`\n${problems.length} problem(s):\n` + problems.map((p) => `  - ${p}`).join("\n"));
   process.exit(1);
 }
-console.log("\nCatalogue OK.");
+console.log("\nCatalogue OK: every product has complete English and Urdu fields. Prices are illustrative, not real.");

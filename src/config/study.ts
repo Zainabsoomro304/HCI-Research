@@ -77,8 +77,18 @@ export const DELIBERATE_EVENT_TYPES = [
   "cart_open",
 ] as const;
 
-/** Minimum viewport width for participant pages. */
-export const MIN_VIEWPORT_WIDTH = 1024;
+/**
+ * Participant pages work from tablet width (landscape tablets and up); phones are blocked with a polite message.
+ * Comparison clips sit side by side from SIDE_BY_SIDE_MIN_WIDTH and are stacked (A above B) below it.
+ */
+export const MIN_VIEWPORT_WIDTH = 768;
+export const SIDE_BY_SIDE_MIN_WIDTH = 1000;
+
+/** Target group: adults aged MIN_AGE or over. Younger people see a polite "not eligible" screen. */
+export const MIN_AGE = 40;
+
+/** Expected session lengths in minutes, shown to participants (Session A instructions, Session B welcome). */
+export const EXPECTED_MINUTES = { comparison: 45, sessionB: 60 } as const;
 
 /** Client event batching. */
 export const EVENT_FLUSH_INTERVAL_MS = 2000;

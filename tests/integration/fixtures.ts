@@ -1,0 +1,21 @@
+/** Shared answers for the Session A background questionnaire (every item of the 40+ redesign). */
+export const background = {
+  age: 52,
+  gender: "woman",
+  occupation: "homemaker",
+  csOrIt: "no",
+  techConfidence: 4,
+  smartphoneUse: "daily",
+  computerUse: "monthly",
+  shoppingFrequency: "lessThanMonthly",
+  groceriesOnline: "no",
+  readingGlasses: "sometimes",
+  readingLanguage: "both",
+  prefTextSize: "large",
+  prefTargetSize: "large",
+  prefButtonStyle: "raised",
+  prefIconLabels: "iconText",
+  prefContrast: "noPreference",
+  prefLayout: "list",
+  prefGuidance: "hints",
+};

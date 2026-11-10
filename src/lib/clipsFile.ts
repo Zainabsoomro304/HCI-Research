@@ -5,9 +5,9 @@ import { ConfigIdSchema, DEFAULT_CONFIG_ID, fromConfigId, numChangedSettings } f
 export const CLIP_SET = {
   analysisClips: 32,
   practiceClips: 4,
-  /** Allowed numbers of settings changed from the base config. 1 and 5 are excluded. */
+  /** Allowed numbers of settings changed from the base config (out of 7). */
   allowedChanges: [2, 3, 4],
-  defaultSeed: 20261025,
+  defaultSeed: 20261110,
   /** Clip timeline (ms). */
   durationMs: 4000,
   transitionStartMs: 1000,
@@ -18,9 +18,9 @@ export const CLIP_SET = {
 } as const;
 
 const ClipEntrySchema = z.object({
-  /** Clip ID = target config ID; files are public/clips/<id>.mp4 and .png. */
+  /** Clip ID = target config ID. Recorded once per scene and language (see data/media-manifest.json). */
   id: ConfigIdSchema,
-  numChangedSettings: z.number().int().min(1).max(5),
+  numChangedSettings: z.number().int().min(1).max(7),
 });
 export type ClipEntry = z.infer<typeof ClipEntrySchema>;
 

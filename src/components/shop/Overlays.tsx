@@ -2,10 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { formatPrice } from "@/config/shop";
-import { imageUrl, productsById, type Product } from "@/lib/catalog";
+import { imageUrl, productDescription, productName, productUnit, productsById, type Product } from "@/lib/catalog";
+import { CATEGORY_TILE } from "@/lib/productArt";
+import type { StringKey } from "@/lib/strings";
+import { ActionButton, QuantityStepper } from "./ActionButton";
 import { useShop } from "./context";
-import { AddToCartButton, Stars } from "./ProductCard";
-import { CloseIcon, MinusIcon, PlusIcon } from "./icons";
+import { CloseIcon, TrashIcon } from "./icons";
+import { BuyControl, Price, Stars } from "./ProductCard";
 
 function useEscape(onClose: () => void) {
   useEffect(() => {
@@ -25,42 +28,38 @@ function useDialogFocus(ref: React.RefObject<HTMLElement | null>) {
 }
 
 export function ProductDetail({ product, onClose }: { product: Product; onClose: () => void }) {
-  const { t, cart } = useShop();
+  const { t, lang, cart } = useShop();
   const ref = useRef<HTMLDivElement>(null);
   useEscape(onClose);
   useDialogFocus(ref);
-  const inCart = cart.quantityOf(product.id);
+  const inBasket = cart.quantityOf(product.id);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-overlay p-6 [animation:fade-in_150ms_ease-out]" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-overlay p-[1.2em] [animation:fade-in_150ms_ease-out]" onMouseDown={onClose}>
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label={t("shop.details")}
         onMouseDown={(e) => e.stopPropagation()}
-        className="relative flex w-full max-w-[52em] gap-7 rounded-2xl border border-line bg-surface p-6 text-fg [animation:pop-in_180ms_ease-out]"
+        className="relative flex w-full max-w-[46em] gap-[1.4em] rounded-[1em] border-[length:var(--bw)] border-line bg-surface p-[1.2em] text-fg [animation:pop-in_180ms_ease-out]"
         style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("shop.close")}
-          className="absolute right-3 top-3 grid place-items-center rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-fg"
-        >
-          <CloseIcon />
-        </button>
+        <div className="absolute end-[0.6em] top-[0.6em]">
+          <ActionButton tone="secondary" icon={<CloseIcon />} label={t("shop.close")} onClick={onClose} />
+        </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl(product)} alt="" className="aspect-[4/3] w-[45%] shrink-0 self-start rounded-xl object-cover" />
-        <div className="flex min-w-0 flex-1 flex-col gap-3 pr-6">
-          <span className="text-caption font-semibold uppercase tracking-wider text-muted">{product.category}</span>
-          <h2 className="text-heading font-bold leading-tight">{product.name}</h2>
+        <img src={imageUrl(product)} alt="" className="aspect-[4/3] w-[42%] shrink-0 self-start rounded-[0.8em] object-contain" style={{ backgroundColor: CATEGORY_TILE[product.category] }} />
+        <div className="flex min-w-0 flex-1 flex-col gap-[0.5em] pe-[2.5em]">
+          <span className="text-caption font-semibold text-muted">{t(`cat.${product.category}` as StringKey)}</span>
+          <h2 className="text-heading font-bold leading-tight">{productName(product, lang)}</h2>
+          <span className="text-body text-muted">{productUnit(product, lang)}</span>
           <Stars rating={product.rating} />
-          <p className="text-body text-muted">{product.description}</p>
-          <div className="mt-auto flex items-center justify-between gap-4 pt-4">
-            <span className="text-heading font-bold tabular-nums">{formatPrice(product.price)}</span>
-            <AddToCartButton product={product} source="detail" />
+          <p className="text-body text-muted">{productDescription(product, lang)}</p>
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-[1em] pt-[0.8em]">
+            <Price amount={product.price} className="text-heading" />
+            <BuyControl product={product} source="detail" />
           </div>
-          {inCart > 0 && <span className="text-small text-muted">{t("shop.inCart", { count: inCart })}</span>}
+          {inBasket > 0 && <span className="text-small text-muted">{t("shop.inBasket", { count: inBasket })}</span>}
         </div>
       </div>
     </div>
@@ -68,7 +67,7 @@ export function ProductDetail({ product, onClose }: { product: Product; onClose:
 }
 
 export function CartDrawer({ onClose }: { onClose: () => void }) {
-  const { t, cart } = useShop();
+  const { t, lang, cart } = useShop();
   const ref = useRef<HTMLDivElement>(null);
   useEscape(onClose);
   useDialogFocus(ref);
@@ -78,64 +77,40 @@ export function CartDrawer({ onClose }: { onClose: () => void }) {
         ref={ref}
         role="dialog"
         aria-modal="true"
-        aria-label={t("shop.cartTitle")}
+        aria-label={t("shop.basketTitle")}
         onMouseDown={(e) => e.stopPropagation()}
-        className="absolute inset-y-0 right-0 flex flex-col border-l border-line bg-surface text-fg [animation:slide-in-right_200ms_ease-out]"
-        style={{ width: "min(calc(var(--fs-base) * 26), 92vw)", boxShadow: "-12px 0 40px rgba(0,0,0,0.2)" }}
+        className="absolute inset-y-0 end-0 flex flex-col border-s-[length:var(--bw)] border-line bg-surface text-fg [animation:slide-in-end_200ms_ease-out]"
+        style={{ width: "min(calc(var(--fs-base) * 30), 94vw)", boxShadow: "0 0 40px rgba(0,0,0,0.2)" }}
       >
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="text-title font-bold">{t("shop.cartTitle")}</h2>
-          <button type="button" onClick={onClose} aria-label={t("shop.close")} className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-fg">
-            <CloseIcon />
-          </button>
+        <div className="flex items-center justify-between border-b-[length:var(--bw)] border-line px-[1em] py-[0.7em]">
+          <h2 className="text-title font-bold">{t("shop.basketTitle")}</h2>
+          <ActionButton tone="secondary" icon={<CloseIcon />} label={t("shop.close")} onClick={onClose} />
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-3">
+        <div className="flex-1 overflow-y-auto px-[1em] py-[0.5em]">
           {cart.lines.length === 0 ? (
-            <p className="py-10 text-center text-body text-muted">{t("shop.cartEmpty")}</p>
+            <p className="py-[2em] text-center text-body text-muted">{t("shop.basketEmpty")}</p>
           ) : (
             <ul className="flex flex-col divide-y divide-line">
               {cart.lines.map((line) => {
                 const p = productsById.get(line.productId);
                 if (!p) return null;
+                const name = productName(p, lang);
                 return (
-                  <li key={p.id} className="flex items-center gap-3 py-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imageUrl(p)} alt="" className="aspect-[4/3] w-16 shrink-0 rounded-md object-cover" />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-small font-semibold leading-snug">{p.name}</span>
-                        <span className="text-small font-semibold tabular-nums">{formatPrice(p.price * line.quantity)}</span>
+                  <li key={p.id} className="flex flex-col gap-[0.5em] py-[0.8em]">
+                    <div className="flex items-start gap-[0.7em]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imageUrl(p)} alt="" className="aspect-[4/3] w-[3.6em] shrink-0 rounded-[0.4em] object-contain" style={{ backgroundColor: CATEGORY_TILE[p.category] }} />
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-body font-semibold leading-snug">{name}</span>
+                        <span className="text-small text-muted">
+                          {productUnit(p, lang)} · <bdi>{t("shop.each", { price: formatPrice(p.price, lang) })}</bdi>
+                        </span>
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center rounded-lg border border-line" role="group" aria-label={t("shop.quantity")}>
-                          <button
-                            type="button"
-                            aria-label={t("shop.decrease", { name: p.name })}
-                            onClick={() => cart.setQuantity(p.id, line.quantity - 1)}
-                            className="grid place-items-center rounded-l-lg px-2 py-1 hover:bg-surface-hover"
-                          >
-                            <MinusIcon width="1em" height="1em" />
-                          </button>
-                          <span className="min-w-[2ch] text-center text-small font-semibold tabular-nums">{line.quantity}</span>
-                          <button
-                            type="button"
-                            aria-label={t("shop.increase", { name: p.name })}
-                            onClick={() => cart.setQuantity(p.id, line.quantity + 1)}
-                            className="grid place-items-center rounded-r-lg px-2 py-1 hover:bg-surface-hover"
-                          >
-                            <PlusIcon width="1em" height="1em" />
-                          </button>
-                        </div>
-                        <span className="text-caption text-muted tabular-nums">{t("shop.each", { price: formatPrice(p.price) })}</span>
-                        <button
-                          type="button"
-                          aria-label={t("shop.removeItem", { name: p.name })}
-                          onClick={() => cart.remove(p.id)}
-                          className="rounded-md px-2 py-1 text-caption font-semibold text-muted underline-offset-2 hover:text-fg hover:underline"
-                        >
-                          {t("shop.remove")}
-                        </button>
-                      </div>
+                      <Price amount={p.price * line.quantity} className="text-body" />
+                    </div>
+                    <div className="flex items-center justify-between gap-[0.6em]">
+                      <QuantityStepper name={name} quantity={line.quantity} onChange={(q) => cart.setQuantity(p.id, q)} />
+                      <ActionButton tone="secondary" icon={<TrashIcon />} label={t("shop.remove")} ariaLabel={t("shop.removeItem", { name })} onClick={() => cart.remove(p.id)} />
                     </div>
                   </li>
                 );
@@ -143,18 +118,12 @@ export function CartDrawer({ onClose }: { onClose: () => void }) {
             </ul>
           )}
         </div>
-        <div className="flex flex-col gap-3 border-t border-line px-5 py-4">
+        <div className="flex flex-col gap-[0.7em] border-t-[length:var(--bw)] border-line px-[1em] py-[0.8em]">
           <div className="flex items-center justify-between">
-            <span className="text-body font-semibold">{t("shop.cartTotal")}</span>
-            <span className="text-title font-bold tabular-nums">{formatPrice(cart.total)}</span>
+            <span className="text-body font-semibold">{t("shop.basketTotal")}</span>
+            <Price amount={cart.total} className="text-title" />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg bg-accent px-4 py-2.5 text-body font-semibold text-on-accent hover:bg-accent-hover"
-          >
-            {t("shop.continueShopping")}
-          </button>
+          <ActionButton label={t("shop.continueShopping")} onClick={onClose} alwaysLabel wide className="text-body" />
         </div>
       </aside>
     </div>

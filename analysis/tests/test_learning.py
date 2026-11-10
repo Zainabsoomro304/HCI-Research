@@ -24,7 +24,10 @@ from hci.model import NO_NUISANCE, Comparisons, Nuisance, by_participant, fit_ma
 from hci.outputs import Report, Run, to_latex
 from hci.questionnaire import N_DIMENSIONS, encode_answers, questionnaire_vectors
 
-NEUTRAL = dict.fromkeys(["prefLayout", "prefTextSize", "prefDetail", "prefTheme", "prefMenu"], "noPreference")
+NEUTRAL = dict.fromkeys(
+    ["prefTextSize", "prefTargetSize", "prefButtonStyle", "prefIconLabels", "prefContrast", "prefLayout", "prefGuidance"],
+    "noPreference",
+)
 
 
 @pytest.fixture(scope="module")
@@ -113,7 +116,7 @@ def test_no_preference_is_neutral_and_differs_from_the_reference_level():
     neutral = encode_answers(NEUTRAL)
     assert neutral.shape == (N_DIMENSIONS,)
     assert np.array_equal(neutral, np.zeros(N_DIMENSIONS))
-    chose_list = encode_answers({**NEUTRAL, "prefLayout": "list"})
+    chose_list = encode_answers({**NEUTRAL, "prefTextSize": "standard"})  # the base level, still not neutral
     assert not np.array_equal(chose_list, neutral)
     assert chose_list[:3].sum() == pytest.approx(0)
     assert chose_list[0] == pytest.approx(2 / 3)
@@ -121,7 +124,7 @@ def test_no_preference_is_neutral_and_differs_from_the_reference_level():
 
 def test_unknown_answers_and_missing_questionnaires_fail(synthetic_zip: Path, config):
     with pytest.raises(ValueError, match="unexpected answer"):
-        encode_answers({**NEUTRAL, "prefTheme": "purple"})
+        encode_answers({**NEUTRAL, "prefContrast": "purple"})
     with pytest.raises(ValueError, match="P3-999"):
         questionnaire_vectors(load_export(synthetic_zip).background, ["P3-999"], config.study.comparison_session_types)
 

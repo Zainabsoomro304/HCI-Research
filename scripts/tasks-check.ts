@@ -17,12 +17,12 @@ console.table(
       task: t.id,
       items: m.items,
       "candidates/item": m.candidatesPerItem.join(" "),
-      budget: formatPrice(m.budget),
-      cheapest: formatPrice(m.cheapestBasket),
+      budget: formatPrice(m.budget, "en"),
+      cheapest: formatPrice(m.cheapestBasket, "en"),
       "cheapest %": (m.cheapestPct * 100).toFixed(1),
-      average: formatPrice(Math.round(m.averageBasket)),
+      average: formatPrice(Math.round(m.averageBasket), "en"),
       "average %": (m.averagePct * 100).toFixed(1),
-      priciest: formatPrice(m.mostExpensiveBasket),
+      priciest: formatPrice(m.mostExpensiveBasket, "en"),
       categories: m.categories,
       "valid baskets": m.validBaskets,
     };
@@ -30,7 +30,7 @@ console.table(
 );
 const problems = tasks.flatMap(taskProblems);
 const pm = taskMetrics(practiceTask);
-console.log(`Practice task "${practiceTask.id}": ${pm.items} items, budget ${formatPrice(pm.budget)}, cheapest ${formatPrice(pm.cheapestBasket)} (not subject to the rules)`);
+console.log(`Practice task "${practiceTask.id}": ${pm.items} items, budget ${formatPrice(pm.budget, "en")}, cheapest ${formatPrice(pm.cheapestBasket, "en")} (not subject to the rules)`);
 if (problems.length) {
   console.error(`\n${problems.length} problem(s):\n  - ${problems.join("\n  - ")}`);
   process.exit(1);

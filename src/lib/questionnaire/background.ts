@@ -1,52 +1,68 @@
 import { z } from "zod";
+import { SETTING_KEYS, SETTING_LEVELS, type SettingKey } from "@/config/uiSpace";
 
-/** Background questionnaire (Phase 1 and Phase 3 Session A). Stored as structured JSON. */
-export const GENDERS = ["woman", "man", "nonBinary", "selfDescribe", "preferNot"] as const;
-export const OCCUPATIONS = ["student", "employed", "selfEmployed", "notWorking", "retired", "other"] as const;
-export const SHOPPING_FREQUENCIES = ["never", "lessThanMonthly", "monthly", "weekly", "severalPerWeek"] as const;
-export const PREF_LAYOUT = ["list", "grid2", "grid3", "noPreference"] as const;
-export const PREF_TEXT_SIZE = ["small", "medium", "large", "noPreference"] as const;
-export const PREF_DETAIL = ["lots", "some", "minimal", "noPreference"] as const;
-export const PREF_THEME = ["light", "dark", "noPreference"] as const;
-export const PREF_MENU = ["side", "dropdown", "noPreference"] as const;
+/**
+ * Background questionnaire (Session A), stored as structured JSON. The CS/IT item is recorded but not used for any
+ * subgroup analysis. One self-rated preference item per interface setting, each with "noPreference".
+ */
+export const GENDERS = ["woman", "man", "preferNot"] as const;
+export const OCCUPATIONS = ["employed", "selfEmployed", "homemaker", "retired", "notWorking", "other"] as const;
+export const USE_FREQUENCIES = ["never", "monthly", "weekly", "daily"] as const;
+export const SHOPPING_FREQUENCIES = ["never", "lessThanMonthly", "monthly", "weekly"] as const;
+export const YES_NO = ["yes", "no"] as const;
+export const YES_NO_SOMETIMES = ["yes", "no", "sometimes"] as const;
+export const READING_LANGUAGES = ["urdu", "english", "both", "other"] as const;
+export const NO_PREFERENCE = "noPreference";
 
-export const BackgroundSchema = z
-  .object({
-    age: z.number().int().min(18).max(99),
-    gender: z.enum(GENDERS),
-    genderSelfDescribe: z.string().trim().max(100).optional(),
-    occupation: z.enum(OCCUPATIONS),
-    occupationOther: z.string().trim().max(100).optional(),
-    field: z.string().trim().max(200),
-    csOrIt: z.enum(["yes", "no"]),
-    techConfidence: z.number().int().min(1).max(7),
-    shoppingFrequency: z.enum(SHOPPING_FREQUENCIES),
-    prefLayout: z.enum(PREF_LAYOUT),
-    prefTextSize: z.enum(PREF_TEXT_SIZE),
-    prefDetail: z.enum(PREF_DETAIL),
-    prefTheme: z.enum(PREF_THEME),
-    prefMenu: z.enum(PREF_MENU),
-  })
-  .superRefine((v, ctx) => {
-    if (v.gender === "selfDescribe" && !v.genderSelfDescribe)
-      ctx.addIssue({ code: "custom", path: ["genderSelfDescribe"], message: "required" });
-  });
+/** Questionnaire item name for each setting's self-rated preference. */
+export const PREF_ITEMS: Record<SettingKey, `pref${string}`> = {
+  textSize: "prefTextSize",
+  targetSize: "prefTargetSize",
+  buttonStyle: "prefButtonStyle",
+  iconLabels: "prefIconLabels",
+  contrast: "prefContrast",
+  layout: "prefLayout",
+  guidance: "prefGuidance",
+};
+
+const prefEnum = (k: SettingKey) => z.enum([...SETTING_LEVELS[k], NO_PREFERENCE] as [string, ...string[]]);
+
+export const BackgroundSchema = z.object({
+  age: z.number().int().min(18).max(110),
+  gender: z.enum(GENDERS),
+  occupation: z.enum(OCCUPATIONS),
+  occupationOther: z.string().trim().max(100).optional(),
+  csOrIt: z.enum(YES_NO),
+  techConfidence: z.number().int().min(1).max(7),
+  smartphoneUse: z.enum(USE_FREQUENCIES),
+  computerUse: z.enum(USE_FREQUENCIES),
+  shoppingFrequency: z.enum(SHOPPING_FREQUENCIES),
+  groceriesOnline: z.enum(YES_NO),
+  readingGlasses: z.enum(YES_NO_SOMETIMES),
+  readingLanguage: z.enum(READING_LANGUAGES),
+  prefTextSize: prefEnum("textSize"),
+  prefTargetSize: prefEnum("targetSize"),
+  prefButtonStyle: prefEnum("buttonStyle"),
+  prefIconLabels: prefEnum("iconLabels"),
+  prefContrast: prefEnum("contrast"),
+  prefLayout: prefEnum("layout"),
+  prefGuidance: prefEnum("guidance"),
+});
 export type BackgroundAnswers = z.infer<typeof BackgroundSchema>;
 
 /** Column order for questionnaire_background.csv. */
 export const BACKGROUND_ITEMS: (keyof BackgroundAnswers)[] = [
   "age",
   "gender",
-  "genderSelfDescribe",
   "occupation",
   "occupationOther",
-  "field",
   "csOrIt",
   "techConfidence",
+  "smartphoneUse",
+  "computerUse",
   "shoppingFrequency",
-  "prefLayout",
-  "prefTextSize",
-  "prefDetail",
-  "prefTheme",
-  "prefMenu",
+  "groceriesOnline",
+  "readingGlasses",
+  "readingLanguage",
+  ...SETTING_KEYS.map((k) => PREF_ITEMS[k] as keyof BackgroundAnswers),
 ];

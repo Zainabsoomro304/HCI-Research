@@ -1,9 +1,10 @@
 /**
- * pnpm clips:select — chooses the 32 analysis clip targets (and 4 practice clips) from the 108 configurations.
+ * pnpm clips:select — chooses the 32 analysis clip targets (and 4 practice clips) from the 432 configurations.
  *
- * Balance: every level of every setting appears as evenly as possible, AND the number of settings that change
- * from the base config (transition busyness) is balanced across 2 / 3 / 4 changes. Clips changing only 1 or
- * all 5 settings are excluded. The base configuration is never a target. Writes data/clips.json.
+ * Balance: the number of settings that change from the base config (transition busyness) is balanced across
+ * 2 / 3 / 4 changes, and every non-base level appears equally often. Base levels are more frequent by construction
+ * (7 settings, 2-4 changes per clip). Clips changing only 1 or
+ * 5 or more settings are excluded. The base configuration is never a target. Writes data/clips.json.
  *
  * Options: --seed=<n> (default 20261025)
  */
@@ -11,14 +12,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { DEFAULT_CONFIG_ID, SETTING_KEYS, numChangedSettings, toConfigId } from "@/config/uiSpace";
 import { CLIP_SET, type ClipsFile } from "@/lib/clipsFile";
-import { selectBalancedClips, spread } from "@/lib/clipSelection";
+import { nonBaseSpread, selectBalancedClips, spread } from "@/lib/clipSelection";
 
 const seedArg = process.argv.find((a) => a.startsWith("--seed="))?.split("=")[1];
 const seed = seedArg ? Number(seedArg) : CLIP_SET.defaultSeed;
 
 const main = selectBalancedClips({ size: CLIP_SET.analysisClips, allowedChanges: CLIP_SET.allowedChanges, seed });
 const problems: string[] = [];
-for (const k of SETTING_KEYS) if (spread(main.levelCounts[k]) > 1) problems.push(`setting "${k}" is not balanced`);
+if (nonBaseSpread(main.levelCounts) > 1) problems.push("non-base levels do not appear equally often (max - min > 1)");
 if (spread(main.changeCounts) > 1) problems.push("number of changed settings is not balanced");
 
 // Practice clips: distinct from the analysis set, same allowed busyness, levels spread as evenly as possible.
@@ -43,7 +44,7 @@ const file: ClipsFile = {
 console.log(`Selected ${file.clips.length} analysis clips (seed ${seed}, base ${DEFAULT_CONFIG_ID})\n`);
 console.log("Level counts:");
 for (const k of SETTING_KEYS)
-  console.log(`  ${k.padEnd(9)} ${Object.entries(main.levelCounts[k]).map(([l, n]) => `${l}=${n}`).join("  ")}`);
+  console.log(`  ${k.padEnd(12)} ${Object.entries(main.levelCounts[k]).map(([l, n]) => `${l}=${n}`).join("  ")}`);
 console.log("\nNumber of settings changed from the base (transition busyness):");
 for (const [n, count] of Object.entries(main.changeCounts)) console.log(`  ${n} changed: ${"#".repeat(count)} ${count}`);
 console.log("\nMean number of changed settings per level (a clip keeping the base level has one fewer change by construction):");
@@ -52,7 +53,7 @@ for (const k of SETTING_KEYS) {
     const xs = main.configs.filter((c) => c[k] === l).map((c) => numChangedSettings(c));
     return `${l}=${(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(2)}`;
   });
-  console.log(`  ${k.padEnd(9)} ${parts.join("  ")}`);
+  console.log(`  ${k.padEnd(12)} ${parts.join("  ")}`);
 }
 console.log(`\nPractice clips:${file.practiceClips.map((c) => `${c.id} (${c.numChangedSettings})`).join(", ")}`);
 console.log(`Optimiser cost: ${main.cost.toFixed(2)}`);

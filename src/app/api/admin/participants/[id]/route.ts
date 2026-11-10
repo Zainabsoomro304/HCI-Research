@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { LANGUAGES } from "@/lib/strings";
+import { LANGUAGES } from "@/config/shop";
 
 export const dynamic = "force-dynamic";
 
 const Body = z.object({
   group: z.enum(["cs", "nonCs", "unknown"]).optional(),
-  language: z.string().refine((l) => LANGUAGES.includes(l), "Unsupported language").optional(),
+  /** Presets the language; the participant can still change it on the welcome screen, before consent. */
+  language: z.enum(LANGUAGES).optional(),
   seed: z.number().int().min(1).max(2147483647).optional(),
   notes: z.string().max(2000).nullable().optional(),
   conditionRowOverride: z.number().int().min(0).max(3).nullable().optional(),

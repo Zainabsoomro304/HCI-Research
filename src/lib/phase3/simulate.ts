@@ -10,6 +10,7 @@ import { generateToken, sessionTypesFor } from "../participants";
 import { hashSeed } from "../planEngine/engine";
 import { BASE_CONFIG_ID, SETTINGS, encode, numChanged, score } from "../planEngine/model";
 import { restrictedArgmax } from "../planEngine/agent";
+import { PREF_ITEMS } from "../questionnaire/background";
 import { loadInstrument } from "../questionnaire/instruments";
 import { createRng, type Rng } from "../random";
 import { applyAction, buildState, getSessionByToken } from "../session";
@@ -22,6 +23,8 @@ import { FreezeError, testToolsEnabled } from "./freeze";
 
 export interface SimulatedTruth {
   seed: number;
+  lang: "en" | "ur";
+  age: number;
   cluster: number;
   w: number[];
   lapse: number;
@@ -41,13 +44,13 @@ function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
-export async function createSimulatedParticipants(opts: { count: number; csShare: number; seed: number; attentionErrorRate?: number }) {
+export async function createSimulatedParticipants(opts: { count: number; urduShare?: number; seed: number; attentionErrorRate?: number }) {
   requireTestTools();
   if (opts.count < 1 || opts.count > 200) throw new FreezeError("Choose between 1 and 200 participants.");
   const attentionErrorRate = opts.attentionErrorRate ?? SIMULATION.attentionErrorRate;
   const shared = createRng(hashSeed(`simulate|${opts.seed}`));
-  const nCs = Math.round(opts.count * opts.csShare);
-  const groups = shared.shuffle([...new Array<"cs">(nCs).fill("cs"), ...new Array<"nonCs">(opts.count - nCs).fill("nonCs")]);
+  const nUr = Math.round(opts.count * (opts.urduShare ?? SIMULATION.urduShare));
+  const langs = shared.shuffle([...new Array<"ur">(nUr).fill("ur"), ...new Array<"en">(opts.count - nUr).fill("en")]);
   return prisma.$transaction(async (tx) => {
     const last = await tx.participant.findFirst({ where: { studyPhase: 3 }, orderBy: { number: "desc" } });
     const start = (last?.number ?? 0) + 1;
@@ -59,15 +62,23 @@ export async function createSimulatedParticipants(opts: { count: number; csShare
       const cluster = r.int(0, SIMULATION.clusterMeans.length - 1);
       const decisiveness = Math.exp(SIMULATION.decisivenessLogSd * normal(r));
       const w = SIMULATION.clusterMeans[cluster]!.map((m) => decisiveness * (SIMULATION.weightScale * m + SIMULATION.individualSd * normal(r)));
-      const truth: SimulatedTruth = { seed: 1 + r.int(0, 0x7ffffffd), cluster, w, lapse: r.next() * SIMULATION.lapseMax, attentionErrorRate, bestTarget: restrictedArgmax(w, 2, 4) };
+      const truth: SimulatedTruth = {
+        seed: 1 + r.int(0, 0x7ffffffd),
+        lang: langs[i]!,
+        age: r.int(SIMULATION.ageMin, SIMULATION.ageMax),
+        cluster,
+        w,
+        lapse: r.next() * SIMULATION.lapseMax,
+        attentionErrorRate,
+        bestTarget: restrictedArgmax(w, 2, 4),
+      };
       await tx.participant.create({
         data: {
           code,
           studyPhase: 3,
           number,
           seed: truth.seed,
-          group: groups[i]!,
-          groupSource: "admin",
+          language: truth.lang,
           isSimulated: true,
           simulatedTruth: truth as unknown as Prisma.InputJsonValue,
           notes: "SIMULATED participant",
@@ -76,7 +87,7 @@ export async function createSimulatedParticipants(opts: { count: number; csShare
       });
       codes.push(code);
     }
-    await tx.adminAction.create({ data: { action: "test_tools", details: { did: "create", count: opts.count, seed: opts.seed, first: codes[0], last: codes.at(-1) } } });
+    await tx.adminAction.create({ data: { action: "test_tools", details: { did: "create", count: opts.count, urdu: nUr, seed: opts.seed, first: codes[0], last: codes.at(-1) } } });
     return codes;
   });
 }
@@ -94,32 +105,30 @@ async function act(token: string, body: unknown) {
   return buildState((await getSessionByToken(token))!);
 }
 
-function backgroundAnswers(truth: SimulatedTruth, group: string, r: Rng) {
-  const labels: Record<string, [string, Record<string, string>]> = {
-    layout: ["prefLayout", { list: "list", grid2: "grid2", grid3: "grid3" }],
-    fontSize: ["prefTextSize", { default: "medium", small: "small", large: "large" }],
-    density: ["prefDetail", { detailed: "lots", partial: "some", summary: "minimal" }],
-    theme: ["prefTheme", { light: "light", dark: "dark" }],
-    menu: ["prefMenu", { sidebar: "side", dropdown: "dropdown" }],
-  };
+function backgroundAnswers(truth: SimulatedTruth, r: Rng) {
   const answers: Record<string, string | number> = {
-    age: r.int(18, 59),
-    gender: r.pick(["woman", "man", "nonBinary", "preferNot"]),
-    occupation: r.pick(["student", "employed"]),
-    field: "Simulated",
-    csOrIt: group === "cs" ? "yes" : "no",
-    techConfidence: r.int(3, 7),
-    shoppingFrequency: r.pick(["monthly", "weekly"]),
+    age: truth.age,
+    gender: r.pick(["woman", "man", "preferNot"]),
+    occupation: r.pick(["employed", "selfEmployed", "homemaker", "retired"]),
+    csOrIt: r.next() < 0.15 ? "yes" : "no",
+    techConfidence: r.int(2, 7),
+    smartphoneUse: r.pick(["weekly", "daily", "daily"]),
+    computerUse: r.pick(["never", "monthly", "weekly", "daily"]),
+    shoppingFrequency: r.pick(["never", "lessThanMonthly", "monthly", "weekly"]),
+    groceriesOnline: r.next() < 0.35 ? "yes" : "no",
+    readingGlasses: r.pick(["yes", "no", "sometimes"]),
+    readingLanguage: truth.lang === "ur" ? r.pick(["urdu", "urdu", "both"]) : r.pick(["english", "both"]),
   };
+  // Self-rated preferences follow the true best level with probability questionnaireInformativeness.
   let start = 0;
   for (const [setting, levels] of Object.entries(SETTINGS)) {
     const size = levels.length - 1;
     const utilities = [0, ...truth.w.slice(start, start + size)];
     start += size;
-    const [column, map] = labels[setting]!;
+    const column = PREF_ITEMS[setting as keyof typeof PREF_ITEMS];
     if (r.next() < SIMULATION.questionnaireNoPreference) answers[column] = "noPreference";
-    else if (r.next() < SIMULATION.questionnaireInformativeness) answers[column] = map[levels[utilities.indexOf(Math.max(...utilities))]!]!;
-    else answers[column] = map[r.pick(levels)]!;
+    else if (r.next() < SIMULATION.questionnaireInformativeness) answers[column] = levels[utilities.indexOf(Math.max(...utilities))]!;
+    else answers[column] = r.pick(levels);
   }
   return answers;
 }
@@ -140,8 +149,9 @@ export async function simulateSessionA(participantId: string): Promise<void> {
   const token = session.token;
   const r = createRng(hashSeed(`sessionA|${p.truth.seed}`));
   await act(token, { type: "start", viewport: { w: 1440, h: 900 }, userAgent: "simulated" });
-  await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
-  await act(token, { type: "background", answers: backgroundAnswers(p.truth, p.group, r), clientTs: Date.now() });
+  if (session.currentStep === "language") await act(token, { type: "language", lang: p.truth.lang ?? p.language });
+  await act(token, { type: "consent", agreed: true, hash: loadConsent(p.truth.lang ?? p.language).hash, clientTs: Date.now() });
+  await act(token, { type: "background", answers: backgroundAnswers(p.truth, r), clientTs: Date.now() });
   let state = (await act(token, { type: "instructions_done" })) as ComparisonState;
   const trials = await prisma.comparisonTrial.findMany({ where: { sessionId: session.id } });
   const byId = new Map(trials.map((t) => [t.id, t]));
@@ -187,7 +197,7 @@ export async function simulateSessionB(participantId: string): Promise<void> {
   await unlockSessionB(session.id);
   await act(token, { type: "start", viewport: { w: 1920, h: 1080 }, userAgent: "simulated" });
   await act(token, { type: "welcome_done" });
-  await act(token, { type: "task_finish", blockIndex: -1, cart: [{ productId: "fs-06", quantity: 1 }], firstInteractionAt: Date.now() - 60_000, finalConfigId: BASE_CONFIG_ID, appliedConfigs: [], clientTs: Date.now() });
+  await act(token, { type: "task_finish", blockIndex: -1, cart: [{ productId: "fv-01", quantity: 1 }], firstInteractionAt: Date.now() - 60_000, finalConfigId: BASE_CONFIG_ID, appliedConfigs: [], clientTs: Date.now() });
   const blocks = await prisma.taskBlock.findMany({ where: { sessionId: session.id, isPractice: false }, orderBy: { blockIndex: "asc" } });
   const personEffect = sb.participantSd * normal(r);
   const latents: { blockIndex: number; quis: number }[] = [];

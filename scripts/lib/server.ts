@@ -1,5 +1,6 @@
 /** Helpers for scripts that need a running app: reuse BASE_URL if it responds, otherwise start `next dev`. */
 import { spawn, type ChildProcess } from "node:child_process";
+import type { BrowserContext } from "@playwright/test";
 
 async function reachable(url: string): Promise<boolean> {
   try {
@@ -33,4 +34,20 @@ function killTree(child: ChildProcess) {
   if (!child.pid) return;
   if (process.platform === "win32") spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore" });
   else child.kill("SIGTERM");
+}
+
+/**
+ * /preview and /clip need an admin session on a production server (`next start`), which renders much faster than
+ * `next dev`. This signs a session cookie with SESSION_SECRET from .env, so the scripts can use either server.
+ */
+export async function authorize(context: BrowserContext, url: string): Promise<void> {
+  try {
+    process.loadEnvFile?.(".env");
+  } catch {
+    // no .env: fine for next dev, where the tools are open
+  }
+  if (!process.env.SESSION_SECRET) return;
+  const { ADMIN_COOKIE, createAdminToken } = await import("@/lib/admin/auth");
+  const { hostname } = new URL(url);
+  await context.addCookies([{ name: ADMIN_COOKIE, value: await createAdminToken(), domain: hostname, path: "/", httpOnly: true, secure: false, sameSite: "Lax" }]);
 }

@@ -134,7 +134,7 @@ def _blocks(n: int, shift: float, seed: int) -> pd.DataFrame:
             rows.append(
                 {
                     "participant": f"p{i}",
-                    "group": "cs",
+                    "language": ["en", "ur"][(i // 8) % 2],
                     "condition": condition,
                     "position": position,
                     "block_index": position,
@@ -203,7 +203,8 @@ def test_full_phase3_report_on_a_synthetic_export(tmp_path: Path, config):
     assert "SYNTHETIC" in html
     assert "not real participants" in html
     assert "Estimation is primary" in html  # N = 16 is below 32
-    assert "descriptive only" in html.lower()
+    assert "rq5" not in html.lower()  # no subgroup analyses
+    assert "language" in html.lower()
     run = path.parent
     assert (run / "tables" / "SYNTHETIC_h4b_tost.csv").exists()
     assert (run / "figures" / "SYNTHETIC_condition_means.pdf").exists()

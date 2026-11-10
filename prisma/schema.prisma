@@ -38,6 +38,7 @@ model Participant {
   group        ParticipantGroup @default(unknown)
   /// "self" when derived from the questionnaire, "admin" when set by a researcher.
   groupSource  String?
+  /** en | ur. Preset by the researcher or chosen by the participant on the welcome screen, before consent. */
   language     String           @default("en")
   /// Seed for every random draw for this participant (trial schedule, side assignment, ...).
   seed         Int
@@ -77,8 +78,10 @@ model Session {
   /// Secret token in the participant link /s/<token>. Reusable until the session is completed (for resume).
   token         String        @unique
   status        SessionStatus @default(not_started)
-  /// Current step pointer: consent | background | instructions | practice | trials | break | end | sb_* ...
-  currentStep   String        @default("consent")
+  /// Current step pointer: language | consent | background | instructions | practice | trials | break | end | ineligible | sb_* ...
+  currentStep   String        @default("language")
+  /// en | ur: the language the session was done in (fixed once consent is given; Session B copies the participant's).
+  language      String?
   /// Position (seq) of the next comparison trial / index of the current task block.
   currentIndex  Int           @default(0)
   /// Exact build (git commit) the participant used, captured when the session started.
@@ -162,6 +165,10 @@ model ComparisonTrial {
   repeatOf      ComparisonTrial?  @relation("RepeatOf", fields: [repeatOfTrialId], references: [id])
   repeats       ComparisonTrial[] @relation("RepeatOf")
   isAttentionCheck Boolean  @default(false)
+  /// Product category shown in both clips of this trial.
+  scene         String      @default("")
+  /// Language of both clips (the participant's language when the schedule was made).
+  language      String      @default("en")
   /// Clip IDs are target config IDs.
   leftClipId    String
   rightClipId   String
@@ -352,4 +359,11 @@ model AdminAction {
   details   Json?
 
   @@index([at])
+}
+
+/// Native-speaker review of Urdu strings. A row means the string was marked as reviewed in the admin panel.
+model TranslationReview {
+  key        String   @id
+  reviewedAt DateTime @default(now())
+  note       String?
 }

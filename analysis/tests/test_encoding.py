@@ -18,10 +18,13 @@ from hci.encoding import (
 from hci.platform import platform_info
 
 
-def test_there_are_108_unique_configs_and_8_features():
-    assert len(ALL_CONFIG_IDS) == len(set(ALL_CONFIG_IDS)) == 108
-    assert FEATURES == ("grid2", "grid3", "small", "large", "partial", "summary", "dark", "dropdown")
-    assert len({tuple(x) for x in ALL_X}) == 108
+def test_there_are_432_unique_configs_and_10_features():
+    assert len(ALL_CONFIG_IDS) == len(set(ALL_CONFIG_IDS)) == 432
+    assert FEATURES == (
+        "textSize.large", "textSize.xlarge", "targetSize.large", "buttonStyle.outlined", "buttonStyle.raised",
+        "iconLabels.iconText", "contrast.high", "layout.grid2", "layout.list", "guidance.hints",
+    )  # fmt: skip
+    assert len({tuple(x) for x in ALL_X}) == 432
 
 
 @pytest.mark.parametrize("config_id", ALL_CONFIG_IDS)
@@ -30,7 +33,7 @@ def test_round_trip(config_id):
 
 
 def test_base_config_encodes_to_zero_and_matches_the_platform():
-    assert BASE_CONFIG_ID == platform_info()["baseConfigId"] == "list-default-detailed-light-sidebar"
+    assert BASE_CONFIG_ID == platform_info()["baseConfigId"] == "standard-standard-flat-iconOnly-standard-grid3-none"
     assert encode(BASE_CONFIG_ID).sum() == 0
     assert num_changed(BASE_CONFIG_ID) == 0
 
@@ -39,10 +42,10 @@ def test_levels_match_the_platform():
     levels = platform_info()["settingLevels"]
     assert tuple(SETTINGS) == tuple(platform_info()["settingKeys"])
     for setting, ours in SETTINGS.items():
-        assert set(ours) == set(levels[setting])
+        assert list(ours) == list(levels[setting])  # same order: the first level is the base on both sides
 
 
-@pytest.mark.parametrize("bad", ["list-default-detailed-light", "table-default-detailed-light-sidebar", ""])
+@pytest.mark.parametrize("bad", ["standard-standard-flat-iconOnly-standard-grid3", "huge-standard-flat-iconOnly-standard-grid3-none", ""])
 def test_invalid_ids_are_rejected(bad):
     with pytest.raises(ValueError):
         encode(bad)
@@ -50,7 +53,7 @@ def test_invalid_ids_are_rejected(bad):
 
 def test_invalid_vectors_are_rejected():
     x = encode(BASE_CONFIG_ID)
-    x[0] = x[1] = 1  # two layouts at once
+    x[0] = x[1] = 1  # two text sizes at once
     with pytest.raises(ValueError):
         decode(x)
 
@@ -65,6 +68,6 @@ def test_eligible_targets_exclude_the_base_and_extremes():
     mask = eligible_mask(2, 4)
     assert not mask[ALL_CONFIG_IDS.index(BASE_CONFIG_ID)]
     assert set(ALL_NUM_CHANGED[mask]) == {2, 3, 4}
-    # 1 base, 8 with one change and 8 * ... : the counts come from expanding (1 + 2t)^3 (1 + t)^2
-    assert np.bincount(ALL_NUM_CHANGED).tolist() == [1, 8, 25, 38, 28, 8]
-    assert mask.sum() == 25 + 38 + 28
+    # The counts come from expanding (1 + 2t)^3 (1 + t)^4: three 3-level and four 2-level settings.
+    assert np.bincount(ALL_NUM_CHANGED).tolist() == [1, 10, 42, 96, 129, 102, 44, 8]
+    assert mask.sum() == 42 + 96 + 129

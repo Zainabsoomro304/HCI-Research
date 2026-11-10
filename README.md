@@ -1,10 +1,12 @@
 # Adaptive-UI preference study platform
 
-Web platform for a three-phase HCI study on adaptive user interfaces:
+Web platform for an HCI study on adaptive user interfaces for adults aged 40 and over, set in a Pakistani online grocery shop (**Ghar Ka Sauda / گھر کا سودا**), in English or Urdu:
 
-- **Phase 1** – preference dataset: consent, background questionnaire, 2 practice + 82 pairwise clip comparisons (70 unique pairs, 10 side-swapped repeats, 2 attention checks).
-- **Phase 2** – offline analysis in Python (not in this codebase). The platform exports clean CSVs.
-- **Phase 3** – validation: Session A (same comparison procedure, online) and Session B (in person: 4 shopping tasks in adapted interfaces, QUIS + UES-SF after each, final ranking).
+- **Session A** (online or in person) – language choice, consent, eligibility (age 40+), background questionnaire, 2 practice + 82 pairwise clip comparisons (70 unique pairs, 10 side-swapped repeats, 2 attention checks).
+- **Analysis** – Python/R pipeline in [analysis/](analysis/) (learning curves, starting points, clusters; then the Session B statistics).
+- **Session B** (in person) – 4 grocery shopping tasks in adapted shops, QUIS + UES-SF after each, final ranking.
+
+All participants are created as Phase 3 participants (`P3-xxx`) and do Session A, then Session B. Everyone finishes Session A before anyone starts Session B; the models are frozen once, after the last Session A.
 
 Stack: Next.js 15 (App Router, TypeScript strict) · Tailwind CSS 4 · Prisma 6 + PostgreSQL · Zod · Playwright (clip recording, screenshots, E2E) · Vitest · pnpm.
 
@@ -17,7 +19,7 @@ Requirements: Node 20+ (tested on 24), pnpm 9 (`npm i -g pnpm@9`), git. ffmpeg i
 ```bash
 pnpm install
 cp .env.example .env        # then edit .env (see below)
-pnpm db:push                # create the tables (local/dev database)
+pnpm db:deploy              # apply the migrations
 pnpm dev                    # http://localhost:3000
 ```
 
@@ -25,7 +27,7 @@ pnpm dev                    # http://localhost:3000
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string. Use **separate databases** for development and the real study. |
+| `DATABASE_URL` | PostgreSQL connection string. Use **separate databases** for local work, the pilot and the real study. |
 | `DIRECT_URL` | Direct (non-pooled) connection for migrations. Neon/Supabase give a pooled and a direct URL; otherwise set it equal to `DATABASE_URL`. |
 | `ADMIN_PASSWORD` | Password for `/admin`. |
 | `SESSION_SECRET` | Long random string used to sign the admin cookie (≥ 16 characters). |
@@ -34,14 +36,16 @@ pnpm dev                    # http://localhost:3000
 
 ### Database options
 
-- **Hosted (recommended, also for the lab laptop):** create a Neon or Supabase project with two databases (`…_dev`, `…_study`). All sessions – including Session B on the lab laptop – write to the same hosted study database, so put that URL in the lab laptop's `.env` (or simply use the deployed site there).
+- **Hosted:** a Neon (or Supabase) project with separate databases: `pilot` and `study`. All sessions – including Session B on the lab laptop – write to the hosted database of that deployment.
 - **Offline/local:** `pnpm db:local` starts an embedded PostgreSQL on port 54329 (data in `.pgdata/`, no installation needed) and prints the URL to put in `.env`. `pnpm db:local --fresh` starts with an empty database.
 
-Schema changes: development databases use `pnpm db:push`. Hosted databases use migrations: `pnpm db:deploy` applies `prisma/migrations/` (`0001_init` creates everything). If a hosted database was created with `db push` earlier, mark the baseline once with `pnpm exec prisma migrate resolve --applied 0001_init`.
+Migrations live in `prisma/migrations/` and are applied with `pnpm db:deploy`: `0001_init`, `0002_freeze_and_test_tools`, `0003_grocery_bilingual` (session/participant language, trial scene and language, translation reviews, `language` as the first step).
+
+**The grocery redesign is not compatible with data collected before it** (different interface space, clips and questionnaire). Reset the pilot database before using it again (section 2). Never reset the study database.
 
 ### Demo data
 
-`pnpm db:seed:demo` creates fake participants (notes start with "DEMO") with completed, in-progress and not-started sessions in both phases, using the real session engines. It refuses to run if the database contains non-demo participants. For a clean demo database: stop `pnpm db:local`, run `pnpm db:local --fresh`, then `pnpm db:push` and `pnpm db:seed:demo`.
+`pnpm db:seed:demo` creates fake participants (notes start with "DEMO") with completed, in-progress and not-started sessions, using the real session engines. It refuses to run if the database contains non-demo participants.
 
 ---
 
@@ -49,38 +53,60 @@ Schema changes: development databases use `pnpm db:push`. Hosted databases use m
 
 ### Vercel
 
-1. Push the repository to GitHub and import it in Vercel.
-2. Set the environment variables above (Production) – `DATABASE_URL` = pooled URL, `DIRECT_URL` = direct URL of the **study** database, `PUBLIC_BASE_URL` = your Vercel domain.
-3. Build command: `pnpm db:deploy && pnpm build` (applies migrations, then builds). Install command: `pnpm install`.
+1. Import the GitHub repository in Vercel.
+2. Set the environment variables above – `DATABASE_URL` = pooled URL, `DIRECT_URL` = direct URL of the deployment's database, `PUBLIC_BASE_URL` = the deployment's domain.
+3. Build command: `pnpm db:deploy && pnpm build`. Install command: `pnpm install`.
 4. The git commit is injected automatically (`VERCEL_GIT_COMMIT_SHA`) and stored on every session as `app_version`.
 
-### Render
+**Resetting the Neon `pilot` database** (pilot only, never `study`): in the Neon console open the project → Branches → the branch holding `pilot` → Databases → delete the `pilot` database and create it again with the same name and owner (or run `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` in the SQL editor while connected to `pilot`). Then redeploy the pilot (its build runs `pnpm db:deploy`, which creates all tables), or run locally `DATABASE_URL=<pilot direct url> DIRECT_URL=<same> pnpm db:deploy`. Double-check the database name in the connection string before running anything.
 
-Create a **Web Service** (Node): build command `pnpm install && pnpm db:deploy && pnpm build`, start command `pnpm start`, same environment variables. Render provides `RENDER_GIT_COMMIT` for the app version. A Render PostgreSQL instance works as well as Neon/Supabase.
+### Media (clips and stills)
 
-Clips (`public/clips`, ~12 MB) and stills (`public/stills`, ~8 MB) are committed and served as static files. Participants receive them through opaque URLs (`/m/<hash>.mp4`), so config IDs never appear in their browser.
+Clips and stills are static files in `public/m/` with opaque hashed names (`/m/<20 hex>.mp4` and `.jpg`), so neither the config, the scene nor the language is visible to participants. `data/media-manifest.json` records what each file is. They are committed (139 MB: 65 MB clips, 74 MB stills) and served by Vercel's CDN. A participant downloads only the clips of their own trials (at most 168 plays, one language), up to about 25 MB per session. If the repository or deployment grows too large, move `public/m/` to object storage (Vercel Blob, Cloudflare R2 or S3) and point the URLs in `src/lib/media.ts` at it.
 
 In production, `/preview` and `/clip` require an admin login; locally they are open (needed by `pnpm screenshots` and `pnpm clips:record`).
 
 ---
 
-## 3. The interface space
+## 3. The shop and the interface space
 
-`src/config/uiSpace.ts` is the single source of truth: 5 settings (layout, fontSize, density, theme, menu) → 108 configurations, canonical ID `layout-fontSize-density-theme-menu`, base configuration `DEFAULT_CONFIG` (`list-default-detailed-light-sidebar`). Font sizes and type scale are in `src/config/shop.ts`; colour tokens for both themes (WCAG AA verified by a unit test) in `src/config/themes.ts`. Currency: `CURRENCY_SYMBOL` in `src/config/shop.ts`.
+### Catalogue and tasks
 
-- `pnpm catalog:check` – validates `data/catalog.json` (90 products, 6 categories) and prints counts and price ranges. `pnpm catalog:images` regenerates the SVG illustrations.
-- `pnpm screenshots` – renders all 108 configurations at 1280×800 and 1920×1080 into `screenshots/` (open `screenshots/index.html`).
-- `/preview?category=Home%20%26%20Office` – try any configuration and its animated transition (`&log=1` prints interaction events to the console).
+`data/catalog.json`: 120 grocery products in 8 categories (fruit & vegetables, flour/rice/lentils, dairy & eggs, spices, tea & drinks, cooking oil, bakery, cleaning), each with English and Urdu name, unit and description, a price in whole rupees, a rating and a flat SVG illustration (`pnpm catalog:images`). No brand names. **Prices are illustrative** (rounded to typical Pakistani retail levels in 2025–26), not real quotes. `pnpm catalog:check` checks completeness in both languages, brands and counts.
+
+Prices: `Rs 1,250` in English and `1,250 روپے` in Urdu. Urdu uses Western digits by default (`URDU_WESTERN_DIGITS` in `src/config/shop.ts`).
+
+`data/tasks.json`: four Session B tasks with bilingual text and PKR budgets – weekly staples for a family of five (Rs 4,300), breakfast (Rs 1,800), a family dinner with a main ingredient alternative (Rs 1,550; the shop has no meat, so paneer, chickpeas or mixed vegetables) and household cleaning (Rs 1,700) – plus a practice task (fruit for guests). `pnpm tasks:check` validates the equivalence rules (6 items, 2–4 candidates each, cheapest basket 70–80 % and average basket 95–110 % of the budget, candidates in ≥ 3 categories).
+
+### Interface settings (for the paper)
+
+`src/config/uiSpace.ts` is the single source of truth: 7 settings → 3 × 2 × 3 × 2 × 2 × 3 × 2 = **432 configurations**, canonical ID `textSize-targetSize-buttonStyle-iconLabels-contrast-layout-guidance`, base configuration `standard-standard-flat-iconOnly-standard-grid3-none`. In the models every non-base level is a dummy feature (10 features).
+
+| Setting | Levels (base first) | Implementation | HCI principle |
+|---|---|---|---|
+| Text size | standard · large · xlarge | Body text 17 / 20 / 24 px (Latin), 19 / 23 / 27 px (Urdu, Nastaliq) | Legibility / readability |
+| Target size | standard · large | Interactive elements ≥ 36 px / ≥ 52 px tall, more spacing at large | Fitts's law / motor ease |
+| Button style | flat · outlined · raised | Text-style actions / bordered / filled with shadow and pressed state | Affordance and signifiers |
+| Icon labels | iconOnly · iconText | Icons only (accessible names; tooltip on hover, never in clips) / icon with a short word | Recognition over recall |
+| Contrast | standard · high | WCAG AA (≥ 4.5:1) / AAA (≥ 7:1) with stronger borders and focus outlines (unit-tested) | Perceptibility / accessibility |
+| Layout | grid3 · grid2 · list | Cards in 3 or 2 columns / one product per row | Information density / cognitive load |
+| Guidance | none · hints | Short inline hints at three fixed places: above the products, next to the basket, under the search box | Help in context |
+
+Every configuration works at 1280×800 and 1024×768 in both languages. Changes animate in ~400 ms (View Transitions), including labels and hints fading in.
+
+- `pnpm screenshots` – renders all 432 configurations in both languages at 1280×800 and a sample of 40 at 1024×768 into `screenshots/<lang>/<size>/`; open `screenshots/index.html` (filterable contact sheet).
+- `/preview?category=grains&lang=ur` – try any configuration and its transition (`&log=1` prints interaction events).
 
 ---
 
 ## 4. Clips
 
-1. **Select targets:** `pnpm clips:select` chooses 32 analysis targets + 4 practice targets (seeded, writes `data/clips.json`). Balance: every level of every setting appears as evenly as possible, the number of settings changed from the base (transition "busyness") is balanced across 2/3/4 changes (1 and 5 excluded), and mean busyness is equal across the non-base levels of each setting. It prints level counts and the busyness distribution. Re-run only if you change the design (and then re-record).
-2. **Record:** `pnpm clips:record` (≈10 min) renders each clip deterministically, frame by frame (0–1.0 s base, 1.0–1.4 s transition, 1.4–4.0 s target = exactly 120 frames at 30 fps), encodes H.264 MP4 1280×800 with `-preset veryfast`, writes `public/clips/<configId>.mp4` and `.png` (final frame), and `public/stills/<configId>.png` for all 108 configurations. It fails loudly if any clip is not 4.0 s ± 0.05 s. Options: `--only=<configId>`, `--skip-stills`, `--stills-only`. Recording the same clip twice produces byte-identical files.
-3. Watch a clip live: `/clip?target=<configId>&autoplay=1`.
+1. **Select targets:** `pnpm clips:select` chooses 32 analysis targets + 4 practice targets (seeded, writes `data/clips.json`). Only targets with 2–4 changed settings; the number of changes is balanced across 2/3/4 (10/11/11), and the 10 non-base levels appear equally often (9–10 times each). The base level of a setting is necessarily shown more often than any single non-base level, because a target changes only 2–4 of 7 settings. Re-run only if the design changes (then re-record).
+2. **Record:** `pnpm clips:record` renders every clip deterministically, frame by frame: 0–1.0 s base, 1.0–1.4 s transition, 1.4–4.0 s target = exactly 120 frames at 30 fps, H.264 MP4 1280×800 (`-preset veryfast`, CRF 20). Each target is recorded in each of the 6 clip scenes (fruit & vegetables, flour/rice/lentils, dairy, spices, tea, cleaning – fixed product sets of 9) and both languages: 36 × 6 × 2 = **432 clips**. It also writes one JPEG still per configuration and language (432 × 2 = **864 stills**, used as thumbnails and in the final ranking). It fails loudly if any clip is not exactly 120 frames; recording the same clip twice gives byte-identical files. Options: `--only=<configId> --scene=<scene> --lang=en|ur --workers=<n> --skip-stills --stills-only --clips-only`. A full run took **26 minutes** on an 8-core laptop (6 workers, production server, see below); the 432 clips total **65 MB** (about 150 KB each) and the 864 stills **74 MB** (about 85 KB each), 139 MB in all.
+   Recording is much faster against a production server than against `next dev`: build once with `NEXT_DIST_DIR=.next-prod pnpm exec next build`, start it with `NEXT_DIST_DIR=.next-prod pnpm exec next start -p 3000`, then run `BASE_URL=http://localhost:3000 pnpm clips:record --workers=6`. The script signs an admin cookie with `SESSION_SECRET` from `.env`, because `/clip` needs an admin session in production. The same works for `pnpm screenshots`.
+3. Watch a clip live: `/clip?target=<configId>&scene=dairy&lang=ur&autoplay=1`.
 
-`numChangedSettings` is stored per clip in `data/clips.json`, on every comparison trial, and exported as `left_numChangedSettings` / `right_numChangedSettings`.
+The scene list and the product set per scene are in `src/config/shop.ts` (`CLIP_SCENES`, first 9 products of each category). `numChangedSettings` is stored per clip, on every trial and in the export.
 
 ---
 
@@ -88,61 +114,54 @@ In production, `/preview` and `/clip` require an admin login; locally they are o
 
 ### Participants and links
 
-Log in at `/admin` with `ADMIN_PASSWORD`. Create participants singly or in bulk (Phase 1 → codes `P1-001…`; Phase 3 → `P3-001…`). Each participant gets a random seed (editable until the trial schedule has been generated) and one link per session (`/s/<token>`; Phase 1: one link; Phase 3: Session A and Session B). Copy links from the table. The CLI equivalent is `pnpm participants:create --phase=1 --count=5`.
+Log in at `/admin` with `ADMIN_PASSWORD`. Create Phase 3 participants singly or in bulk (codes `P3-001…`). Each gets a random seed and one link per session (`/s/<token>`). You can preset a participant's language on their admin page; they can still change it on the first screen. The participants table shows each session's status, language, attention checks and live self-consistency.
 
-The participants table shows each session's status (not started / in progress with current step and trial / completed), attention checks and live self-consistency (% of repeats where the same clip was chosen).
+### Language
 
-### Phase 1 and Session A (online)
+The first screen asks **English / اردو**. The whole study then runs in that language: consent, questionnaires, instructions, the clips (recorded per language) and the Session B shop. The language can only be changed before consent; it is stored on the participant and on every session, and exported with every trial. Urdu is fully right to left, set in self-hosted Noto Nastaliq Urdu (Latin text in Inter) with taller line heights; numbers and codes are isolated with `<bdi>`. In Urdu the layout is mirrored, so Option A is on the right; the arrow keys follow the screen.
 
-Send the link. Flow: consent → background questionnaire → instructions → 2 practice trials → 82 trials with breaks after trials 27 and 54 → end screen (Phase 1 shows a completion code; Session A says the team will schedule Session B). The complete schedule is generated from the participant's seed and stored when consent is given. Every choice is saved immediately (the next trial appears only after the server confirms; network errors are retried with a visible banner), interaction events are batched every 2 s and on tab close, and reopening the link resumes exactly where the participant stopped. Screens narrower than 1024 px get a "please use a computer" message.
+Texts: `content/strings.en.json` and `content/strings.ur.json` (identical keys, unit-tested). The Urdu drafts are complete but **all need native review**: `content/review/ur-status.json` lists them, `pnpm translations:status` prints the count, and **Admin → Translations** lists each Urdu string next to its English source with a "Mark as reviewed" button (reviews are stored in the database). Consent and questionnaire texts are placeholders in both languages (`content/consent.<lang>.md`, `content/questionnaires/<instrument>.<lang>.json`) and must be replaced with approved and validated versions.
 
-Trial schedule (identical for Phase 1 and Session A; generated from the participant's seed):
+### Session A
 
-- **70 main trials** – unique pairs of the 32 analysis clips; each clip appears equally often (max − min ≤ 1, i.e. 4 or 5 times), never in two consecutive trials, and on the left about half the time.
-- **10 repeats** – copies of main trials from trials 1–50, each placed at least 20 trials after its original with sides swapped. They are spread across the session: 5 fall in the first half (trials 21–41) and 5 in the second half (trials 42–82).
-- **2 attention checks** – the same clip on both sides with "please choose B", at random positions in trials 25–75, at least 20 trials apart, and never on the last trial before a break or the first trial after one (so never trials 27, 28, 54 or 55).
-- **Breaks** after analysis trials 27 and 54.
+Flow: language → consent → background questionnaire (age first: anyone under 40 sees a polite "not eligible" page; only the age and the screening result are kept and the participant is marked withdrawn) → instructions → 2 practice trials → 82 trials with breaks after trials 27 and 54 → end. Expected length: about 45 minutes (`EXPECTED_MINUTES` in `src/config/study.ts`, shown on the instructions page). Every choice is saved immediately with retries, events are batched every 2 s, and reopening the link resumes exactly where the participant stopped.
 
-All of these (counts, repeat source range, spacing, first-half share, attention range and spacing, break positions, attention-failure threshold) are constants in `src/config/study.ts`, settable per phase.
+Study screens use large text (≥ 18 px Latin, ≥ 20 px Urdu), large buttons and short sentences; they never vary with the interface settings. Tablets in landscape work: from 1000 px wide the two clips are side by side, from 768 px stacked; phones (< 768 px) get a "please use a bigger screen" message. For participants less used to computers, Session A can also be done in person on the lab laptop.
 
-### Between sessions: adaptation plans
+Trial schedule (generated from the participant's seed, stored when consent is given):
 
-Plans are computed in the admin panel. Create all participants as Phase 3; everyone does Session A and then Session B.
+- **70 main trials** – unique pairs of the 32 analysis clips; each clip appears equally often (max − min ≤ 1), never in two consecutive trials, and as Option A about half the time.
+- **10 repeats** – copies of main trials from trials 1–50, at least 20 trials later with sides swapped; 5 in each half. A repeat keeps its original's scene.
+- **2 attention checks** – the same clip on both sides with "please choose Option B", in trials 25–75, at least 20 apart, never next to a break.
+- **Scenes** – both clips of a trial show the same scene and language. Across the 82 trials each scene appears equally often (max − min ≤ 1), no scene appears more than 2 trials in a row, and the practice scene is not counted. Scene and language are stored on every trial.
 
-Open **Phase 3 preparation** (`/admin/phase3`). It shows who has finished Session A, lets you copy reminder links, and lets you mark someone as withdrawn. When every active participant has finished, click **Freeze models & generate plans**. It builds each participant's global and cluster models from everyone else, computes their four plans, stores them with a frozen-model record in one transaction, and shows the results with thumbnails and flags. Each adaptive condition gets one step, after 8000 ms.
+All constants are in `src/config/study.ts`.
 
-- Re-running replaces the computed plans, and is allowed only until any Session B starts. After that, unfreezing takes a typed phrase and a reason, is logged, and is flagged permanently in the export.
-- Participants who failed an attention check are left out of the models, and still get a flagged plan built from everyone included.
-- Someone who finishes Session A after the freeze gets nothing automatically: you either exclude them or generate a flagged late plan from the frozen models.
-- Session B needs a plan and a completed Session A, and refuses withdrawn participants.
+### Between sessions: freeze and plans
 
-The computation lives in `src/lib/planEngine/` and runs in chunks with a progress bar, so it cannot hit a serverless time limit. `analysis/README.md` explains how it relates to the Python analysis.
+Open **Phase 3 preparation** (`/admin/phase3`). It shows who has finished Session A. When every active participant has finished, click **Freeze models & generate plans**: it builds each participant's global and cluster models from everyone else (leave-one-out), computes their four plans with a value-iteration agent (checked against brute force; targets restricted to 2–4 changed settings), and stores everything in one transaction with thumbnails and flags. Each adaptive condition gets one step after 8000 ms. Re-running is allowed only until any Session B starts; after that, unfreezing takes a typed phrase and a reason and is flagged permanently. Attention failures are left out of the models and still get a flagged plan; late finishers get nothing automatically. The computation (`src/lib/planEngine/`) runs in chunks with a progress bar.
 
-**Override plan (advanced)** on a participant's page still accepts a JSON file, flagged as `uploaded` in the data and kept when re-freezing. Format:
+**Override plan (advanced)** on a participant's page accepts a JSON file, flagged as `uploaded`:
 
 ```json
 {
   "participantCode": "P3-004",
   "conditions": {
     "static":       { "steps": [] },
-    "global":       { "steps": [ { "trigger": { "type": "afterMs", "value": 8000 }, "config": "grid2-default-partial-light-sidebar" } ] },
-    "cluster5":     { "steps": [ { "trigger": { "type": "afterEvents", "value": 5 }, "config": "grid3-large-partial-dark-dropdown" } ] },
-    "personalFull": { "steps": [ { "trigger": { "type": "afterMs", "value": 8000 }, "config": "grid3-default-detailed-dark-dropdown" } ] }
+    "global":       { "steps": [ { "trigger": { "type": "afterMs", "value": 8000 }, "config": "standard-large-flat-iconText-standard-grid3-none" } ] },
+    "cluster5":     { "steps": [ { "trigger": { "type": "afterEvents", "value": 5 }, "config": "large-large-flat-iconText-high-grid3-none" } ] },
+    "personalFull": { "steps": [ { "trigger": { "type": "afterMs", "value": 8000 }, "config": "standard-standard-flat-iconOnly-high-grid3-hints" } ] }
   }
 }
 ```
 
-`afterMs` = ms since the task started; `afterEvents` = deliberate interactions since the previous step (category_select, search_query, product_open, add_to_cart, remove_from_cart, quantity_change, cart_open – scrolls, closes and page views do not count). Steps fire in order; every task starts in the base configuration.
-
 ### Rehearsing with simulated participants
 
-Set `ALLOW_TEST_TOOLS=true` on a local or pilot deployment, **never on the study deployment**. A TEST MODE banner appears, and Phase 3 preparation gains test tools and a rehearsal checklist: create simulated `P3-Sxxx` participants, simulate their Session A and B through the real session code, and do your own sessions alongside them. With the setting off, simulated participants can't be created and freezing refuses to run if any exist. Exports leave them out unless you tick the option.
+Set `ALLOW_TEST_TOOLS=true` on a local or pilot deployment, **never on the study deployment**. A TEST MODE banner appears and Phase 3 preparation gains test tools: create simulated `P3-Sxxx` participants (aged 40–78, with a chosen share doing the study in Urdu and plausible older-adult preference profiles), simulate their Session A and B through the real session code, and do your own sessions alongside them. With the setting off, simulated participants can't be created and freezing refuses to run if any exist. Exports leave them out unless you tick the option.
 
 ### Session B (in person)
 
-On the participant's admin page click **Start Session B** (enabled once all 4 plans are uploaded); it opens the participant link (the participant page also polls and starts by itself). Condition order follows row `(n−1) mod 4` and task order row `⌊(n−1)/4⌋ mod 4` of a 4×4 balanced Latin square (`n` = participant number); every 16 participants cover all combinations, so conditions and tasks are not confounded. Rows can be overridden on the admin page before Session B starts (e.g. after dropouts); the rows used are stored. Flow: welcome → practice task (default config, excluded from exports by default) → 4 × (task intro → shop with the condition's adaptation plan → finish → QUIS → UES-SF) → final ranking (drag or arrow buttons, one-line "why") → end. A reload mid-task restores the cart and adaptation progress from the logged events.
-
-`pnpm tasks:check` validates `data/tasks.json` against the equivalence rules (6 items, 2–4 candidates each, cheapest basket 70–80 % and average basket 95–110 % of the budget, candidates in ≥ 3 categories) and prints a comparison table.
+On the participant's admin page click **Start Session B**. Condition and task orders follow 4×4 balanced Latin squares (rows from the participant number; overridable before Session B). Flow: welcome → practice task (excluded from exports by default) → 4 × (task intro → shop with the condition's adaptation → finish → QUIS → UES-SF) → ranking → end. About 60 minutes. A reload mid-task restores the basket and adaptation progress from the logged events.
 
 ### Live monitor
 
@@ -152,48 +171,47 @@ On the participant's admin page click **Start Session B** (enabled once all 4 pl
 
 ## 6. Export format
 
-`/admin/export` downloads a ZIP: one UTF-8 CSV per table (header row, comma-separated, booleans 1/0, ISO 8601 timestamps, JSON columns as JSON text) plus `codebook.md`, which documents every column (generated from the same definitions as the CSVs, `src/lib/export/tables.ts`).
+`/admin/export` downloads a ZIP: one UTF-8 CSV per table plus `codebook.md` (generated from the same definitions, `src/lib/export/tables.ts`) and `frozen_model.json`.
 
 | File | Contents |
 |---|---|
-| `participants.csv` | One row per participant: group, seed, Latin-square rows, session status/times/app version, attention and self-consistency metrics |
-| `questionnaire_background.csv` | One row per participant session, one column per item |
-| `comparison_trials.csv` | One row per trial incl. both clips' five setting values (`left_layout` … `right_menu`) and `*_numChangedSettings`, choice, RT, replays, flags; repeats also carry `repeat_of_trial_index` and `repeat_gap` (trials since the original) |
+| `participants.csv` | One row per participant: language, seed, Latin-square rows, session status/times/app version, withdrawal (incl. screening), attention and self-consistency |
+| `questionnaire_background.csv` | One row per participant session: age, gender, occupation, CS/IT (recorded only), tech confidence, smartphone/computer use, online shopping, groceries online, reading glasses, reading language, one preference item per setting |
+| `comparison_trials.csv` | One row per trial: `scene`, `language`, both clips' seven setting values (`left_textSize` … `right_guidance`) and `*_numChangedSettings`, choice (`left` = Option A), RT, replays, flags, repeat links |
 | `breaks.csv` | Break durations |
-| `task_trials.csv` | Session B blocks: condition, task, scores (`required_items_found`, `within_budget`, `total_spent`, `duration_ms`, `extra_items`), applied adaptations |
-| `questionnaire_task.csv` | QUIS / UES-SF in long format (participant, block, condition, task, instrument, item_id, value, N/A, reverse flag) |
+| `task_trials.csv` | Session B blocks: condition, task, scores, final config and its seven settings, applied adaptations |
+| `questionnaire_task.csv` | QUIS / UES-SF in long format |
 | `rankings.csv` | Final ranking with reasons |
-| `plans.csv` | One row per participant in the active frozen model: assigned cluster, target per condition, flags |
+| `plans.csv` | Per participant in the active frozen model: cluster, target per condition, flags |
 | `admin_actions.csv` | Freezes, unfreezes, withdrawals, late plans, uploads and test-tool use |
-| `frozen_model.json` | The active frozen model: settings, seeds, input-data hash, models and per-participant summaries |
-| `events.csv` | All interaction events with client and server timestamps |
+| `frozen_model.json` | The active frozen model |
+| `events.csv` | All interaction events |
 
-Filters: study phase; completed sessions only; exclude participants who failed attention checks; include the Session B practice task; include simulated participants (left out by default).
+Screening questionnaires (people under 40) are stored as a `screening` record with only the age and `eligible: false`.
 
 ---
 
 ## 7. Tests
 
 ```bash
-pnpm lint          # TypeScript (strict)
-pnpm test          # unit tests + integration tests (throwaway embedded PostgreSQL)
-pnpm test:e2e      # Playwright: full Phase 1 session, resume after closing, full Session B, admin + export ZIP
+pnpm lint               # TypeScript (strict)
+pnpm test               # unit + integration tests (throwaway embedded PostgreSQL)
+pnpm test:e2e           # Playwright: full Session A, eligibility, resume, Session B, admin + export, full rehearsal
+cd analysis && uv run pytest
 ```
 
-Unit tests cover config IDs, the trial schedule generator (counts, no duplicate pairs, balance, no consecutive clips, repeat source range/spacing/side swap, repeats spread across both halves, attention range/spacing/break-adjacency, break positions, reproducibility), Latin squares, task scoring, catalogue/task validators, clip selection, theme contrast, media URLs and admin auth. E2E tests start their own database (port 54331) and Next server (port 3210), so they can run next to `pnpm dev`.
+Unit tests cover the 432-config space, contrast (AA/AAA), the trial schedule (incl. scene balance, runs ≤ 2, repeats keep their scene), translation keys and placeholders in both languages, the catalogue in both languages, Latin squares, task scoring, clip selection, media names, the plan engine and admin auth. Integration tests cover the session engines incl. language and eligibility screening, export columns and the freeze. `REHEARSAL_N=31 pnpm test:e2e phase3` runs the full rehearsal: 31 simulated participants plus one scripted real participant who does Session A and Session B in Urdu through the participant interface.
 
 ---
 
 ## 8. Pre-study checklist
 
-1. **Replace placeholders** (search for `[PLACEHOLDER – replace before study]`):
-   - `content/consent.en.md` – approved information sheet and consent text.
-   - `content/questionnaires/quis.en.json` and `ues_sf.en.json` – the licensed/validated items, scales, anchors, N/A options and reverse flags. Set `"placeholder": false` and bump `"version"`.
-2. **Review content:** `data/catalog.json` (`pnpm catalog:check`), `data/tasks.json` (`pnpm tasks:check`), shop name/currency in `src/config/shop.ts`, all participant text in `content/strings.en.json`.
-3. **Clips:** if anything visual changed, run `pnpm screenshots` and inspect, then `pnpm clips:record` and commit `public/clips` and `public/stills`.
-4. **Tests:** `pnpm lint && pnpm test && pnpm test:e2e`.
-5. **Deploy** to the study database (`pnpm db:deploy`), set a strong `ADMIN_PASSWORD` and `SESSION_SECRET`, and set `PUBLIC_BASE_URL`.
-6. **Pilot:** run 2–3 pilot participants end to end (Phase 1, Session A, plan upload, Session B on the lab laptop), then check the export and the codebook in Python. Delete pilot data or use a separate database.
-7. On collection days keep `/admin/monitor` open.
-
-Adding a translation later: copy `content/strings.en.json` to `content/strings.<lang>.json`, register it in `src/lib/strings.ts`, and add translated `consent.<lang>.md` and questionnaire files.
+1. **Native Urdu review** of every string (Admin → Translations, or `pnpm translations:status`), the catalogue and the tasks. Mark each as reviewed.
+2. **Replace placeholders** (search for `[PLACEHOLDER` and `[عارضی`): `content/consent.en.md` and `consent.ur.md` (approved information sheet and consent); `content/questionnaires/{quis,ues_sf}.{en,ur}.json` – the licensed/validated items in both languages (validated Urdu versions where they exist), same item IDs, scales and reverse flags in both files; set `"placeholder": false` and bump `"version"`.
+3. **Tablets:** try a session on the tablets you will use, in landscape, in both languages.
+4. **In-person option:** decide who does Session A in person on the lab laptop (e.g. participants with little computer experience) and book the room.
+5. **Clips and screenshots:** if anything visual changed, run `pnpm screenshots` and inspect, then `pnpm clips:record` and commit `public/m` and `data/media-manifest.json`.
+6. **Tests:** `pnpm lint && pnpm test && pnpm test:e2e`, and `uv run pytest` in `analysis/`.
+7. **Deploy** to the study database (`pnpm db:deploy`), with a strong `ADMIN_PASSWORD` and `SESSION_SECRET`, `ALLOW_TEST_TOOLS=false` and the right `PUBLIC_BASE_URL`.
+8. **Pilot** on the reset pilot database: 2–3 people end to end in both languages, then export and run `hci validate`, `hci phase2` and `hci phase3` on the export.
+9. On collection days keep `/admin/monitor` open.

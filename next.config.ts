@@ -1,16 +1,5 @@
 import type { NextConfig } from "next";
 import { execSync } from "node:child_process";
-import { mediaRewrites } from "./src/lib/media";
-
-/** All 108 config IDs (kept local: next.config cannot use the @/ path alias). */
-const LEVELS = [
-  ["list", "grid2", "grid3"],
-  ["small", "default", "large"],
-  ["detailed", "partial", "summary"],
-  ["light", "dark"],
-  ["sidebar", "dropdown"],
-];
-const ALL_IDS = LEVELS.reduce<string[]>((acc, levels) => acc.flatMap((p) => levels.map((l) => (p ? `${p}-${l}` : l))), [""]);
 
 /** The exact build a participant used: git commit hash, injected at build/dev-start time. */
 function resolveAppVersion(): string {
@@ -33,9 +22,7 @@ const nextConfig: NextConfig = {
   // Consent text and questionnaires are read from content/ at runtime; make sure serverless bundles include them.
   outputFileTracingIncludes: { "/**": ["./content/**/*"] },
   devIndicators: false,
-  async rewrites() {
-    return mediaRewrites(ALL_IDS);
-  },
+  // Clips and stills are served as static files under hashed names (public/m/), so no rewrites are needed.
 };
 
 export default nextConfig;

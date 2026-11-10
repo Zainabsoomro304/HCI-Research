@@ -1,9 +1,10 @@
 /** State sent to the participant browser: no condition names or design flags (Session B plan steps carry only the config IDs the shop needs to render). */
 import { z } from "zod";
+import { LANGUAGES, type Lang } from "@/config/shop";
 import { BackgroundSchema } from "../questionnaire/background";
 import type { SessionBState } from "./sessionBTypes";
 
-export const COMPARISON_STEPS = ["consent", "background", "instructions", "practice", "main_intro", "trials", "break", "end"] as const;
+export const COMPARISON_STEPS = ["language", "consent", "background", "ineligible", "instructions", "practice", "main_intro", "trials", "break", "end"] as const;
 export type ComparisonStep = (typeof COMPARISON_STEPS)[number];
 
 export interface TrialView {
@@ -23,7 +24,7 @@ export interface ComparisonState {
   kind: "comparison";
   sessionType: "phase1" | "p3_sessionA";
   step: ComparisonStep;
-  lang: string;
+  lang: Lang;
   consent?: { markdown: string; hash: string };
   trial?: TrialView;
   progress?: { done: number; total: number };
@@ -41,7 +42,10 @@ export const ComparisonActionSchema = z.discriminatedUnion("type", [
     viewport: z.object({ w: z.number().int(), h: z.number().int() }),
     userAgent: z.string().max(500),
   }),
+  z.object({ type: z.literal("language"), lang: z.enum(LANGUAGES) }),
   z.object({ type: z.literal("consent"), agreed: z.literal(true), hash: z.string().length(64), clientTs: ts }),
+  /** Age under MIN_AGE: only the age is stored, as a screening record. */
+  z.object({ type: z.literal("screen_out"), age: z.number().int().min(0).max(110), clientTs: ts }),
   z.object({ type: z.literal("background"), answers: BackgroundSchema, clientTs: ts }),
   z.object({ type: z.literal("instructions_done") }),
   z.object({ type: z.literal("main_intro_done") }),

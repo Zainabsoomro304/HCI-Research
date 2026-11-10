@@ -84,7 +84,7 @@ def validate(
     if len(cleaned.participants):
         per_person = cleaned.main.groupby("participant_code").size()
         typer.echo(f"\nMain trials per participant: min {per_person.min()}, max {per_person.max()}")
-        typer.echo(f"Groups: {cleaned.participants['group'].value_counts().to_dict()}")
+        typer.echo(f"Language: {cleaned.participants['language'].fillna('missing').value_counts().to_dict()}   CS/IT (recorded only): {cleaned.participants['group'].value_counts().to_dict()}")
         consistency = cleaned.participants["self_consistency"].astype(float)
         typer.echo(
             f"Self-consistency: min {consistency.min():.2f}, median {consistency.median():.2f}, max {consistency.max():.2f}"

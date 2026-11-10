@@ -16,7 +16,7 @@ afterAll(async () => {
 function req(body: unknown) {
   return new Request("http://test/api/events", { method: "POST", body: JSON.stringify(body) });
 }
-const ev = (id: string, type = "add_to_cart", ts = 1_700_000_000_000) => ({ id, type, ts, configId: "list-default-detailed-light-sidebar", trialId: "blk1", payload: { productId: "ho-01" } });
+const ev = (id: string, type = "add_to_cart", ts = 1_700_000_000_000) => ({ id, type, ts, configId: "standard-standard-flat-iconOnly-standard-grid3-none", trialId: "blk1", payload: { productId: "gr-01" } });
 
 describe("POST /api/events", () => {
   it("stores a batch with participant/session, config, trial and both timestamps", async () => {
@@ -25,7 +25,7 @@ describe("POST /api/events", () => {
     expect(await res.json()).toEqual({ received: 2, saved: 2 });
     const rows = await prisma.event.findMany({ where: { session: { token } }, orderBy: { id: "asc" } });
     expect(rows).toHaveLength(2);
-    expect(rows[0]!.configId).toBe("list-default-detailed-light-sidebar");
+    expect(rows[0]!.configId).toBe("standard-standard-flat-iconOnly-standard-grid3-none");
     expect(rows[0]!.trialId).toBe("blk1");
     expect(Number(rows[0]!.clientTsMs)).toBe(1_700_000_000_000);
     expect(rows[0]!.serverTs).toBeInstanceOf(Date);

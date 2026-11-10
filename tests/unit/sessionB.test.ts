@@ -54,13 +54,13 @@ describe("tasks validator and equivalence", () => {
   it("accepts the shipped tasks and they satisfy all equivalence rules", () => {
     expect(TasksFileSchema.safeParse(rawTasks).success).toBe(true);
     for (const t of TASKS) expect(taskProblems(t)).toEqual([]);
-    expect(TASKS.map((t) => t.id)).toEqual(["picnic", "homeoffice", "giftbasket", "runner"]);
+    expect(TASKS.map((t) => t.id)).toEqual(["staples", "breakfast", "dinner", "cleaning"]);
   });
 
   it("flags tasks that break the rules", () => {
     const t = structuredClone(TASKS[0]!);
     t.budget = 200;
-    t.requiredItems[0]!.candidateProductIds = ["po-01"];
+    t.requiredItems[0]!.candidateProductIds = ["gr-01"];
     const problems = taskProblems(t);
     expect(problems.some((p) => p.includes("candidate products"))).toBe(true);
     expect(problems.some((p) => p.includes("cheapest basket"))).toBe(true);
@@ -75,36 +75,38 @@ describe("tasks validator and equivalence", () => {
   });
 
   it("computes basket metrics", () => {
-    const m = taskMetrics(getTask("picnic"));
-    expect(m.cheapestBasket).toBe(80);
-    expect(m.averageBasket).toBeCloseTo(120, 5);
+    const m = taskMetrics(getTask("dinner"));
+    expect(m.cheapestBasket).toBe(120 + 160 + 120 + 110 + 560 + 110);
+    expect(m.averageBasket).toBeCloseTo(1670, 5);
     expect(m.categories).toBe(5);
+    expect(m.validBaskets).toBe(324);
   });
 });
 
 describe("task scoring", () => {
-  const picnic = getTask("picnic");
+  const picnic = getTask("staples");
   it("scores a perfect basket", () => {
     const cart = picnic.requiredItems.map((i) => ({ productId: i.candidateProductIds[0]!, quantity: 1 }));
     const s = scoreTask(picnic, cart);
-    expect(s).toEqual({ requiredItemsFound: 6, withinBudget: true, totalSpent: 24 + 22 + 28 + 7 + 14 + 9, extraItems: 0 });
-    expect(s.totalSpent).toBe(104);
+    expect(s).toEqual({ requiredItemsFound: 6, withinBudget: false, totalSpent: 1450 + 1850 + 380 + 560 + 165 + 950, extraItems: 0 });
+    const cheap = scoreTask(picnic, [{ productId: "gr-07", quantity: 1 }, { productId: "gr-12", quantity: 1 }, { productId: "gr-05", quantity: 1 }, { productId: "oi-01", quantity: 1 }, { productId: "gr-06", quantity: 1 }, { productId: "tb-02", quantity: 1 }]);
+    expect(cheap).toEqual({ requiredItemsFound: 6, withinBudget: true, totalSpent: 3165, extraItems: 0 });
   });
   it("counts duplicates and off-list products as extra items and checks the budget", () => {
     const s = scoreTask(picnic, [
-      { productId: "po-03", quantity: 2 },
-      { productId: "kt-10", quantity: 1 },
-      { productId: "fs-01", quantity: 1 },
+      { productId: "gr-03", quantity: 2 },
+      { productId: "da-01", quantity: 1 },
+      { productId: "tb-02", quantity: 1 },
     ]);
     expect(s.requiredItemsFound).toBe(2);
     expect(s.extraItems).toBe(2);
-    expect(s.totalSpent).toBe(16 * 2 + 36 + 7);
+    expect(s.totalSpent).toBe(380 * 2 + 220 + 420);
     expect(s.withinBudget).toBe(true);
   });
   it("handles an empty cart and over-budget baskets", () => {
     expect(scoreTask(picnic, [])).toEqual({ requiredItemsFound: 0, withinBudget: true, totalSpent: 0, extraItems: 0 });
-    expect(scoreTask(picnic, [{ productId: "po-06", quantity: 3 }]).withinBudget).toBe(false);
-    expect(scoreTask(PRACTICE_TASK, [{ productId: "fs-05", quantity: 1 }]).requiredItemsFound).toBe(1);
+    expect(scoreTask(picnic, [{ productId: "gr-02", quantity: 3 }]).withinBudget).toBe(false);
+    expect(scoreTask(PRACTICE_TASK, [{ productId: "fv-01", quantity: 1 }]).requiredItemsFound).toBe(1);
   });
 });
 
@@ -113,9 +115,9 @@ describe("adaptation plans", () => {
     participantCode: "P3-004",
     conditions: {
       static: { steps: [] },
-      global: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "grid2-default-partial-light-sidebar" }] },
-      cluster5: { steps: [{ trigger: { type: "afterEvents", value: 5 }, config: "grid3-large-partial-dark-dropdown" }] },
-      personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "grid3-default-detailed-dark-dropdown" }] },
+      global: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "standard-large-flat-iconText-standard-grid3-none" }] },
+      cluster5: { steps: [{ trigger: { type: "afterEvents", value: 5 }, config: "large-large-flat-iconText-high-grid3-none" }] },
+      personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "standard-standard-flat-iconOnly-high-grid3-hints" }] },
     },
   };
   it("accepts the documented example", () => {
@@ -136,9 +138,9 @@ describe("adaptation plans", () => {
   });
   it("fires afterMs and afterEvents triggers in order, resetting the event count after each step", () => {
     const steps: PlanStep[] = [
-      { trigger: { type: "afterMs", value: 8000 }, config: "grid2-default-partial-light-sidebar" },
-      { trigger: { type: "afterEvents", value: 3 }, config: "grid3-default-partial-light-sidebar" },
-      { trigger: { type: "afterMs", value: 20000 }, config: "grid3-large-partial-dark-sidebar" },
+      { trigger: { type: "afterMs", value: 8000 }, config: "standard-large-flat-iconText-standard-grid3-none" },
+      { trigger: { type: "afterEvents", value: 3 }, config: "standard-standard-outlined-iconOnly-standard-grid3-none" },
+      { trigger: { type: "afterMs", value: 20000 }, config: "large-standard-outlined-iconOnly-high-grid3-none" },
     ];
     expect(stepsDue(steps, 0, 7999, 10)).toBe(0);
     expect(stepsDue(steps, 0, 8000, 0)).toBe(1);

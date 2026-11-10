@@ -1,15 +1,23 @@
 /** Simulated participants for rehearsals. Same values and logic as the `simulate` section of analysis/config.yaml. */
 export const SIMULATION = {
-  /** Weights in logit units, feature order: grid2 grid3 small large partial summary dark dropdown. */
+  /**
+   * Weights in logit units, one row per latent cluster. Feature order (vs the base level):
+   * textSize large, xlarge | targetSize large | buttonStyle outlined, raised | iconLabels iconText | contrast high |
+   * layout grid2, list | guidance hints. Plausible for adults aged 40+: many lean toward larger text and targets,
+   * labels and hints, with real variation and one cluster that prefers a familiar, compact shop.
+   */
   clusterMeans: [
-    [1.5, 2.2, -1.0, 0.2, 0.8, 1.6, 1.8, 0.6],
-    [-1.5, -2.2, -1.5, 1.5, -1.0, -2.0, -1.5, -1.0],
-    [1.0, 0.0, 1.2, -1.5, 1.5, 0.5, -0.8, 1.6],
+    [1.2, 1.6, 1.0, 0.6, 1.0, 1.0, 0.8, 0.4, 0.8, 0.8],
+    [0.5, -0.4, 0.3, 0.3, 0.6, -0.5, -0.3, 0.5, -0.6, -0.8],
+    [0.8, 0.4, 0.6, 0.9, 0.4, 0.6, 0.2, -0.6, -1.2, 0.3],
   ],
-  weightScale: 2.5,
-  individualSd: 1.2,
+  weightScale: 2.0,
+  individualSd: 1.0,
   decisivenessLogSd: 0.5,
   sideBias: 0.2,
+  urduShare: 0.5,
+  ageMin: 40,
+  ageMax: 78,
   busyGamma: -0.1,
   lapseMax: 0.08,
   fatigueLapseSlope: 0.03,

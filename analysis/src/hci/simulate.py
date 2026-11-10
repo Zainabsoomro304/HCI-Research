@@ -27,15 +27,9 @@ from hci.io import SYNTHETIC_MARKER
 from hci.model import comparisons_from_trials, use_curvature
 from hci.node import run_tsx
 from hci.platform import platform_info
+from hci.questionnaire import PREF_ITEMS
 
 _EPOCH = datetime(2026, 1, 1, 9, 0, tzinfo=UTC)
-_QUESTIONNAIRE_LABELS = {
-    "layout": ("prefLayout", {"list": "list", "grid2": "grid2", "grid3": "grid3"}),
-    "fontSize": ("prefTextSize", {"default": "medium", "small": "small", "large": "large"}),
-    "density": ("prefDetail", {"detailed": "lots", "partial": "some", "summary": "minimal"}),
-    "theme": ("prefTheme", {"light": "light", "dark": "dark"}),
-    "menu": ("prefMenu", {"sidebar": "side", "dropdown": "dropdown"}),
-}
 
 
 def _iso(t: datetime) -> str:
@@ -56,6 +50,8 @@ class Person:
     number: int
     seed: int
     group: str
+    language: str
+    age: int
     cluster: int
     w: np.ndarray
     lapse: float
@@ -72,10 +68,7 @@ def _p_left(person: Person, sim: Any, left: str, right: str, position: float) ->
     dbusy = num_changed(left) - num_changed(right)
     dcurv = (num_changed(left) - 3) ** 2 - (num_changed(right) - 3) ** 2
     p = float(expit(du + sim.side_bias + sim.busy_gamma * dbusy + sim.busy_curvature * dcurv))
-    lapse = person.lapse + sim.fatigue_lapse_slope * position
-    if person.group == "nonCs":
-        lapse += sim.noncs_extra_lapse
-    lapse = min(lapse, 1.0)
+    lapse = min(person.lapse + sim.fatigue_lapse_slope * position, 1.0)
     return (1 - lapse) * p + lapse / 2
 
 
@@ -135,6 +128,8 @@ def _simulate_comparisons(
             "repeat_of_trial_index": "" if origin_index is None else str(origin_index),
             "repeat_gap": "" if origin_index is None else str(t["trialIndex"] - origin_index),
             "is_attention_check": _bit(t["isAttentionCheck"]),
+            "scene": t["scene"],
+            "language": person.language,
             "choice": choice if answered else "",
             "chosen_clip_id": (t["left"] if choice == "left" else t["right"]) if answered else "",
             "rt_ms": str(rt) if answered else "",
@@ -162,34 +157,37 @@ def _simulate_background(person: Person, sim: Any) -> dict[str, str]:
         "study_phase": "3",
         "session_type": "p3_sessionA",
         "submitted_at": _iso(_EPOCH + timedelta(days=person.number, minutes=-5)),
-        "age": str(int(rng.integers(18, 60))),
-        "gender": str(rng.choice(["woman", "man", "nonBinary", "preferNot"])),
-        "genderSelfDescribe": "",
-        "occupation": str(rng.choice(["student", "employed"])),
+        "age": str(person.age),
+        "gender": str(rng.choice(["woman", "man", "preferNot"])),
+        "occupation": str(rng.choice(["employed", "selfEmployed", "homemaker", "retired"])),
         "occupationOther": "",
-        "field": "SYNTHETIC",
         "csOrIt": "yes" if person.group == "cs" else "no",
-        "techConfidence": str(int(rng.integers(3, 8))),
-        "shoppingFrequency": str(rng.choice(["monthly", "weekly"])),
+        "techConfidence": str(int(rng.integers(2, 8))),
+        "smartphoneUse": str(rng.choice(["weekly", "daily", "daily"])),
+        "computerUse": str(rng.choice(["never", "monthly", "weekly", "daily"])),
+        "shoppingFrequency": str(rng.choice(["never", "lessThanMonthly", "monthly", "weekly"])),
+        "groceriesOnline": "yes" if rng.random() < 0.35 else "no",
+        "readingGlasses": str(rng.choice(["yes", "no", "sometimes"])),
+        "readingLanguage": str(rng.choice(["urdu", "urdu", "both"] if person.language == "ur" else ["english", "both"])),
     }
     start = 0
     for setting, levels in SETTINGS.items():
         size = len(levels) - 1
         utilities = np.concatenate([[0.0], person.w[start : start + size]])
         start += size
-        column, labels = _QUESTIONNAIRE_LABELS[setting]
+        column = PREF_ITEMS[setting]
         draw = rng.random()
         if draw < sim.questionnaire_no_preference:
             row[column] = "noPreference"
         elif rng.random() < sim.questionnaire_informativeness:
-            row[column] = labels[levels[int(np.argmax(utilities))]]
+            row[column] = levels[int(np.argmax(utilities))]
         else:
-            row[column] = labels[levels[int(rng.integers(0, len(levels)))]]
+            row[column] = levels[int(rng.integers(0, len(levels)))]
     return row
 
 
-def _read_instrument(name: str) -> dict[str, Any]:
-    path = REPO_ROOT / "content" / "questionnaires" / f"{name}.en.json"
+def _read_instrument(name: str, lang: str = "en") -> dict[str, Any]:
+    path = REPO_ROOT / "content" / "questionnaires" / f"{name}.{lang}.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -334,16 +332,20 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
     means = np.array(sim.cluster_means)
     probabilities = np.array(sim.cluster_probs) / np.sum(sim.cluster_probs)
     people: list[Person] = []
-    n_cs = int(round(n * sim.cs_share))
-    groups = ["cs"] * n_cs + ["nonCs"] * (n - n_cs)
-    groups = [groups[i] for i in shared.permutation(n)]
+    n_ur = int(round(n * sim.urdu_share))
+    languages = ["ur"] * n_ur + ["en"] * (n - n_ur)
+    languages = [languages[i] for i in shared.permutation(n)]
     for i in range(n):
         rng = np.random.default_rng(streams[i + 1])
         cluster = int(rng.choice(len(means), p=probabilities))
         decisiveness = float(rng.lognormal(0, sim.decisiveness_log_sd))
+        # CS/IT background is recorded only (no subgroup analysis); about 15% say yes.
+        group = "cs" if rng.random() < 0.15 else "nonCs"
+        age = int(rng.integers(sim.age_min, sim.age_max + 1))
         people.append(
             Person(
-                code=f"P3-{i + 1:03d}", number=i + 1, seed=seeds[i], group=groups[i], cluster=cluster,
+                code=f"P3-{i + 1:03d}", number=i + 1, seed=seeds[i], group=group, language=languages[i], age=age,
+                cluster=cluster,
                 w=decisiveness * (sim.weight_scale * means[cluster] + rng.normal(0, sim.individual_sd, len(FEATURES))),
                 lapse=float(rng.uniform(sim.lapse_min, sim.lapse_max)), plan={}, rng=rng,
             )
@@ -394,7 +396,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
             "cluster_k": models.cluster_k,
         }
 
-    instruments = {name: _read_instrument(name) for name in ("quis", "ues_sf")}
+    instruments = {lang: {name: _read_instrument(name, lang) for name in ("quis", "ues_sf")} for lang in ("en", "ur")}
     task_effects = {t["id"]: float(shared.normal(0, sb.task_sd)) for t in platform_info()["tasks"]}
     shift = sb.scenarios[scenario]["cluster5_shift"]
     task_rows, question_rows, rank_rows, event_rows, participant_rows = [], [], [], [], []
@@ -410,7 +412,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
                 person,
                 sb,
                 item["blocks"],
-                instruments,
+                instruments[person.language],
                 task_effects,
                 shift,
                 effect,
@@ -422,7 +424,8 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
             rank_rows.extend(r)
             event_rows.extend(e)
         truth_people.append({
-            "participant_code": person.code, "group": person.group, "cluster": person.cluster,
+            "participant_code": person.code, "group": person.group, "language": person.language, "age": person.age,
+            "cluster": person.cluster,
             "w": person.w.tolist(), "lapse": person.lapse, "expected_consistency": consistency_expected[person.code],
             "plan_targets": person.plan["targets"], "session_b": latents,
         })  # fmt: skip
@@ -500,7 +503,7 @@ def _participant_row(person: Person, rows: list[dict[str, str]], item: dict[str,
     pct = "" if not repeats else f"{round(100 * same / len(repeats), 1):g}"
     return {
         "participant_code": person.code, "study_phase": "3", "number": str(person.number), "group": person.group,
-        "group_source": "self", "language": "en", "seed": str(person.seed), "condition_row": str(item["conditionRow"]),
+        "group_source": "self", "language": person.language, "seed": str(person.seed), "condition_row": str(item["conditionRow"]),
         "task_row": str(item["taskRow"]), "completion_code": "", "is_simulated": "1", "withdrawn_at": "", "withdrawn_reason": "", "notes": "SYNTHETIC participant",
         "created_at": _iso(_EPOCH), "phase1_status": "", "phase1_started_at": "", "phase1_completed_at": "",
         "phase1_app_version": "", "sessionA_status": "completed" if done else "in_progress",

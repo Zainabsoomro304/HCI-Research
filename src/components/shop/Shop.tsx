@@ -2,17 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { CATEGORIES, type Category } from "@/config/shop";
+import { CATEGORIES, dirOf, type Category, type Lang } from "@/config/shop";
 import { DELIBERATE_EVENT_TYPES, SCROLL_THROTTLE_MS } from "@/config/study";
 import { shopCssVars } from "@/config/themes";
 import { toConfigId, type UIConfig } from "@/config/uiSpace";
-import { products as allProducts, productsById, type Product } from "@/lib/catalog";
+import { products as allProducts, matchesQuery, productsById, type Product } from "@/lib/catalog";
 import type { EventSink } from "@/lib/eventLogger";
 import { NullEventSink } from "@/lib/eventLogger";
 import type { EventType } from "@/lib/events";
-import { makeT } from "@/lib/strings";
+import { makeT, type StringKey } from "@/lib/strings";
 import { ShopContext, type CartApi, type CartLine, type ShopContextValue, type ShopMode } from "./context";
-import { CategorySidebar, TopBar } from "./Navigation";
+import { CategoryBar, Hint, TopBar } from "./Navigation";
 import { CartDrawer, ProductDetail } from "./Overlays";
 import { ProductCard } from "./ProductCard";
 
@@ -25,7 +25,7 @@ export interface ShopProps {
   config: UIConfig;
   mode: ShopMode;
   sink?: EventSink;
-  lang?: string;
+  lang?: Lang;
   initialCategory?: Category;
   /** Restrict the products shown (clip mode). */
   productIds?: readonly string[];
@@ -146,7 +146,7 @@ export function Shop(props: ShopProps) {
       if (searchTimer.current) clearTimeout(searchTimer.current);
       searchTimer.current = setTimeout(() => {
         const trimmed = q.trim();
-        const results = trimmed ? allProducts.filter((p) => p.name.toLowerCase().includes(trimmed.toLowerCase())).length : null;
+        const results = trimmed ? allProducts.filter((p) => matchesQuery(p, trimmed)).length : null;
         emit("search_query", { query: trimmed, results });
       }, 600);
     },
@@ -225,13 +225,14 @@ export function Shop(props: ShopProps) {
   // ---- visible products ----
   const visible = useMemo(() => {
     const pool = productIds ? productIds.map((id) => productsById.get(id)).filter((p): p is Product => !!p) : allProducts;
-    const q = query.trim().toLowerCase();
-    if (q) return pool.filter((p) => p.name.toLowerCase().includes(q));
+    const q = query.trim();
+    if (q) return pool.filter((p) => matchesQuery(p, q));
     return category ? pool.filter((p) => p.category === category) : pool;
   }, [productIds, query, category]);
 
   const ctx: ShopContextValue = {
     config: shown,
+    lang,
     mode,
     t,
     emit,
@@ -246,42 +247,40 @@ export function Shop(props: ShopProps) {
   };
 
   const q = query.trim();
-  const heading = q ? t("shop.resultsFor", { query: q }) : (category ?? "");
+  const heading = q ? t("shop.resultsFor", { query: q }) : category ? t(`cat.${category}` as StringKey) : "";
   const countLabel = visible.length === 1 ? t("shop.itemsCountOne") : t("shop.itemsCount", { count: visible.length });
-  const listingClass =
-    shown.layout === "list" ? "flex flex-col gap-3" : shown.layout === "grid2" ? "grid grid-cols-2 gap-5" : "grid grid-cols-3 gap-5";
+  const listingClass = shown.layout === "list" ? "flex flex-col gap-[0.8em]" : shown.layout === "grid2" ? "grid grid-cols-2 gap-[1em]" : "grid grid-cols-3 gap-[1em]";
 
   return (
     <ShopContext.Provider value={ctx}>
       <div
-        className={`shop min-h-screen bg-bg font-sans text-fg ${frozen ? "no-cursor pointer-events-none select-none" : ""}`}
-        data-theme={shown.theme}
+        className={`shop min-h-screen bg-bg text-fg ${frozen ? "no-cursor pointer-events-none select-none" : ""}`}
+        dir={dirOf(lang)}
+        lang={lang}
+        data-lang={lang}
         data-layout={shown.layout}
-        data-font={shown.fontSize}
-        data-density={shown.density}
-        data-menu={shown.menu}
+        data-text-size={shown.textSize}
+        data-target-size={shown.targetSize}
+        data-button-style={shown.buttonStyle}
+        data-icon-labels={shown.iconLabels}
+        data-contrast={shown.contrast}
+        data-guidance={shown.guidance}
         data-config-id={toConfigId(shown)}
-        style={{ ...shopCssVars(shown), colorScheme: shown.theme }}
+        style={shopCssVars(shown, lang)}
       >
         <TopBar />
-        <div className="mx-auto flex max-w-[1440px] items-start gap-7 px-6 py-6">
-          {shown.menu === "sidebar" && <CategorySidebar />}
+        <CategoryBar />
+        <div className="mx-auto flex max-w-[1440px] items-start gap-[1.4em] px-[1.2em] py-[1em]">
           <main className="min-w-0 flex-1">
-            <div
-              className="mb-4 flex items-baseline justify-between gap-4"
-              style={{ viewTransitionName: "shop-heading" } as React.CSSProperties}
-            >
-              <h1 className="text-heading font-bold tracking-tight">{heading}</h1>
+            <div className="mb-[0.7em] flex items-baseline justify-between gap-[1em]" style={{ viewTransitionName: "shop-heading" } as React.CSSProperties}>
+              <h1 className="text-heading font-bold leading-[1.25]">{heading}</h1>
               <span className="shrink-0 text-small text-muted">{countLabel}</span>
             </div>
+            <Hint k="shop.hint.list" name="hint-list" className="mb-[0.9em]" />
             {visible.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-line bg-surface px-6 py-16 text-center">
+              <div className="rounded-[0.8em] border-[length:var(--bw)] border-dashed border-line bg-surface px-[1.5em] py-[3em] text-center">
                 <p className="text-body text-muted">{t("shop.noResults")}</p>
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="mt-4 rounded-lg border border-line px-4 py-2 text-small font-semibold hover:bg-surface-hover"
-                >
+                <button type="button" onClick={() => setQuery("")} className="mt-[1em] min-h-[var(--tap)] rounded-[0.55em] border-[length:var(--bw)] border-control px-[1em] text-small font-semibold hover:bg-surface-hover">
                   {t("shop.clearSearch")}
                 </button>
               </div>
@@ -294,10 +293,7 @@ export function Shop(props: ShopProps) {
             )}
           </main>
           {renderTaskPanel && (
-            <aside
-              className="sticky top-[calc(var(--fs-base)*4+1.5rem)] shrink-0 self-start"
-              style={{ viewTransitionName: "shop-taskpanel", width: "calc(var(--fs-base) * 18)" } as React.CSSProperties}
-            >
+            <aside className="sticky top-[1em] shrink-0 self-start" style={{ viewTransitionName: "shop-taskpanel", width: "calc(var(--fs-base) * 16)" } as React.CSSProperties}>
               {renderTaskPanel(cart)}
             </aside>
           )}
@@ -308,4 +304,3 @@ export function Shop(props: ShopProps) {
     </ShopContext.Provider>
   );
 }
-

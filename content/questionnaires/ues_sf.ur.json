@@ -1,0 +1,249 @@
+{
+  "instrument": "ues_sf",
+  "version": "placeholder-0",
+  "placeholder": true,
+  "title": "[عارضی – مطالعے سے پہلے تبدیل کریں] آپ کا تجربہ",
+  "instructions": "[عارضی – مطالعے سے پہلے تبدیل کریں] سوالنامے کی ہدایات یہاں آئیں گی۔",
+  "items": [
+    {
+      "id": "ues_01",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 1",
+      "section": "[عارضی] Subscale A",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_02",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 2",
+      "section": "[عارضی] Subscale A",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_03",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 3",
+      "section": "[عارضی] Subscale A",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_04",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 4",
+      "section": "[عارضی] Subscale B",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": true
+    },
+    {
+      "id": "ues_05",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 5",
+      "section": "[عارضی] Subscale B",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": true
+    },
+    {
+      "id": "ues_06",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 6",
+      "section": "[عارضی] Subscale B",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": true
+    },
+    {
+      "id": "ues_07",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 7",
+      "section": "[عارضی] Subscale C",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_08",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 8",
+      "section": "[عارضی] Subscale C",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_09",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 9",
+      "section": "[عارضی] Subscale C",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_10",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 10",
+      "section": "[عارضی] Subscale D",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_11",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 11",
+      "section": "[عارضی] Subscale D",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    },
+    {
+      "id": "ues_12",
+      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 12",
+      "section": "[عارضی] Subscale D",
+      "scale": {
+        "min": 1,
+        "points": 5,
+        "leftAnchor": "[عارضی] Strongly disagree",
+        "rightAnchor": "[عارضی] Strongly agree",
+        "labels": [
+          "[عارضی] 1",
+          "[عارضی] 2",
+          "[عارضی] 3",
+          "[عارضی] 4",
+          "[عارضی] 5"
+        ]
+      },
+      "allowNA": false,
+      "reverse": false
+    }
+  ]
+}

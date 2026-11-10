@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
+import { CLIP_SCENES, isLang, isScene } from "@/config/shop";
 import { fromConfigId, isConfigId } from "@/config/uiSpace";
 import { ClipClient } from "./ClipClient";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Clip mode: /clip?target=<configId>&seed=<n>
+ * Clip mode: /clip?target=<configId>&scene=<scene>&lang=en|ur&seed=<n>
  * Renders the shop in a fixed state starting from the base config. The recorder drives the transition
  * through window.__clip (see ClipClient). Extra flags for researchers:
  *   &autoplay=1  play the 4-second timeline in real time
@@ -17,6 +18,8 @@ export default async function ClipPage({ searchParams }: { searchParams: Promise
   return (
     <ClipClient
       target={fromConfigId(sp.target)}
+      scene={isScene(sp.scene) ? sp.scene : CLIP_SCENES[0]}
+      lang={isLang(sp.lang) ? sp.lang : "en"}
       seed={Number(sp.seed ?? 0) || 0}
       autoplay={sp.autoplay === "1"}
       isStatic={sp.static === "1"}

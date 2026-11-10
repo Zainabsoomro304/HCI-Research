@@ -5,13 +5,18 @@
  * Tailwind utilities map onto them, so a theme or font-size change is purely a variable swap.
  */
 @theme inline {
-  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Latin text (prices, units, digits) stays in Inter; Urdu falls through to self-hosted Noto Nastaliq Urdu. */
+  --font-sans: "Inter Variable", "Inter", "Noto Nastaliq Urdu", ui-sans-serif, system-ui, sans-serif;
 
   --color-bg: var(--c-bg);
   --color-surface: var(--c-surface);
   --color-surface-2: var(--c-surface-2);
   --color-surface-hover: var(--c-surface-hover);
   --color-line: var(--c-border);
+  --color-control: var(--c-control);
+  --color-accent-pressed: var(--c-accent-pressed);
+  --color-hint: var(--c-hint);
+  --color-on-hint: var(--c-on-hint);
   --color-fg: var(--c-fg);
   --color-muted: var(--c-muted);
   --color-accent: var(--c-accent);
@@ -43,6 +48,15 @@
   --c-surface-2: #ffffff;
   --c-surface-hover: #f0f2f5;
   --c-border: #dfe3e8;
+  --c-control: #c9c6bd;
+  --c-accent-pressed: #13553d;
+  --c-hint: #eef5fb;
+  --c-on-hint: #2c5274;
+  --focus-width: 2px;
+  --bw: 1px;
+  --lh: 1.5;
+  --tap: 44px;
+  --tap-gap: 8px;
   --c-fg: #1c2430;
   --c-muted: #566070;
   --c-accent: #2b6a5a;
@@ -81,12 +95,69 @@ body {
 /* Tailwind preflight resets buttons/inputs to inherit fonts, so no browser default styles leak into any variant. */
 .shop {
   font-size: var(--fs-body);
-  line-height: 1.5;
+  line-height: var(--lh);
+}
+/* Nastaliq needs room above and below the line; buttons and inputs inherit the taller line too. */
+.shop button,
+.shop input {
+  line-height: inherit;
+}
+html[lang="ur"] body,
+[lang="ur"] {
+  font-family: "Inter Variable", "Inter", "Noto Nastaliq Urdu", ui-sans-serif, system-ui, sans-serif;
 }
 
 :focus-visible {
-  outline: 2px solid var(--c-focus);
+  outline: var(--focus-width) solid var(--c-focus);
   outline-offset: 2px;
+}
+
+/* ---- Action buttons (ActionButton): minimum size from targetSize, look from buttonStyle ---- */
+.act {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  position: relative;
+}
+.act-flat {
+  background: transparent;
+}
+.act-flat .act-label {
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.25em;
+}
+.act-raised {
+  box-shadow: var(--shadow-raised);
+}
+.act-raised:active {
+  box-shadow: none;
+  transform: translateY(1px);
+}
+/* Tooltips for icon-only buttons: on hover or keyboard focus only, never in clips or screenshots. */
+.act[data-tip]:hover::after,
+.act[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  white-space: nowrap;
+  border-radius: 6px;
+  background: var(--c-fg);
+  color: var(--c-surface);
+  padding: 4px 8px;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: 1.5;
+  pointer-events: none;
+}
+[dir="rtl"] .act[data-tip]:hover::after,
+[dir="rtl"] .act[data-tip]:focus-visible::after {
+  transform: translateX(50%);
+}
+.no-cursor .act[data-tip]::after {
+  display: none !important;
 }
 
 /* ---- Interface adaptation transition (View Transitions API), ~400 ms ---- */
@@ -109,7 +180,8 @@ body {
 }
 /* Card action areas (price + "Add to cart") are never clipped: their box does not clip, and the snapshots scale
    within it instead of being cropped. Applies identically to every layout. */
-::view-transition-group(*.act) {
+::view-transition-group(*.act),
+::view-transition-group(*.hint) {
   overflow: visible;
 }
 ::view-transition-old(*.act),
@@ -173,9 +245,20 @@ html.clip-mode::-webkit-scrollbar {
     opacity: 1;
   }
 }
-@keyframes slide-in-right {
+@keyframes slide-in-end {
   from {
     transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+[dir="rtl"] [class*="slide-in-end"] {
+  animation-name: slide-in-start !important;
+}
+@keyframes slide-in-start {
+  from {
+    transform: translateX(-100%);
   }
   to {
     transform: translateX(0);

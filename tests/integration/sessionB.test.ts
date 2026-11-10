@@ -17,9 +17,9 @@ const planFor = (code: string) => ({
   participantCode: code,
   conditions: {
     static: { steps: [] },
-    global: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "grid2-default-partial-light-sidebar" }] },
-    cluster5: { steps: [{ trigger: { type: "afterEvents", value: 5 }, config: "grid3-large-partial-dark-dropdown" }] },
-    personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "grid3-default-detailed-dark-dropdown" }] },
+    global: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "standard-large-flat-iconText-standard-grid3-none" }] },
+    cluster5: { steps: [{ trigger: { type: "afterEvents", value: 5 }, config: "large-large-flat-iconText-high-grid3-none" }] },
+    personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "standard-standard-flat-iconOnly-high-grid3-hints" }] },
   },
 });
 
@@ -69,8 +69,8 @@ describe("Session B", () => {
     expect(st.step).toBe("practice_task");
     expect(st.block!.isPractice).toBe(true);
     st = await act(sb.token, {
-      type: "task_finish", blockIndex: -1, cart: [{ productId: "fs-05", quantity: 1 }], firstInteractionAt: Date.now() - 5000,
-      finalConfigId: "list-default-detailed-light-sidebar", appliedConfigs: [], clientTs: Date.now(),
+      type: "task_finish", blockIndex: -1, cart: [{ productId: "fv-01", quantity: 1 }], firstInteractionAt: Date.now() - 5000,
+      finalConfigId: "standard-standard-flat-iconOnly-standard-grid3-none", appliedConfigs: [], clientTs: Date.now(),
     });
     expect(st.step).toBe("block_intro");
 
@@ -84,7 +84,7 @@ describe("Session B", () => {
       for (const c of ["static", "global", "cluster5", "personalFull", "condition"]) expect(json).not.toContain(c);
       const task = getTask(blocks[bi + 1]!.taskId);
       const cart = task.requiredItems.slice(0, 5).map((i) => ({ productId: i.candidateProductIds[0]!, quantity: 1 }));
-      const last = st.block!.steps.at(-1)?.config ?? "list-default-detailed-light-sidebar";
+      const last = st.block!.steps.at(-1)?.config ?? "standard-standard-flat-iconOnly-standard-grid3-none";
       st = await act(sb.token, {
         type: "task_finish", blockIndex: bi, cart, firstInteractionAt: Date.now() - 60_000, finalConfigId: last,
         appliedConfigs: st.block!.steps.map((s, i) => ({ step: i + 1, configId: s.config, atMs: 8000 })), clientTs: Date.now(),
@@ -98,7 +98,7 @@ describe("Session B", () => {
     }
     expect(st.step).toBe("ranking");
     expect(st.ranking!.interfaces.map((i) => i.number)).toEqual([1, 2, 3, 4]);
-    for (const i of st.ranking!.interfaces) expect(i.imageUrl).toMatch(/^\/m\/[0-9a-f]{16}\.png$/);
+    for (const i of st.ranking!.interfaces) expect(i.imageUrl).toMatch(/^\/m\/[0-9a-f]{20}\.jpg$/);
     await expect(act(sb.token, { type: "ranking", ranks: [0, 1, 2, 3].map((b) => ({ blockIndex: b, rank: 1, reason: "" })) })).rejects.toMatchObject({ status: 400 });
     st = await act(sb.token, { type: "ranking", ranks: [0, 1, 2, 3].map((b) => ({ blockIndex: b, rank: 4 - b, reason: b === 3 ? "Easy to read" : "" })) });
     expect(st.step).toBe("end");
@@ -134,17 +134,17 @@ describe("Session B", () => {
     });
     await prisma.event.createMany({
       data: [
-        ev(1, "add_to_cart", { productId: "fs-05", quantity: 1 }),
-        ev(2, "add_to_cart", { productId: "fs-05", quantity: 2 }),
-        ev(3, "add_to_cart", { productId: "kt-03", quantity: 1 }),
-        ev(4, "quantity_change", { productId: "fs-05", from: 2, to: 3 }),
-        ev(5, "adaptation_applied", { from: "a", to: "grid2-default-partial-light-sidebar", stepIndex: 1, atMs: 8000 }),
-        ev(6, "remove_from_cart", { productId: "kt-03", quantity: 1 }),
+        ev(1, "add_to_cart", { productId: "fv-01", quantity: 1 }),
+        ev(2, "add_to_cart", { productId: "fv-01", quantity: 2 }),
+        ev(3, "add_to_cart", { productId: "da-01", quantity: 1 }),
+        ev(4, "quantity_change", { productId: "fv-01", from: 2, to: 3 }),
+        ev(5, "adaptation_applied", { from: "a", to: "standard-large-flat-iconText-standard-grid3-none", stepIndex: 1, atMs: 8000 }),
+        ev(6, "remove_from_cart", { productId: "da-01", quantity: 1 }),
         ev(7, "category_select", { category: "Kitchen" }),
       ],
     });
     const resumed = await state(sb.token);
-    expect(resumed.block!.resume!.cart).toEqual([{ productId: "fs-05", quantity: 3 }]);
+    expect(resumed.block!.resume!.cart).toEqual([{ productId: "fv-01", quantity: 3 }]);
     expect(resumed.block!.resume!.appliedSteps).toBe(1);
     expect(resumed.block!.resume!.eventsSinceLast).toBe(2);
     expect(resumed.block!.elapsedMs).toBeGreaterThanOrEqual(0);

@@ -1,4 +1,4 @@
-"""Config IDs <-> the 8-dimensional dummy vector, with the base level of each setting as reference."""
+"""Config IDs <-> the 10-dimensional dummy vector, with the base level of each setting as reference."""
 
 from __future__ import annotations
 
@@ -6,17 +6,20 @@ from itertools import product
 
 import numpy as np
 
-# Base level first. The platform's level order differs (fontSize is small, default, large), so the base is explicit.
+# Base level first (the platform's order, src/config/uiSpace.ts). 3*2*3*2*2*3*2 = 432 configs, 10 dummy features.
 SETTINGS: dict[str, tuple[str, ...]] = {
-    "layout": ("list", "grid2", "grid3"),
-    "fontSize": ("default", "small", "large"),
-    "density": ("detailed", "partial", "summary"),
-    "theme": ("light", "dark"),
-    "menu": ("sidebar", "dropdown"),
+    "textSize": ("standard", "large", "xlarge"),
+    "targetSize": ("standard", "large"),
+    "buttonStyle": ("flat", "outlined", "raised"),
+    "iconLabels": ("iconOnly", "iconText"),
+    "contrast": ("standard", "high"),
+    "layout": ("grid3", "grid2", "list"),
+    "guidance": ("none", "hints"),
 }
 SETTING_KEYS = tuple(SETTINGS)
 BASE_CONFIG_ID = "-".join(levels[0] for levels in SETTINGS.values())
-FEATURES: tuple[str, ...] = tuple(level for levels in SETTINGS.values() for level in levels[1:])
+# "setting.level", because two settings have a level called "large".
+FEATURES: tuple[str, ...] = tuple(f"{s}.{level}" for s, levels in SETTINGS.items() for level in levels[1:])
 _FEATURE_INDEX = {key: i for i, key in enumerate((s, lv) for s, ls in SETTINGS.items() for lv in ls[1:])}
 
 ALL_CONFIG_IDS: tuple[str, ...] = tuple("-".join(parts) for parts in product(*SETTINGS.values()))

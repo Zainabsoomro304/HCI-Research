@@ -221,7 +221,7 @@ export function TestTools({ participants }: { participants: SimRow[] }) {
   const router = useRouter();
   const hydrated = useHydrated();
   const [count, setCount] = useState(31);
-  const [csShare, setCsShare] = useState(50);
+  const [urduShare, setUrduShare] = useState(50);
   const [seed, setSeed] = useState(1);
   const [attention, setAttention] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
@@ -255,7 +255,7 @@ export function TestTools({ participants }: { participants: SimRow[] }) {
           setMessage(null);
           setBusy("Creating…");
           try {
-            const r = await post("/api/admin/test-tools", { action: "create", count, csShare: csShare / 100, seed, attentionErrorRate: attention / 100 });
+            const r = await post("/api/admin/test-tools", { action: "create", count, urduShare: urduShare / 100, seed, attentionErrorRate: attention / 100 });
             setMessage(`Created ${r.created.length}: ${r.created[0]} … ${r.created.at(-1)}`);
           } catch (err) {
             setMessage((err as Error).message);
@@ -270,8 +270,8 @@ export function TestTools({ participants }: { participants: SimRow[] }) {
           <input type="number" min={1} max={200} value={count} onChange={(e) => setCount(Number(e.target.value))} className={`${field} mt-1 w-20`} />
         </label>
         <label className="flex flex-col text-xs font-medium text-[#566070]">
-          CS share (%)
-          <input type="number" min={0} max={100} value={csShare} onChange={(e) => setCsShare(Number(e.target.value))} className={`${field} mt-1 w-20`} />
+          Urdu share (%)
+          <input type="number" min={0} max={100} value={urduShare} onChange={(e) => setUrduShare(Number(e.target.value))} className={`${field} mt-1 w-20`} />
         </label>
         <label className="flex flex-col text-xs font-medium text-[#566070]">
           Seed

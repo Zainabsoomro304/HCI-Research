@@ -10,11 +10,11 @@ export interface ColumnDef {
 }
 
 const clipColumns = (side: "left" | "right"): ColumnDef[] => [
-  { name: `${side}_clip_id`, description: `Clip shown on the ${side} (= target config ID, layout-fontSize-density-theme-menu).` },
+  { name: `${side}_clip_id`, description: `Clip shown as Option ${side === "left" ? "A" : "B"} (= target config ID, ${SETTING_KEYS.join("-")}).` },
   ...SETTING_KEYS.map((k) => ({ name: `${side}_${k}`, description: `Target ${k} of the ${side} clip.` })),
   {
     name: `${side}_numChangedSettings`,
-    description: `Number of settings (0-5) in which the ${side} clip's target differs from the base config, i.e. transition busyness.`,
+    description: `Number of settings (0-7) in which the ${side} clip's target differs from the base config, i.e. transition busyness.`,
   },
 ];
 
@@ -32,6 +32,8 @@ export const COMPARISON_COLUMNS: ColumnDef[] = [
   { name: "repeat_of_trial_index", description: "trial_index of the original trial (repeats only)." },
   { name: "repeat_gap", description: "Number of trials between the original and this repeat (trial_index - repeat_of_trial_index; repeats only, >= 20 by design)." },
   { name: "is_attention_check", description: "1 if attention check (both clips identical; correct answer is right/B)." },
+  { name: "scene", description: "Product category shown in both clips of the trial (the scene)." },
+  { name: "language", description: "Language of both clips: en or ur. In Urdu the layout is right to left, so Option A (left_*) is shown on the right." },
   ...clipColumns("left"),
   ...clipColumns("right"),
   { name: "choice", description: "left or right (empty if not answered)." },

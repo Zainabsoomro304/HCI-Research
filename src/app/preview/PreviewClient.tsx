@@ -3,17 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { NullEventSink } from "@/lib/eventLogger";
 import { Shop } from "@/components/shop/Shop";
-import type { Category } from "@/config/shop";
+import type { Category, Lang } from "@/config/shop";
 import { DEFAULT_CONFIG, SETTING_KEYS, SETTING_LEVELS, fromConfigId, toConfigId, type UIConfig } from "@/config/uiSpace";
 
 export function PreviewClient({
   initialConfig,
   category,
+  lang,
   isStatic,
   logToConsole,
 }: {
   initialConfig: UIConfig;
   category?: Category;
+  lang: Lang;
   isStatic: boolean;
   logToConsole: boolean;
 }) {
@@ -26,9 +28,9 @@ export function PreviewClient({
   }, []);
   return (
     <>
-      <Shop config={config} mode="preview" sink={sink} initialCategory={category} instantTransitions={isStatic} />
+      <Shop config={config} mode="preview" sink={sink} lang={lang} initialCategory={category} instantTransitions={isStatic} />
       {!isStatic && (
-        <div className="fixed bottom-4 left-4 z-[60] w-72 rounded-xl border border-black/10 bg-white p-3 font-sans text-[13px] text-[#1c2430] shadow-2xl">
+        <div dir="ltr" className="fixed bottom-4 left-4 z-[60] w-80 rounded-xl border border-black/10 bg-white p-3 font-sans text-[13px] text-[#1c2430] shadow-2xl">
           <div className="flex items-center justify-between">
             <strong>Config preview</strong>
             <button className="rounded px-2 text-[#566070] hover:bg-black/5" onClick={() => setOpen((o) => !o)}>
@@ -38,8 +40,8 @@ export function PreviewClient({
           {open && (
             <div className="mt-2 flex flex-col gap-2">
               {SETTING_KEYS.map((k) => (
-                <div key={k} className="flex items-center gap-1">
-                  <span className="w-16 text-[#566070]">{k}</span>
+                <div key={k} className="flex flex-wrap items-center gap-1">
+                  <span className="w-20 shrink-0 text-[#566070]">{k}</span>
                   {SETTING_LEVELS[k].map((v) => (
                     <button
                       key={v}

@@ -1,9 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SIDE_BY_SIDE_MIN_WIDTH } from "@/config/study";
 import type { EventSink } from "@/lib/eventLogger";
 import type { TrialView } from "@/lib/session/types";
-import { Button, useT } from "./ui";
+import { Button, useLang, useT } from "./ui";
+
+function useSideBySide(): boolean {
+  const [wide, setWide] = useState(true);
+  useEffect(() => {
+    const check = () => setWide(window.innerWidth >= SIDE_BY_SIDE_MIN_WIDTH);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return wide;
+}
 
 export interface TrialResponse {
   trialId: string;
@@ -45,6 +57,8 @@ export function TrialStep({
   onChoose: (r: TrialResponse) => Promise<boolean>;
 }) {
   const t = useT();
+  const rtl = useLang() === "ur";
+  const sideBySide = useSideBySide();
   const left = useRef<HTMLVideoElement>(null);
   const right = useRef<HTMLVideoElement>(null);
   const [phase, setPhase] = useState<Phase>("loading");
@@ -121,23 +135,25 @@ export function TrialStep({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
-      if (e.key === "ArrowLeft") (e.preventDefault(), choose("left"));
-      if (e.key === "ArrowRight") (e.preventDefault(), choose("right"));
+      // Keys follow what is on screen: in Urdu (right to left) Option A is on the right.
+      if (e.key === "ArrowLeft") (e.preventDefault(), choose(rtl ? "right" : "left"));
+      if (e.key === "ArrowRight") (e.preventDefault(), choose(rtl ? "left" : "right"));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [choose]);
+  }, [choose, rtl]);
 
   const ready = phase === "ready" && !saving;
   const progressLabel = trial.isPractice
     ? t("trial.practiceProgress", { current: trial.trialIndex, total: trial.total })
     : t("trial.progress", { current: trial.trialIndex, total: trial.total });
-  const videoWidth = "min(45vw, calc((100vh - 270px) * 1.6))";
+  // Side by side on wide screens; stacked (A above B) on narrower tablets, with clear labels on each.
+  const videoWidth = sideBySide ? "min(44vw, calc((100vh - 320px) * 1.6))" : "min(88vw, calc((100vh - 400px) / 2 * 1.6))";
 
   const panel = (side: Side, label: string, url: string, ref: React.RefObject<HTMLVideoElement | null>, chooseLabel: string, key: string) => (
-    <div className="flex flex-col items-center gap-3" style={{ width: videoWidth }}>
-      <span className="grid size-9 place-items-center rounded-full bg-[var(--c-fg)] text-[17px] font-bold text-white">{label}</span>
-      <div className="relative w-full overflow-hidden rounded-xl border border-[var(--c-border)] bg-[#e9edf1] shadow-sm" style={{ aspectRatio: "16 / 10" }}>
+    <div className={`flex items-center gap-[0.6em] ${sideBySide ? "flex-col" : "flex-row"}`} style={sideBySide ? { width: videoWidth } : undefined}>
+      <span className="rounded-full bg-[#1d2420] px-[0.9em] py-[0.15em] text-[1.05em] font-bold text-white">{label}</span>
+      <div className="relative overflow-hidden rounded-[0.8em] border-2 border-[#c9cec9] bg-[#e9edea] shadow-sm" style={{ aspectRatio: "16 / 10", width: videoWidth }}>
         <video
           ref={ref}
           src={url}
@@ -151,7 +167,7 @@ export function TrialStep({
           className="absolute inset-0 h-full w-full object-contain"
         />
       </div>
-      <Button onClick={() => choose(side)} disabled={!ready} className="w-full py-3 text-[17px]" ariaKeyshortcuts={key}>
+      <Button onClick={() => choose(side)} disabled={!ready} className={sideBySide ? "min-h-[64px] w-full text-[1.15em]" : "min-h-[64px] min-w-[9em] text-[1.15em]"} ariaKeyshortcuts={key}>
         {chooseLabel}
       </Button>
     </div>
@@ -162,30 +178,30 @@ export function TrialStep({
       {trial.preloadUrls.map((u) => (
         <link key={u} rel="prefetch" href={u} as="video" />
       ))}
-      <header className="flex items-center gap-4 border-b border-[var(--c-border)] bg-white px-8 py-3">
-        <span className="whitespace-nowrap text-[14px] font-semibold text-[var(--c-muted)]">{progressLabel}</span>
+      <header className="flex items-center gap-[1em] border-b border-[var(--c-border)] bg-white px-[1.5em] py-[0.5em]">
+        <span className="whitespace-nowrap text-[0.9em] font-bold text-[var(--c-muted)]">{progressLabel}</span>
         <div
-          className="h-2 flex-1 overflow-hidden rounded-full bg-[#e3e7ec]"
+          className="h-[0.55em] flex-1 overflow-hidden rounded-full bg-[#e3e7e4]"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={trial.total}
           aria-valuenow={trial.trialIndex - 1}
           aria-label={progressLabel}
         >
-          <div className="h-full rounded-full bg-[var(--c-accent)] transition-[width]" style={{ width: `${((trial.trialIndex - 1) / trial.total) * 100}%` }} />
+          <div className="h-full rounded-full bg-[#1E6B4B] transition-[width]" style={{ width: `${((trial.trialIndex - 1) / trial.total) * 100}%` }} />
         </div>
       </header>
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-5">
-        <h1 className={`text-center text-[22px] font-bold ${trial.question === "chooseB" ? "text-[var(--c-accent)]" : ""}`}>
+      <div className="flex flex-1 flex-col items-center justify-center gap-[0.9em] px-[1em] py-[0.8em]">
+        <h1 className={`text-center text-[1.35em] font-bold ${trial.question === "chooseB" ? "text-[#1E6B4B]" : ""}`}>
           {trial.question === "chooseB" ? t("trial.questionChooseB") : t("trial.question")}
         </h1>
-        <div className="flex items-start justify-center gap-[4vw]">
-          {panel("left", t("trial.labelA"), trial.leftUrl, left, t("trial.preferA"), "ArrowLeft")}
-          {panel("right", t("trial.labelB"), trial.rightUrl, right, t("trial.preferB"), "ArrowRight")}
+        <div className={`flex items-start justify-center ${sideBySide ? "flex-row gap-[3vw]" : "flex-col gap-[0.8em]"}`}>
+          {panel("left", t("trial.optionA"), trial.leftUrl, left, t("trial.chooseA"), rtl ? "ArrowRight" : "ArrowLeft")}
+          {panel("right", t("trial.optionB"), trial.rightUrl, right, t("trial.chooseB"), rtl ? "ArrowLeft" : "ArrowRight")}
         </div>
-        <div className="flex min-h-[44px] flex-col items-center gap-2">
+        <div className="flex min-h-[56px] flex-col items-center gap-[0.4em]">
           {phase === "error" ? (
-            <div className="flex items-center gap-3 text-[15px] text-[var(--c-warning)]">
+            <div className="flex items-center gap-[0.7em] font-bold text-[var(--c-warning)]">
               {t("trial.videoError")}
               <Button variant="secondary" onClick={() => (setPhase("loading"), left.current?.load(), right.current?.load(), void playBoth())}>
                 {t("trial.retryVideo")}
@@ -197,10 +213,12 @@ export function TrialStep({
             </Button>
           ) : (
             <>
-              <Button variant="secondary" onClick={replay} disabled={phase !== "ready" || saving}>
+              <Button variant="secondary" onClick={replay} disabled={phase !== "ready" || saving} className="min-w-[12em]">
                 ↻ {t("trial.replay")}
               </Button>
-              <p className="text-[13px] text-[var(--c-muted)]">{phase === "ready" ? t("trial.keyboardHint") : phase === "loading" ? t("trial.loading") : t("trial.watchFirst")}</p>
+              <p className="text-[0.85em] text-[var(--c-muted)]">
+                {phase === "ready" ? t(rtl ? "trial.keyboardHintRtl" : "trial.keyboardHint") : phase === "loading" ? t("trial.loading") : t("trial.watchFirst")}
+              </p>
             </>
           )}
         </div>

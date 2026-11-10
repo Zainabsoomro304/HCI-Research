@@ -136,13 +136,6 @@ def clean(export: Export, config: Config, *, exclude_attention: bool | None = No
     if rules.require_completed_session and (exported != participants["n_consistent"].fillna(-1).to_numpy(float)).any():
         warnings.append("Self-consistency differs from participants.csv for some participants.")
 
-    unknown = list(participants.loc[participants["group"] == "unknown", "participant_code"])
-    if unknown:
-        log.append(
-            LogEntry(
-                "group unknown (left out of CS / non-CS descriptives)", "participants", len(unknown), "flagged", unknown
-            )
-        )
     return CleanData(
         participants=participants.reset_index(drop=True),
         main=main,

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "@/config/shop";
-import { imageUrl, type Product } from "@/lib/catalog";
+import { imageUrl, productDescription, productName, productUnit, type Product } from "@/lib/catalog";
 import { CATEGORY_TILE } from "@/lib/productArt";
+import { ActionButton, QuantityStepper } from "./ActionButton";
 import { useShop } from "./context";
-import { CheckIcon, PlusIcon } from "./icons";
+import { PlusIcon } from "./icons";
 
 const STAR_PATH = "M10 1.6l2.5 5.3 5.8.7-4.3 4 1.1 5.7L10 14.5l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z";
 
@@ -23,141 +23,87 @@ export function Stars({ rating }: { rating: number }) {
   const { t } = useShop();
   const pct = (rating / 5) * 100;
   return (
-    <span className="inline-flex items-center gap-1.5 text-small text-muted" aria-label={t("shop.rating", { rating: rating.toFixed(1) })}>
-      <span className="relative inline-flex leading-none" aria-hidden>
+    <span className="inline-flex items-center gap-[0.4em] text-small text-muted" aria-label={t("shop.rating", { rating: rating.toFixed(1) })}>
+      {/* Stars fill from the left in both directions, like a gauge. */}
+      <span className="relative inline-flex leading-none" aria-hidden dir="ltr">
         <StarRow className="text-star-empty" />
         <span className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${pct}%` }}>
           <StarRow className="text-star" />
         </span>
       </span>
-      <span className="tabular-nums">{rating.toFixed(1)}</span>
+      <bdi dir="ltr" className="tabular-nums">
+        {rating.toFixed(1)}
+      </bdi>
     </span>
   );
 }
 
-export function AddToCartButton({ product, source, full }: { product: Product; source: "card" | "detail"; full?: boolean }) {
-  const { t, cart, frozen } = useShop();
-  const [justAdded, setJustAdded] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
-  return (
-    <button
-      type="button"
-      tabIndex={frozen ? -1 : 0}
-      onClick={() => {
-        cart.add(product.id, source);
-        setJustAdded(true);
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => setJustAdded(false), 1200);
-      }}
-      className={`inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-accent px-4 py-2 text-body font-semibold text-on-accent transition-colors hover:bg-accent-hover ${full ? "w-full" : ""}`}
-    >
-      {justAdded ? <CheckIcon width="1.1em" height="1.1em" /> : <PlusIcon width="1.1em" height="1.1em" />}
-      <span>{justAdded ? t("shop.added") : t("shop.addToCart")}</span>
-    </button>
-  );
+export function Price({ amount, className = "" }: { amount: number; className?: string }) {
+  const { lang } = useShop();
+  return <bdi className={`font-bold tabular-nums ${className}`}>{formatPrice(amount, lang)}</bdi>;
+}
+
+/** "Add" until the product is in the basket, then a −/+ quantity control. */
+export function BuyControl({ product, source }: { product: Product; source: "card" | "detail" }) {
+  const { t, lang, cart } = useShop();
+  const qty = cart.quantityOf(product.id);
+  const name = productName(product, lang);
+  if (qty > 0) return <QuantityStepper name={name} quantity={qty} onChange={(q) => cart.setQuantity(product.id, q)} />;
+  return <ActionButton icon={<PlusIcon />} label={t("shop.add")} ariaLabel={t("shop.addItem", { name })} onClick={() => cart.add(product.id, source)} className="text-body" />;
 }
 
 function ProductName({ product, className }: { product: Product; className: string }) {
-  const { openProduct, frozen } = useShop();
+  const { lang, openProduct, frozen } = useShop();
   return (
     <button
       type="button"
       tabIndex={frozen ? -1 : 0}
       onClick={() => openProduct(product)}
-      className={`text-left font-semibold leading-snug text-fg decoration-2 underline-offset-2 hover:underline ${className}`}
+      className={`text-start font-semibold leading-[1.3] text-fg decoration-2 underline-offset-[0.2em] hover:underline ${className}`}
     >
-      {product.name}
+      {productName(product, lang)}
     </button>
   );
 }
 
 function ProductImage({ product, className }: { product: Product; className: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return (
-    <img
-      src={imageUrl(product)}
-      alt=""
-      draggable={false}
-      className={`block select-none object-contain ${className}`}
-      style={{ backgroundColor: CATEGORY_TILE[product.category] }}
-    />
-  );
-}
-
-/** Price that only appears on hover/focus (summary density). Space is reserved so nothing shifts. */
-function HoverPrice({ product, className }: { product: Product; className: string }) {
-  return (
-    <span
-      className={`pointer-events-none font-semibold tabular-nums opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 ${className}`}
-    >
-      {formatPrice(product.price)}
-    </span>
-  );
+  return <img src={imageUrl(product)} alt="" draggable={false} className={`block select-none object-contain ${className}`} style={{ backgroundColor: CATEGORY_TILE[product.category] }} />;
 }
 
 export function ProductCard({ product }: { product: Product }) {
-  const { config } = useShop();
-  const { layout, density } = config;
-  const vtName = { viewTransitionName: `p-${product.id}` } as React.CSSProperties;
-  // Price + button morph as their own element in every layout, so the card box never clips them mid-transition.
+  const { config, lang } = useShop();
+  const vtCard = { viewTransitionName: `p-${product.id}` } as React.CSSProperties;
+  // The price and buy control morph as their own element, so the card box never clips them mid-transition.
   const vtAction = { viewTransitionName: `act-${product.id}`, viewTransitionClass: "act" } as React.CSSProperties;
+  const unit = <span className="text-small text-muted">{productUnit(product, lang)}</span>;
 
-  if (layout === "list") {
+  if (config.layout === "list") {
     return (
-      <article
-        style={vtName}
-        data-product-id={product.id}
-        className="group flex items-center gap-5 rounded-xl border border-line bg-surface p-3 pr-5 shadow-card"
-      >
-        <ProductImage product={product} className="aspect-[4/3] w-32 shrink-0 rounded-lg" />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <article style={vtCard} data-product-id={product.id} className="flex items-center gap-[1em] rounded-[0.8em] border-[length:var(--bw)] border-line bg-surface p-[0.6em] pe-[1em] shadow-card">
+        <ProductImage product={product} className="aspect-[4/3] w-[8.5em] shrink-0 rounded-[0.55em]" />
+        <div className="flex min-w-0 flex-1 flex-col gap-[0.15em]">
           <ProductName product={product} className="text-title" />
-          {density === "detailed" && (
-            <>
-              <Stars rating={product.rating} />
-              <p className="line-clamp-2 max-w-[60ch] text-small text-muted">{product.description}</p>
-            </>
-          )}
+          {unit}
+          <p className="line-clamp-1 text-small text-muted">{productDescription(product, lang)}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-5" style={vtAction}>
-          {density === "summary" ? (
-            <HoverPrice product={product} className="min-w-[4ch] text-right text-title" />
-          ) : (
-            <span className="min-w-[4ch] text-right text-title font-semibold tabular-nums">{formatPrice(product.price)}</span>
-          )}
-          <AddToCartButton product={product} source="card" />
+        <div className="flex shrink-0 items-center gap-[1em]" style={vtAction}>
+          <Price amount={product.price} className="min-w-[5.5ch] text-end text-title" />
+          <BuyControl product={product} source="card" />
         </div>
       </article>
     );
   }
 
   return (
-    <article
-      style={vtName}
-      data-product-id={product.id}
-      className="group flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-card"
-    >
-      <div className="relative">
-        <ProductImage product={product} className={`w-full ${layout === "grid2" ? "h-[220px]" : "h-[180px]"}`} />
-        {density === "summary" && (
-          <HoverPrice
-            product={product}
-            className="absolute bottom-3 left-3 rounded-full bg-surface px-3 py-1 text-small text-fg shadow-card"
-          />
-        )}
-      </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
+    <article style={vtCard} data-product-id={product.id} className="flex flex-col overflow-hidden rounded-[0.8em] border-[length:var(--bw)] border-line bg-surface shadow-card">
+      <ProductImage product={product} className="h-[7.5em] w-full" />
+      <div className="flex flex-1 flex-col gap-[0.2em] p-[0.8em]">
         <ProductName product={product} className="text-title" />
-        {density === "detailed" && (
-          <>
-            <Stars rating={product.rating} />
-            <p className="line-clamp-2 text-small text-muted">{product.description}</p>
-          </>
-        )}
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-2" style={vtAction}>
-          {density !== "summary" && <span className="text-title font-semibold tabular-nums">{formatPrice(product.price)}</span>}
-          <AddToCartButton product={product} source="card" />
+        {unit}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-[0.8em] gap-y-[0.5em] pt-[0.5em]" style={vtAction}>
+          <Price amount={product.price} className="text-title" />
+          <BuyControl product={product} source="card" />
         </div>
       </div>
     </article>

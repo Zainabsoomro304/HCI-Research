@@ -45,8 +45,13 @@ _INT = {
 _DATETIME_EXACT = {"client_ts", "server_ts", "at"}
 
 _DOMAINS: dict[str, dict[str, set[str]]] = {
-    "participants.csv": {"group": {"cs", "nonCs", "unknown"}},
-    "comparison_trials.csv": {"choice": {"left", "right"}, "group": {"cs", "nonCs", "unknown"}},
+    "participants.csv": {"group": {"cs", "nonCs", "unknown"}, "language": {"en", "ur"}},
+    "comparison_trials.csv": {
+        "choice": {"left", "right"},
+        "group": {"cs", "nonCs", "unknown"},
+        "language": {"en", "ur"},
+        "scene": {"fruitsVeg", "grains", "dairy", "spices", "tea", "cleaning"},
+    },
     "task_trials.csv": {"condition": {"static", "global", "cluster5", "personalFull", "practice"}},
     "questionnaire_task.csv": {"instrument": {"quis", "ues_sf"}},
     "rankings.csv": {"condition": {"static", "global", "cluster5", "personalFull"}},

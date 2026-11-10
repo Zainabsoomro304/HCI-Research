@@ -1,21 +1,37 @@
 import { z } from "zod";
+import type { Lang } from "@/config/shop";
 import rawTasks from "@data/tasks.json";
 import { productsById, type Product } from "./catalog";
 
 const RequiredItemSchema = z.object({
   id: z.string().regex(/^[a-z0-9]+$/),
-  description: z.string().min(3).max(80),
+  description_en: z.string().min(3).max(90),
+  description_ur: z.string().min(2).max(90),
   candidateProductIds: z.array(z.string()).min(1),
 });
 
 export const TaskSchema = z.object({
   id: z.string().regex(/^[a-z0-9]+$/),
-  title: z.string().min(3).max(80),
-  instructions: z.string().min(10).max(400),
+  title_en: z.string().min(3).max(80),
+  title_ur: z.string().min(2).max(80),
+  instructions_en: z.string().min(10).max(400),
+  instructions_ur: z.string().min(10).max(400),
+  /** In PKR. */
   budget: z.number().int().positive(),
   requiredItems: z.array(RequiredItemSchema).min(1),
 });
 export type Task = z.infer<typeof TaskSchema>;
+
+/** A task's participant-facing text in one language. */
+export function taskText(t: Task, lang: Lang) {
+  const ur = lang === "ur";
+  return {
+    title: ur ? t.title_ur : t.title_en,
+    instructions: ur ? t.instructions_ur : t.instructions_en,
+    budget: t.budget,
+    requiredItems: t.requiredItems.map((i) => ({ id: i.id, description: ur ? i.description_ur : i.description_en })),
+  };
+}
 
 export const TasksFileSchema = z
   .object({ tasks: z.array(TaskSchema).length(4), practiceTask: TaskSchema })

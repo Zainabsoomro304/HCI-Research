@@ -1,11 +1,11 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import type { Category, Lang } from "@/config/shop";
 import type { UIConfig } from "@/config/uiSpace";
-import type { Category } from "@/config/shop";
 import type { Product } from "@/lib/catalog";
-import type { Translate } from "@/lib/strings";
 import type { EventType } from "@/lib/events";
+import type { Translate } from "@/lib/strings";
 
 export type ShopMode = "preview" | "task" | "practice" | "clip";
 
@@ -26,6 +26,7 @@ export interface CartApi {
 
 export interface ShopContextValue {
   config: UIConfig;
+  lang: Lang;
   mode: ShopMode;
   t: Translate;
   emit(type: EventType, payload?: Record<string, unknown>): void;

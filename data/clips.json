@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "seed": 20261025,
-  "baseConfigId": "list-default-detailed-light-sidebar",
+  "seed": 20261110,
+  "baseConfigId": "standard-standard-flat-iconOnly-standard-grid3-none",
   "allowedChanges": [
     2,
     3,
@@ -9,149 +9,149 @@
   ],
   "clips": [
     {
-      "id": "grid2-default-partial-light-sidebar",
+      "id": "large-standard-flat-iconText-standard-grid3-none",
       "numChangedSettings": 2
     },
     {
-      "id": "grid2-large-detailed-light-sidebar",
+      "id": "large-standard-outlined-iconOnly-standard-grid3-none",
       "numChangedSettings": 2
     },
     {
-      "id": "grid2-small-detailed-light-sidebar",
+      "id": "standard-large-flat-iconOnly-standard-grid2-none",
       "numChangedSettings": 2
     },
     {
-      "id": "grid3-default-detailed-dark-sidebar",
+      "id": "standard-large-flat-iconOnly-standard-list-none",
       "numChangedSettings": 2
     },
     {
-      "id": "grid3-default-detailed-light-dropdown",
+      "id": "standard-standard-outlined-iconOnly-high-grid3-none",
       "numChangedSettings": 2
     },
     {
-      "id": "grid3-small-detailed-light-sidebar",
+      "id": "standard-standard-raised-iconOnly-high-grid3-none",
       "numChangedSettings": 2
     },
     {
-      "id": "list-default-partial-dark-sidebar",
+      "id": "standard-standard-raised-iconOnly-standard-grid2-none",
       "numChangedSettings": 2
     },
     {
-      "id": "list-default-summary-light-dropdown",
+      "id": "standard-standard-raised-iconText-standard-grid3-none",
       "numChangedSettings": 2
     },
     {
-      "id": "list-large-detailed-dark-sidebar",
+      "id": "xlarge-standard-flat-iconOnly-standard-grid3-hints",
       "numChangedSettings": 2
     },
     {
-      "id": "list-large-partial-light-sidebar",
+      "id": "xlarge-standard-flat-iconOnly-standard-list-none",
       "numChangedSettings": 2
     },
     {
-      "id": "grid2-default-partial-light-dropdown",
+      "id": "large-large-flat-iconOnly-standard-grid3-hints",
       "numChangedSettings": 3
     },
     {
-      "id": "grid2-default-summary-dark-sidebar",
+      "id": "large-large-flat-iconOnly-standard-list-none",
       "numChangedSettings": 3
     },
     {
-      "id": "grid2-large-summary-light-sidebar",
+      "id": "large-standard-outlined-iconOnly-high-grid3-none",
       "numChangedSettings": 3
     },
     {
-      "id": "grid3-default-summary-dark-sidebar",
+      "id": "standard-large-raised-iconOnly-high-grid3-none",
       "numChangedSettings": 3
     },
     {
-      "id": "grid3-default-summary-light-dropdown",
+      "id": "standard-standard-flat-iconOnly-high-grid2-hints",
       "numChangedSettings": 3
     },
     {
-      "id": "grid3-small-summary-light-sidebar",
+      "id": "standard-standard-outlined-iconOnly-standard-list-hints",
       "numChangedSettings": 3
     },
     {
-      "id": "list-large-partial-dark-sidebar",
+      "id": "standard-standard-outlined-iconText-standard-list-none",
       "numChangedSettings": 3
     },
     {
-      "id": "list-large-summary-light-dropdown",
+      "id": "standard-standard-raised-iconOnly-standard-grid2-hints",
       "numChangedSettings": 3
     },
     {
-      "id": "list-small-detailed-dark-dropdown",
+      "id": "xlarge-large-outlined-iconOnly-standard-grid3-none",
       "numChangedSettings": 3
     },
     {
-      "id": "list-small-partial-light-dropdown",
+      "id": "xlarge-standard-flat-iconText-standard-grid2-none",
       "numChangedSettings": 3
     },
     {
-      "id": "list-small-summary-dark-sidebar",
+      "id": "xlarge-standard-outlined-iconText-standard-grid3-none",
       "numChangedSettings": 3
     },
     {
-      "id": "grid2-default-summary-dark-dropdown",
+      "id": "large-large-raised-iconOnly-standard-grid2-none",
       "numChangedSettings": 4
     },
     {
-      "id": "grid2-large-detailed-dark-dropdown",
+      "id": "large-standard-flat-iconText-high-grid2-none",
       "numChangedSettings": 4
     },
     {
-      "id": "grid2-large-partial-light-dropdown",
+      "id": "large-standard-outlined-iconOnly-high-grid2-none",
       "numChangedSettings": 4
     },
     {
-      "id": "grid2-small-detailed-dark-dropdown",
+      "id": "large-standard-raised-iconOnly-standard-list-hints",
       "numChangedSettings": 4
     },
     {
-      "id": "grid2-small-partial-dark-sidebar",
+      "id": "standard-large-flat-iconText-high-grid3-hints",
       "numChangedSettings": 4
     },
     {
-      "id": "grid3-default-summary-dark-dropdown",
+      "id": "standard-large-outlined-iconText-standard-grid3-hints",
       "numChangedSettings": 4
     },
     {
-      "id": "grid3-large-detailed-dark-dropdown",
+      "id": "standard-standard-raised-iconText-standard-list-hints",
       "numChangedSettings": 4
     },
     {
-      "id": "grid3-large-partial-dark-sidebar",
+      "id": "xlarge-large-raised-iconOnly-standard-list-none",
       "numChangedSettings": 4
     },
     {
-      "id": "grid3-large-partial-light-dropdown",
+      "id": "xlarge-standard-flat-iconText-high-list-none",
       "numChangedSettings": 4
     },
     {
-      "id": "grid3-small-partial-light-dropdown",
+      "id": "xlarge-standard-outlined-iconOnly-high-list-none",
       "numChangedSettings": 4
     },
     {
-      "id": "list-small-summary-dark-dropdown",
+      "id": "xlarge-standard-raised-iconOnly-standard-grid2-hints",
       "numChangedSettings": 4
     }
   ],
   "practiceClips": [
     {
-      "id": "grid3-default-summary-light-sidebar",
+      "id": "large-standard-raised-iconOnly-standard-grid3-none",
       "numChangedSettings": 2
     },
     {
-      "id": "grid2-large-partial-light-sidebar",
+      "id": "xlarge-standard-flat-iconOnly-high-grid3-none",
+      "numChangedSettings": 2
+    },
+    {
+      "id": "standard-standard-outlined-iconText-standard-grid2-none",
       "numChangedSettings": 3
     },
     {
-      "id": "grid3-small-detailed-dark-dropdown",
-      "numChangedSettings": 4
-    },
-    {
-      "id": "list-large-summary-dark-dropdown",
+      "id": "standard-large-raised-iconOnly-standard-list-hints",
       "numChangedSettings": 4
     }
   ]

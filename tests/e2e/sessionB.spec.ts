@@ -28,9 +28,9 @@ test("a complete Session B with an uploaded plan", async ({ page }) => {
     participantCode: p.code,
     conditions: {
       static: { steps: [] },
-      global: { steps: [{ trigger: { type: "afterMs", value: 1500 }, config: "grid2-default-partial-light-sidebar" }] },
-      cluster5: { steps: [{ trigger: { type: "afterEvents", value: 2 }, config: "grid3-large-partial-dark-dropdown" }] },
-      personalFull: { steps: [{ trigger: { type: "afterMs", value: 1500 }, config: "grid3-default-detailed-dark-dropdown" }] },
+      global: { steps: [{ trigger: { type: "afterMs", value: 1500 }, config: "standard-large-flat-iconText-standard-grid3-none" }] },
+      cluster5: { steps: [{ trigger: { type: "afterEvents", value: 2 }, config: "large-large-flat-iconText-high-grid3-none" }] },
+      personalFull: { steps: [{ trigger: { type: "afterMs", value: 1500 }, config: "standard-standard-flat-iconOnly-high-grid3-hints" }] },
     },
   });
   expect(uploaded.ok).toBe(true);
@@ -41,7 +41,7 @@ test("a complete Session B with an uploaded plan", async ({ page }) => {
 
   await page.getByRole("button", { name: "Start practice task" }).click();
   await expect(page.getByText("Practice", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Add to cart" }).first().click();
+  await page.getByRole("button", { name: /^Add .+ to basket$/ }).first().click();
   await finishTask(page);
 
   const blocks = await prisma.taskBlock.findMany({ where: { sessionId: sb.id, isPractice: false }, orderBy: { blockIndex: "asc" } });
@@ -49,12 +49,12 @@ test("a complete Session B with an uploaded plan", async ({ page }) => {
     await expect(page.getByText(`Task ${block.blockIndex + 1} of 4`)).toBeVisible();
     await page.getByRole("button", { name: "Start shopping" }).click();
     await expect(page.getByRole("button", { name: "Finish task" })).toBeVisible();
-    const adds = page.getByRole("button", { name: "Add to cart" });
+    const adds = page.getByRole("button", { name: /^Add .+ to basket$/ });
     await adds.nth(0).click();
     await adds.nth(1).click();
     await adds.nth(2).click();
     const steps = block.planSnapshot as { config: string }[];
-    const expected = steps.at(-1)?.config ?? "list-default-detailed-light-sidebar";
+    const expected = steps.at(-1)?.config ?? "standard-standard-flat-iconOnly-standard-grid3-none";
     await expect(page.locator(".shop")).toHaveAttribute("data-config-id", expected, { timeout: 10_000 });
     await finishTask(page);
     await answerQuestionnaire(page, /Satisfaction with the interface/);
@@ -62,9 +62,9 @@ test("a complete Session B with an uploaded plan", async ({ page }) => {
   }
 
   await expect(page.getByRole("heading", { name: "Compare the four shops" })).toBeVisible();
-  await page.getByRole("button", { name: "Move Interface 3 up" }).click();
+  await page.getByRole("button", { name: "Move Shop 3 up" }).click();
   await page.locator('[data-interface="4"]').dragTo(page.locator("ol li").first());
-  await page.getByLabel("Interface 2: Why? (optional, one line)").fill("Easy to read");
+  await page.getByLabel("Shop 2: Why? (optional, one line)").fill("Easy to read");
   await expect(page.locator("ol li").first()).toHaveAttribute("data-interface", "4");
   await page.getByRole("button", { name: "Submit ranking" }).click();
   await expect(page.getByRole("heading", { name: "Thank you!" })).toBeVisible();
@@ -74,7 +74,7 @@ test("a complete Session B with an uploaded plan", async ({ page }) => {
     expect(b.finishedAt).not.toBeNull();
     expect(b.totalSpent).toBeGreaterThan(0);
     expect(b.requiredItemsFound).not.toBeNull();
-    expect(b.finalConfigId).toBe((b.planSnapshot as { config: string }[]).at(-1)?.config ?? "list-default-detailed-light-sidebar");
+    expect(b.finalConfigId).toBe((b.planSnapshot as { config: string }[]).at(-1)?.config ?? "standard-standard-flat-iconOnly-standard-grid3-none");
   }
   expect(await prisma.questionnaireResponse.count({ where: { sessionId: sb.id } })).toBe(8);
   const ranks = await prisma.ranking.findMany({ where: { sessionId: sb.id }, orderBy: { rank: "asc" } });

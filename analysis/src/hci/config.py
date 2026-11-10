@@ -128,7 +128,9 @@ class SessionBSimConfig(_Strict):
 
 
 class SimulateConfig(_Strict):
-    cs_share: float
+    urdu_share: float
+    age_min: int
+    age_max: int
     cluster_probs: list[float]
     cluster_means: list[list[float]]
     weight_scale: float
@@ -140,7 +142,6 @@ class SimulateConfig(_Strict):
     lapse_min: float
     lapse_max: float
     fatigue_lapse_slope: float
-    noncs_extra_lapse: float
     attention_error_rate: float
     questionnaire_informativeness: float
     questionnaire_no_preference: float

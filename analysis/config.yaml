@@ -81,15 +81,21 @@ plans:
   trigger_after_ms: 8000
 
 simulate:
-  cs_share: 0.5
+  urdu_share: 0.5                     # share of participants doing the study in Urdu
+  age_min: 40                         # eligibility: 40 and over
+  age_max: 78
   cluster_probs: [0.34, 0.33, 0.33]
-  # Weights in logit units, feature order: grid2 grid3 small large partial summary dark dropdown
+  # Weights in logit units. Feature order: textSize.large textSize.xlarge targetSize.large buttonStyle.outlined
+  # buttonStyle.raised iconLabels.iconText contrast.high layout.grid2 layout.list guidance.hints.
+  # Plausible older-adult profiles (mirrors src/config/simulation.ts): (1) wants larger text, bigger targets, labels and
+  # high contrast; (2) likes the standard look but values labels and roomier layouts; (3) wants larger text and labels,
+  # dislikes the list layout and hints.
   cluster_means:
-    - [1.5, 2.2, -1.0, 0.2, 0.8, 1.6, 1.8, 0.6]
-    - [-1.5, -2.2, -1.5, 1.5, -1.0, -2.0, -1.5, -1.0]
-    - [1.0, 0.0, 1.2, -1.5, 1.5, 0.5, -0.8, 1.6]
-  weight_scale: 2.5
-  individual_sd: 1.2
+    - [1.2, 1.6, 1.0, 0.6, 1.0, 1.0, 0.8, 0.4, 0.8, 0.8]
+    - [0.5, -0.4, 0.3, 0.3, 0.6, -0.5, -0.3, 0.5, -0.6, -0.8]
+    - [0.8, 0.4, 0.6, 0.9, 0.4, 0.6, 0.2, -0.6, -1.2, 0.3]
+  weight_scale: 2.0
+  individual_sd: 1.0
   decisiveness_log_sd: 0.5            # person-level multiplier on all weights: how strong their preferences are
   side_bias: 0.2
   busy_gamma: -0.1                    # linear busyness: only w + gamma is recoverable
@@ -97,7 +103,6 @@ simulate:
   lapse_min: 0.0
   lapse_max: 0.08
   fatigue_lapse_slope: 0.03           # added lapse rate at the end of the session
-  noncs_extra_lapse: 0.0
   attention_error_rate: 0.01          # per check; one wrong answer fails the participant
   questionnaire_informativeness: 0.6
   questionnaire_no_preference: 0.15

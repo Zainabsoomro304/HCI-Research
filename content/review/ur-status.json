@@ -1,0 +1,1808 @@
+{
+ "description": "Urdu review status. needsReview: true until a native speaker has checked the string. Reviews done in the admin panel are stored in the database.",
+ "items": {
+  "strings:lang.title": {
+   "needsReview": true
+  },
+  "strings:lang.intro": {
+   "needsReview": true
+  },
+  "strings:lang.continue": {
+   "needsReview": true
+  },
+  "strings:common.continue": {
+   "needsReview": true
+  },
+  "strings:common.back": {
+   "needsReview": true
+  },
+  "strings:common.saving": {
+   "needsReview": true
+  },
+  "strings:common.retrying": {
+   "needsReview": true
+  },
+  "strings:common.deviceTooSmall.title": {
+   "needsReview": true
+  },
+  "strings:common.deviceTooSmall.body": {
+   "needsReview": true
+  },
+  "strings:study.title": {
+   "needsReview": true
+  },
+  "strings:study.invalidLink.title": {
+   "needsReview": true
+  },
+  "strings:study.invalidLink.body": {
+   "needsReview": true
+  },
+  "strings:study.error.title": {
+   "needsReview": true
+  },
+  "strings:study.error.body": {
+   "needsReview": true
+  },
+  "strings:study.reload": {
+   "needsReview": true
+  },
+  "strings:consent.agree": {
+   "needsReview": true
+  },
+  "strings:consent.mustAgree": {
+   "needsReview": true
+  },
+  "strings:bg.title": {
+   "needsReview": true
+  },
+  "strings:bg.intro": {
+   "needsReview": true
+  },
+  "strings:bg.required": {
+   "needsReview": true
+  },
+  "strings:bg.age": {
+   "needsReview": true
+  },
+  "strings:bg.ageHint": {
+   "needsReview": true
+  },
+  "strings:bg.gender": {
+   "needsReview": true
+  },
+  "strings:bg.gender.woman": {
+   "needsReview": true
+  },
+  "strings:bg.gender.man": {
+   "needsReview": true
+  },
+  "strings:bg.gender.preferNot": {
+   "needsReview": true
+  },
+  "strings:bg.occupation": {
+   "needsReview": true
+  },
+  "strings:bg.occupation.employed": {
+   "needsReview": true
+  },
+  "strings:bg.occupation.selfEmployed": {
+   "needsReview": true
+  },
+  "strings:bg.occupation.homemaker": {
+   "needsReview": true
+  },
+  "strings:bg.occupation.retired": {
+   "needsReview": true
+  },
+  "strings:bg.occupation.notWorking": {
+   "needsReview": true
+  },
+  "strings:bg.occupation.other": {
+   "needsReview": true
+  },
+  "strings:bg.csOrIt": {
+   "needsReview": true
+  },
+  "strings:bg.yes": {
+   "needsReview": true
+  },
+  "strings:bg.no": {
+   "needsReview": true
+  },
+  "strings:bg.sometimes": {
+   "needsReview": true
+  },
+  "strings:bg.techConfidence": {
+   "needsReview": true
+  },
+  "strings:bg.techConfidence.low": {
+   "needsReview": true
+  },
+  "strings:bg.techConfidence.high": {
+   "needsReview": true
+  },
+  "strings:bg.smartphoneUse": {
+   "needsReview": true
+  },
+  "strings:bg.computerUse": {
+   "needsReview": true
+  },
+  "strings:bg.freq.never": {
+   "needsReview": true
+  },
+  "strings:bg.freq.monthly": {
+   "needsReview": true
+  },
+  "strings:bg.freq.weekly": {
+   "needsReview": true
+  },
+  "strings:bg.freq.daily": {
+   "needsReview": true
+  },
+  "strings:bg.shopping": {
+   "needsReview": true
+  },
+  "strings:bg.shopping.never": {
+   "needsReview": true
+  },
+  "strings:bg.shopping.lessThanMonthly": {
+   "needsReview": true
+  },
+  "strings:bg.shopping.monthly": {
+   "needsReview": true
+  },
+  "strings:bg.shopping.weekly": {
+   "needsReview": true
+  },
+  "strings:bg.groceriesOnline": {
+   "needsReview": true
+  },
+  "strings:bg.readingGlasses": {
+   "needsReview": true
+  },
+  "strings:bg.readingLanguage": {
+   "needsReview": true
+  },
+  "strings:bg.readingLanguage.urdu": {
+   "needsReview": true
+  },
+  "strings:bg.readingLanguage.english": {
+   "needsReview": true
+  },
+  "strings:bg.readingLanguage.both": {
+   "needsReview": true
+  },
+  "strings:bg.readingLanguage.other": {
+   "needsReview": true
+  },
+  "strings:bg.prefsTitle": {
+   "needsReview": true
+  },
+  "strings:bg.prefsIntro": {
+   "needsReview": true
+  },
+  "strings:bg.noPreference": {
+   "needsReview": true
+  },
+  "strings:bg.prefTextSize": {
+   "needsReview": true
+  },
+  "strings:bg.prefTextSize.standard": {
+   "needsReview": true
+  },
+  "strings:bg.prefTextSize.large": {
+   "needsReview": true
+  },
+  "strings:bg.prefTextSize.xlarge": {
+   "needsReview": true
+  },
+  "strings:bg.prefTargetSize": {
+   "needsReview": true
+  },
+  "strings:bg.prefTargetSize.standard": {
+   "needsReview": true
+  },
+  "strings:bg.prefTargetSize.large": {
+   "needsReview": true
+  },
+  "strings:bg.prefButtonStyle": {
+   "needsReview": true
+  },
+  "strings:bg.prefButtonStyle.flat": {
+   "needsReview": true
+  },
+  "strings:bg.prefButtonStyle.outlined": {
+   "needsReview": true
+  },
+  "strings:bg.prefButtonStyle.raised": {
+   "needsReview": true
+  },
+  "strings:bg.prefIconLabels": {
+   "needsReview": true
+  },
+  "strings:bg.prefIconLabels.iconOnly": {
+   "needsReview": true
+  },
+  "strings:bg.prefIconLabels.iconText": {
+   "needsReview": true
+  },
+  "strings:bg.prefContrast": {
+   "needsReview": true
+  },
+  "strings:bg.prefContrast.standard": {
+   "needsReview": true
+  },
+  "strings:bg.prefContrast.high": {
+   "needsReview": true
+  },
+  "strings:bg.prefLayout": {
+   "needsReview": true
+  },
+  "strings:bg.prefLayout.grid3": {
+   "needsReview": true
+  },
+  "strings:bg.prefLayout.grid2": {
+   "needsReview": true
+  },
+  "strings:bg.prefLayout.list": {
+   "needsReview": true
+  },
+  "strings:bg.prefGuidance": {
+   "needsReview": true
+  },
+  "strings:bg.prefGuidance.none": {
+   "needsReview": true
+  },
+  "strings:bg.prefGuidance.hints": {
+   "needsReview": true
+  },
+  "strings:bg.submit": {
+   "needsReview": true
+  },
+  "strings:bg.fixErrors": {
+   "needsReview": true
+  },
+  "strings:eligibility.title": {
+   "needsReview": true
+  },
+  "strings:eligibility.body": {
+   "needsReview": true
+  },
+  "strings:instr.title": {
+   "needsReview": true
+  },
+  "strings:instr.step1": {
+   "needsReview": true
+  },
+  "strings:instr.step2": {
+   "needsReview": true
+  },
+  "strings:instr.step3": {
+   "needsReview": true
+  },
+  "strings:instr.step4": {
+   "needsReview": true
+  },
+  "strings:instr.step5": {
+   "needsReview": true
+  },
+  "strings:instr.practice": {
+   "needsReview": true
+  },
+  "strings:instr.duration": {
+   "needsReview": true
+  },
+  "strings:instr.start": {
+   "needsReview": true
+  },
+  "strings:mainIntro.title": {
+   "needsReview": true
+  },
+  "strings:mainIntro.body": {
+   "needsReview": true
+  },
+  "strings:mainIntro.start": {
+   "needsReview": true
+  },
+  "strings:trial.question": {
+   "needsReview": true
+  },
+  "strings:trial.questionChooseB": {
+   "needsReview": true
+  },
+  "strings:trial.progress": {
+   "needsReview": true
+  },
+  "strings:trial.practiceProgress": {
+   "needsReview": true
+  },
+  "strings:trial.optionA": {
+   "needsReview": true
+  },
+  "strings:trial.optionB": {
+   "needsReview": true
+  },
+  "strings:trial.chooseA": {
+   "needsReview": true
+  },
+  "strings:trial.chooseB": {
+   "needsReview": true
+  },
+  "strings:trial.replay": {
+   "needsReview": true
+  },
+  "strings:trial.watchFirst": {
+   "needsReview": true
+  },
+  "strings:trial.keyboardHint": {
+   "needsReview": true
+  },
+  "strings:trial.keyboardHintRtl": {
+   "needsReview": true
+  },
+  "strings:trial.loading": {
+   "needsReview": true
+  },
+  "strings:trial.videoError": {
+   "needsReview": true
+  },
+  "strings:trial.retryVideo": {
+   "needsReview": true
+  },
+  "strings:break.title": {
+   "needsReview": true
+  },
+  "strings:break.body": {
+   "needsReview": true
+  },
+  "strings:end.title": {
+   "needsReview": true
+  },
+  "strings:end.phase1": {
+   "needsReview": true
+  },
+  "strings:end.sessionA": {
+   "needsReview": true
+  },
+  "strings:end.sessionB": {
+   "needsReview": true
+  },
+  "strings:end.close": {
+   "needsReview": true
+  },
+  "strings:shop.searchPlaceholder": {
+   "needsReview": true
+  },
+  "strings:shop.searchLabel": {
+   "needsReview": true
+  },
+  "strings:shop.searchButton": {
+   "needsReview": true
+  },
+  "strings:shop.categories": {
+   "needsReview": true
+  },
+  "strings:shop.basket": {
+   "needsReview": true
+  },
+  "strings:shop.basketButton": {
+   "needsReview": true
+  },
+  "strings:shop.itemsCount": {
+   "needsReview": true
+  },
+  "strings:shop.itemsCountOne": {
+   "needsReview": true
+  },
+  "strings:shop.resultsFor": {
+   "needsReview": true
+  },
+  "strings:shop.noResults": {
+   "needsReview": true
+  },
+  "strings:shop.clearSearch": {
+   "needsReview": true
+  },
+  "strings:shop.add": {
+   "needsReview": true
+  },
+  "strings:shop.addItem": {
+   "needsReview": true
+  },
+  "strings:shop.added": {
+   "needsReview": true
+  },
+  "strings:shop.inBasket": {
+   "needsReview": true
+  },
+  "strings:shop.rating": {
+   "needsReview": true
+  },
+  "strings:shop.close": {
+   "needsReview": true
+  },
+  "strings:shop.details": {
+   "needsReview": true
+  },
+  "strings:shop.basketTitle": {
+   "needsReview": true
+  },
+  "strings:shop.basketEmpty": {
+   "needsReview": true
+  },
+  "strings:shop.basketTotal": {
+   "needsReview": true
+  },
+  "strings:shop.less": {
+   "needsReview": true
+  },
+  "strings:shop.more": {
+   "needsReview": true
+  },
+  "strings:shop.decrease": {
+   "needsReview": true
+  },
+  "strings:shop.increase": {
+   "needsReview": true
+  },
+  "strings:shop.quantity": {
+   "needsReview": true
+  },
+  "strings:shop.each": {
+   "needsReview": true
+  },
+  "strings:shop.remove": {
+   "needsReview": true
+  },
+  "strings:shop.removeItem": {
+   "needsReview": true
+  },
+  "strings:shop.continueShopping": {
+   "needsReview": true
+  },
+  "strings:shop.hint.list": {
+   "needsReview": true
+  },
+  "strings:shop.hint.basket": {
+   "needsReview": true
+  },
+  "strings:shop.hint.search": {
+   "needsReview": true
+  },
+  "strings:cat.fruitsVeg": {
+   "needsReview": true
+  },
+  "strings:cat.grains": {
+   "needsReview": true
+  },
+  "strings:cat.dairy": {
+   "needsReview": true
+  },
+  "strings:cat.spices": {
+   "needsReview": true
+  },
+  "strings:cat.tea": {
+   "needsReview": true
+  },
+  "strings:cat.oil": {
+   "needsReview": true
+  },
+  "strings:cat.bakery": {
+   "needsReview": true
+  },
+  "strings:cat.cleaning": {
+   "needsReview": true
+  },
+  "strings:task.title": {
+   "needsReview": true
+  },
+  "strings:task.shoppingList": {
+   "needsReview": true
+  },
+  "strings:task.budget": {
+   "needsReview": true
+  },
+  "strings:task.spent": {
+   "needsReview": true
+  },
+  "strings:task.remaining": {
+   "needsReview": true
+  },
+  "strings:task.overBudget": {
+   "needsReview": true
+  },
+  "strings:task.finish": {
+   "needsReview": true
+  },
+  "strings:task.confirmTitle": {
+   "needsReview": true
+  },
+  "strings:task.confirmBody": {
+   "needsReview": true
+  },
+  "strings:task.confirmYes": {
+   "needsReview": true
+  },
+  "strings:task.confirmNo": {
+   "needsReview": true
+  },
+  "strings:sb.locked.title": {
+   "needsReview": true
+  },
+  "strings:sb.locked.body": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.title": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.p1": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.p2": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.p3": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.p4": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.p5": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.duration": {
+   "needsReview": true
+  },
+  "strings:sb.welcome.start": {
+   "needsReview": true
+  },
+  "strings:sb.intro.taskOf": {
+   "needsReview": true
+  },
+  "strings:sb.intro.budget": {
+   "needsReview": true
+  },
+  "strings:sb.intro.list": {
+   "needsReview": true
+  },
+  "strings:sb.intro.start": {
+   "needsReview": true
+  },
+  "strings:sb.practiceBadge": {
+   "needsReview": true
+  },
+  "strings:q.progress": {
+   "needsReview": true
+  },
+  "strings:q.submit": {
+   "needsReview": true
+  },
+  "strings:q.missing": {
+   "needsReview": true
+  },
+  "strings:rank.title": {
+   "needsReview": true
+  },
+  "strings:rank.intro": {
+   "needsReview": true
+  },
+  "strings:rank.interface": {
+   "needsReview": true
+  },
+  "strings:rank.position": {
+   "needsReview": true
+  },
+  "strings:rank.mostPreferred": {
+   "needsReview": true
+  },
+  "strings:rank.leastPreferred": {
+   "needsReview": true
+  },
+  "strings:rank.moveUp": {
+   "needsReview": true
+  },
+  "strings:rank.moveDown": {
+   "needsReview": true
+  },
+  "strings:rank.why": {
+   "needsReview": true
+  },
+  "strings:rank.submit": {
+   "needsReview": true
+  },
+  "strings:home.body": {
+   "needsReview": true
+  },
+  "catalog:fv-01:name": {
+   "needsReview": true
+  },
+  "catalog:fv-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-01:description": {
+   "needsReview": true
+  },
+  "catalog:fv-02:name": {
+   "needsReview": true
+  },
+  "catalog:fv-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-02:description": {
+   "needsReview": true
+  },
+  "catalog:fv-03:name": {
+   "needsReview": true
+  },
+  "catalog:fv-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-03:description": {
+   "needsReview": true
+  },
+  "catalog:fv-04:name": {
+   "needsReview": true
+  },
+  "catalog:fv-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-04:description": {
+   "needsReview": true
+  },
+  "catalog:fv-05:name": {
+   "needsReview": true
+  },
+  "catalog:fv-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-05:description": {
+   "needsReview": true
+  },
+  "catalog:fv-06:name": {
+   "needsReview": true
+  },
+  "catalog:fv-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-06:description": {
+   "needsReview": true
+  },
+  "catalog:fv-07:name": {
+   "needsReview": true
+  },
+  "catalog:fv-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-07:description": {
+   "needsReview": true
+  },
+  "catalog:fv-08:name": {
+   "needsReview": true
+  },
+  "catalog:fv-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-08:description": {
+   "needsReview": true
+  },
+  "catalog:fv-09:name": {
+   "needsReview": true
+  },
+  "catalog:fv-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-09:description": {
+   "needsReview": true
+  },
+  "catalog:fv-10:name": {
+   "needsReview": true
+  },
+  "catalog:fv-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-10:description": {
+   "needsReview": true
+  },
+  "catalog:fv-11:name": {
+   "needsReview": true
+  },
+  "catalog:fv-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-11:description": {
+   "needsReview": true
+  },
+  "catalog:fv-12:name": {
+   "needsReview": true
+  },
+  "catalog:fv-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-12:description": {
+   "needsReview": true
+  },
+  "catalog:fv-13:name": {
+   "needsReview": true
+  },
+  "catalog:fv-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-13:description": {
+   "needsReview": true
+  },
+  "catalog:fv-14:name": {
+   "needsReview": true
+  },
+  "catalog:fv-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-14:description": {
+   "needsReview": true
+  },
+  "catalog:fv-15:name": {
+   "needsReview": true
+  },
+  "catalog:fv-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:fv-15:description": {
+   "needsReview": true
+  },
+  "catalog:gr-01:name": {
+   "needsReview": true
+  },
+  "catalog:gr-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-01:description": {
+   "needsReview": true
+  },
+  "catalog:gr-02:name": {
+   "needsReview": true
+  },
+  "catalog:gr-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-02:description": {
+   "needsReview": true
+  },
+  "catalog:gr-03:name": {
+   "needsReview": true
+  },
+  "catalog:gr-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-03:description": {
+   "needsReview": true
+  },
+  "catalog:gr-04:name": {
+   "needsReview": true
+  },
+  "catalog:gr-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-04:description": {
+   "needsReview": true
+  },
+  "catalog:gr-05:name": {
+   "needsReview": true
+  },
+  "catalog:gr-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-05:description": {
+   "needsReview": true
+  },
+  "catalog:gr-06:name": {
+   "needsReview": true
+  },
+  "catalog:gr-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-06:description": {
+   "needsReview": true
+  },
+  "catalog:gr-07:name": {
+   "needsReview": true
+  },
+  "catalog:gr-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-07:description": {
+   "needsReview": true
+  },
+  "catalog:gr-08:name": {
+   "needsReview": true
+  },
+  "catalog:gr-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-08:description": {
+   "needsReview": true
+  },
+  "catalog:gr-09:name": {
+   "needsReview": true
+  },
+  "catalog:gr-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-09:description": {
+   "needsReview": true
+  },
+  "catalog:gr-10:name": {
+   "needsReview": true
+  },
+  "catalog:gr-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-10:description": {
+   "needsReview": true
+  },
+  "catalog:gr-11:name": {
+   "needsReview": true
+  },
+  "catalog:gr-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-11:description": {
+   "needsReview": true
+  },
+  "catalog:gr-12:name": {
+   "needsReview": true
+  },
+  "catalog:gr-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-12:description": {
+   "needsReview": true
+  },
+  "catalog:gr-13:name": {
+   "needsReview": true
+  },
+  "catalog:gr-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-13:description": {
+   "needsReview": true
+  },
+  "catalog:gr-14:name": {
+   "needsReview": true
+  },
+  "catalog:gr-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-14:description": {
+   "needsReview": true
+  },
+  "catalog:gr-15:name": {
+   "needsReview": true
+  },
+  "catalog:gr-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:gr-15:description": {
+   "needsReview": true
+  },
+  "catalog:da-01:name": {
+   "needsReview": true
+  },
+  "catalog:da-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-01:description": {
+   "needsReview": true
+  },
+  "catalog:da-02:name": {
+   "needsReview": true
+  },
+  "catalog:da-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-02:description": {
+   "needsReview": true
+  },
+  "catalog:da-03:name": {
+   "needsReview": true
+  },
+  "catalog:da-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-03:description": {
+   "needsReview": true
+  },
+  "catalog:da-04:name": {
+   "needsReview": true
+  },
+  "catalog:da-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-04:description": {
+   "needsReview": true
+  },
+  "catalog:da-05:name": {
+   "needsReview": true
+  },
+  "catalog:da-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-05:description": {
+   "needsReview": true
+  },
+  "catalog:da-06:name": {
+   "needsReview": true
+  },
+  "catalog:da-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-06:description": {
+   "needsReview": true
+  },
+  "catalog:da-07:name": {
+   "needsReview": true
+  },
+  "catalog:da-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-07:description": {
+   "needsReview": true
+  },
+  "catalog:da-08:name": {
+   "needsReview": true
+  },
+  "catalog:da-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-08:description": {
+   "needsReview": true
+  },
+  "catalog:da-09:name": {
+   "needsReview": true
+  },
+  "catalog:da-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-09:description": {
+   "needsReview": true
+  },
+  "catalog:da-10:name": {
+   "needsReview": true
+  },
+  "catalog:da-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-10:description": {
+   "needsReview": true
+  },
+  "catalog:da-11:name": {
+   "needsReview": true
+  },
+  "catalog:da-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-11:description": {
+   "needsReview": true
+  },
+  "catalog:da-12:name": {
+   "needsReview": true
+  },
+  "catalog:da-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-12:description": {
+   "needsReview": true
+  },
+  "catalog:da-13:name": {
+   "needsReview": true
+  },
+  "catalog:da-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-13:description": {
+   "needsReview": true
+  },
+  "catalog:da-14:name": {
+   "needsReview": true
+  },
+  "catalog:da-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-14:description": {
+   "needsReview": true
+  },
+  "catalog:da-15:name": {
+   "needsReview": true
+  },
+  "catalog:da-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:da-15:description": {
+   "needsReview": true
+  },
+  "catalog:sp-01:name": {
+   "needsReview": true
+  },
+  "catalog:sp-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-01:description": {
+   "needsReview": true
+  },
+  "catalog:sp-02:name": {
+   "needsReview": true
+  },
+  "catalog:sp-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-02:description": {
+   "needsReview": true
+  },
+  "catalog:sp-03:name": {
+   "needsReview": true
+  },
+  "catalog:sp-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-03:description": {
+   "needsReview": true
+  },
+  "catalog:sp-04:name": {
+   "needsReview": true
+  },
+  "catalog:sp-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-04:description": {
+   "needsReview": true
+  },
+  "catalog:sp-05:name": {
+   "needsReview": true
+  },
+  "catalog:sp-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-05:description": {
+   "needsReview": true
+  },
+  "catalog:sp-06:name": {
+   "needsReview": true
+  },
+  "catalog:sp-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-06:description": {
+   "needsReview": true
+  },
+  "catalog:sp-07:name": {
+   "needsReview": true
+  },
+  "catalog:sp-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-07:description": {
+   "needsReview": true
+  },
+  "catalog:sp-08:name": {
+   "needsReview": true
+  },
+  "catalog:sp-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-08:description": {
+   "needsReview": true
+  },
+  "catalog:sp-09:name": {
+   "needsReview": true
+  },
+  "catalog:sp-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-09:description": {
+   "needsReview": true
+  },
+  "catalog:sp-10:name": {
+   "needsReview": true
+  },
+  "catalog:sp-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-10:description": {
+   "needsReview": true
+  },
+  "catalog:sp-11:name": {
+   "needsReview": true
+  },
+  "catalog:sp-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-11:description": {
+   "needsReview": true
+  },
+  "catalog:sp-12:name": {
+   "needsReview": true
+  },
+  "catalog:sp-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-12:description": {
+   "needsReview": true
+  },
+  "catalog:sp-13:name": {
+   "needsReview": true
+  },
+  "catalog:sp-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-13:description": {
+   "needsReview": true
+  },
+  "catalog:sp-14:name": {
+   "needsReview": true
+  },
+  "catalog:sp-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-14:description": {
+   "needsReview": true
+  },
+  "catalog:sp-15:name": {
+   "needsReview": true
+  },
+  "catalog:sp-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:sp-15:description": {
+   "needsReview": true
+  },
+  "catalog:tb-01:name": {
+   "needsReview": true
+  },
+  "catalog:tb-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-01:description": {
+   "needsReview": true
+  },
+  "catalog:tb-02:name": {
+   "needsReview": true
+  },
+  "catalog:tb-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-02:description": {
+   "needsReview": true
+  },
+  "catalog:tb-03:name": {
+   "needsReview": true
+  },
+  "catalog:tb-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-03:description": {
+   "needsReview": true
+  },
+  "catalog:tb-04:name": {
+   "needsReview": true
+  },
+  "catalog:tb-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-04:description": {
+   "needsReview": true
+  },
+  "catalog:tb-05:name": {
+   "needsReview": true
+  },
+  "catalog:tb-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-05:description": {
+   "needsReview": true
+  },
+  "catalog:tb-06:name": {
+   "needsReview": true
+  },
+  "catalog:tb-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-06:description": {
+   "needsReview": true
+  },
+  "catalog:tb-07:name": {
+   "needsReview": true
+  },
+  "catalog:tb-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-07:description": {
+   "needsReview": true
+  },
+  "catalog:tb-08:name": {
+   "needsReview": true
+  },
+  "catalog:tb-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-08:description": {
+   "needsReview": true
+  },
+  "catalog:tb-09:name": {
+   "needsReview": true
+  },
+  "catalog:tb-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-09:description": {
+   "needsReview": true
+  },
+  "catalog:tb-10:name": {
+   "needsReview": true
+  },
+  "catalog:tb-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-10:description": {
+   "needsReview": true
+  },
+  "catalog:tb-11:name": {
+   "needsReview": true
+  },
+  "catalog:tb-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-11:description": {
+   "needsReview": true
+  },
+  "catalog:tb-12:name": {
+   "needsReview": true
+  },
+  "catalog:tb-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-12:description": {
+   "needsReview": true
+  },
+  "catalog:tb-13:name": {
+   "needsReview": true
+  },
+  "catalog:tb-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-13:description": {
+   "needsReview": true
+  },
+  "catalog:tb-14:name": {
+   "needsReview": true
+  },
+  "catalog:tb-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-14:description": {
+   "needsReview": true
+  },
+  "catalog:tb-15:name": {
+   "needsReview": true
+  },
+  "catalog:tb-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:tb-15:description": {
+   "needsReview": true
+  },
+  "catalog:oi-01:name": {
+   "needsReview": true
+  },
+  "catalog:oi-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-01:description": {
+   "needsReview": true
+  },
+  "catalog:oi-02:name": {
+   "needsReview": true
+  },
+  "catalog:oi-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-02:description": {
+   "needsReview": true
+  },
+  "catalog:oi-03:name": {
+   "needsReview": true
+  },
+  "catalog:oi-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-03:description": {
+   "needsReview": true
+  },
+  "catalog:oi-04:name": {
+   "needsReview": true
+  },
+  "catalog:oi-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-04:description": {
+   "needsReview": true
+  },
+  "catalog:oi-05:name": {
+   "needsReview": true
+  },
+  "catalog:oi-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-05:description": {
+   "needsReview": true
+  },
+  "catalog:oi-06:name": {
+   "needsReview": true
+  },
+  "catalog:oi-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-06:description": {
+   "needsReview": true
+  },
+  "catalog:oi-07:name": {
+   "needsReview": true
+  },
+  "catalog:oi-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-07:description": {
+   "needsReview": true
+  },
+  "catalog:oi-08:name": {
+   "needsReview": true
+  },
+  "catalog:oi-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-08:description": {
+   "needsReview": true
+  },
+  "catalog:oi-09:name": {
+   "needsReview": true
+  },
+  "catalog:oi-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-09:description": {
+   "needsReview": true
+  },
+  "catalog:oi-10:name": {
+   "needsReview": true
+  },
+  "catalog:oi-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-10:description": {
+   "needsReview": true
+  },
+  "catalog:oi-11:name": {
+   "needsReview": true
+  },
+  "catalog:oi-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-11:description": {
+   "needsReview": true
+  },
+  "catalog:oi-12:name": {
+   "needsReview": true
+  },
+  "catalog:oi-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-12:description": {
+   "needsReview": true
+  },
+  "catalog:oi-13:name": {
+   "needsReview": true
+  },
+  "catalog:oi-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-13:description": {
+   "needsReview": true
+  },
+  "catalog:oi-14:name": {
+   "needsReview": true
+  },
+  "catalog:oi-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-14:description": {
+   "needsReview": true
+  },
+  "catalog:oi-15:name": {
+   "needsReview": true
+  },
+  "catalog:oi-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:oi-15:description": {
+   "needsReview": true
+  },
+  "catalog:bk-01:name": {
+   "needsReview": true
+  },
+  "catalog:bk-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-01:description": {
+   "needsReview": true
+  },
+  "catalog:bk-02:name": {
+   "needsReview": true
+  },
+  "catalog:bk-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-02:description": {
+   "needsReview": true
+  },
+  "catalog:bk-03:name": {
+   "needsReview": true
+  },
+  "catalog:bk-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-03:description": {
+   "needsReview": true
+  },
+  "catalog:bk-04:name": {
+   "needsReview": true
+  },
+  "catalog:bk-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-04:description": {
+   "needsReview": true
+  },
+  "catalog:bk-05:name": {
+   "needsReview": true
+  },
+  "catalog:bk-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-05:description": {
+   "needsReview": true
+  },
+  "catalog:bk-06:name": {
+   "needsReview": true
+  },
+  "catalog:bk-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-06:description": {
+   "needsReview": true
+  },
+  "catalog:bk-07:name": {
+   "needsReview": true
+  },
+  "catalog:bk-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-07:description": {
+   "needsReview": true
+  },
+  "catalog:bk-08:name": {
+   "needsReview": true
+  },
+  "catalog:bk-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-08:description": {
+   "needsReview": true
+  },
+  "catalog:bk-09:name": {
+   "needsReview": true
+  },
+  "catalog:bk-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-09:description": {
+   "needsReview": true
+  },
+  "catalog:bk-10:name": {
+   "needsReview": true
+  },
+  "catalog:bk-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-10:description": {
+   "needsReview": true
+  },
+  "catalog:bk-11:name": {
+   "needsReview": true
+  },
+  "catalog:bk-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-11:description": {
+   "needsReview": true
+  },
+  "catalog:bk-12:name": {
+   "needsReview": true
+  },
+  "catalog:bk-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-12:description": {
+   "needsReview": true
+  },
+  "catalog:bk-13:name": {
+   "needsReview": true
+  },
+  "catalog:bk-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-13:description": {
+   "needsReview": true
+  },
+  "catalog:bk-14:name": {
+   "needsReview": true
+  },
+  "catalog:bk-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-14:description": {
+   "needsReview": true
+  },
+  "catalog:bk-15:name": {
+   "needsReview": true
+  },
+  "catalog:bk-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:bk-15:description": {
+   "needsReview": true
+  },
+  "catalog:cl-01:name": {
+   "needsReview": true
+  },
+  "catalog:cl-01:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-01:description": {
+   "needsReview": true
+  },
+  "catalog:cl-02:name": {
+   "needsReview": true
+  },
+  "catalog:cl-02:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-02:description": {
+   "needsReview": true
+  },
+  "catalog:cl-03:name": {
+   "needsReview": true
+  },
+  "catalog:cl-03:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-03:description": {
+   "needsReview": true
+  },
+  "catalog:cl-04:name": {
+   "needsReview": true
+  },
+  "catalog:cl-04:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-04:description": {
+   "needsReview": true
+  },
+  "catalog:cl-05:name": {
+   "needsReview": true
+  },
+  "catalog:cl-05:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-05:description": {
+   "needsReview": true
+  },
+  "catalog:cl-06:name": {
+   "needsReview": true
+  },
+  "catalog:cl-06:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-06:description": {
+   "needsReview": true
+  },
+  "catalog:cl-07:name": {
+   "needsReview": true
+  },
+  "catalog:cl-07:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-07:description": {
+   "needsReview": true
+  },
+  "catalog:cl-08:name": {
+   "needsReview": true
+  },
+  "catalog:cl-08:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-08:description": {
+   "needsReview": true
+  },
+  "catalog:cl-09:name": {
+   "needsReview": true
+  },
+  "catalog:cl-09:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-09:description": {
+   "needsReview": true
+  },
+  "catalog:cl-10:name": {
+   "needsReview": true
+  },
+  "catalog:cl-10:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-10:description": {
+   "needsReview": true
+  },
+  "catalog:cl-11:name": {
+   "needsReview": true
+  },
+  "catalog:cl-11:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-11:description": {
+   "needsReview": true
+  },
+  "catalog:cl-12:name": {
+   "needsReview": true
+  },
+  "catalog:cl-12:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-12:description": {
+   "needsReview": true
+  },
+  "catalog:cl-13:name": {
+   "needsReview": true
+  },
+  "catalog:cl-13:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-13:description": {
+   "needsReview": true
+  },
+  "catalog:cl-14:name": {
+   "needsReview": true
+  },
+  "catalog:cl-14:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-14:description": {
+   "needsReview": true
+  },
+  "catalog:cl-15:name": {
+   "needsReview": true
+  },
+  "catalog:cl-15:unitLabel": {
+   "needsReview": true
+  },
+  "catalog:cl-15:description": {
+   "needsReview": true
+  },
+  "tasks:staples:title": {
+   "needsReview": true
+  },
+  "tasks:staples:instructions": {
+   "needsReview": true
+  },
+  "tasks:staples:atta": {
+   "needsReview": true
+  },
+  "tasks:staples:rice": {
+   "needsReview": true
+  },
+  "tasks:staples:daal": {
+   "needsReview": true
+  },
+  "tasks:staples:oil": {
+   "needsReview": true
+  },
+  "tasks:staples:sugar": {
+   "needsReview": true
+  },
+  "tasks:staples:tea": {
+   "needsReview": true
+  },
+  "tasks:breakfast:title": {
+   "needsReview": true
+  },
+  "tasks:breakfast:instructions": {
+   "needsReview": true
+  },
+  "tasks:breakfast:eggs": {
+   "needsReview": true
+  },
+  "tasks:breakfast:bread": {
+   "needsReview": true
+  },
+  "tasks:breakfast:milk": {
+   "needsReview": true
+  },
+  "tasks:breakfast:butter": {
+   "needsReview": true
+  },
+  "tasks:breakfast:spread": {
+   "needsReview": true
+  },
+  "tasks:breakfast:rusk": {
+   "needsReview": true
+  },
+  "tasks:dinner:title": {
+   "needsReview": true
+  },
+  "tasks:dinner:instructions": {
+   "needsReview": true
+  },
+  "tasks:dinner:onions": {
+   "needsReview": true
+  },
+  "tasks:dinner:tomatoes": {
+   "needsReview": true
+  },
+  "tasks:dinner:gingergarlic": {
+   "needsReview": true
+  },
+  "tasks:dinner:spices": {
+   "needsReview": true
+  },
+  "tasks:dinner:oil": {
+   "needsReview": true
+  },
+  "tasks:dinner:main": {
+   "needsReview": true
+  },
+  "tasks:cleaning:title": {
+   "needsReview": true
+  },
+  "tasks:cleaning:instructions": {
+   "needsReview": true
+  },
+  "tasks:cleaning:dishes": {
+   "needsReview": true
+  },
+  "tasks:cleaning:laundry": {
+   "needsReview": true
+  },
+  "tasks:cleaning:floor": {
+   "needsReview": true
+  },
+  "tasks:cleaning:scrub": {
+   "needsReview": true
+  },
+  "tasks:cleaning:vinegar": {
+   "needsReview": true
+  },
+  "tasks:cleaning:soda": {
+   "needsReview": true
+  },
+  "tasks:practice:title": {
+   "needsReview": true
+  },
+  "tasks:practice:instructions": {
+   "needsReview": true
+  },
+  "tasks:practice:bananas": {
+   "needsReview": true
+  },
+  "tasks:practice:fruit": {
+   "needsReview": true
+  },
+  "tasks:practice:kinnow": {
+   "needsReview": true
+  }
+ }
+}

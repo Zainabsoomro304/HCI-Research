@@ -1,71 +1,81 @@
 {
   "tasks": [
     {
-      "id": "picnic",
-      "title": "Picnic for 4 people",
-      "instructions": "You are organising a picnic in the park for four people. Buy everything on the shopping list below. Try to stay within your budget.",
-      "budget": 110,
+      "id": "staples",
+      "title_en": "Weekly staples for a family of 5",
+      "title_ur": "پانچ افراد کے گھرانے کا ہفتہ وار راشن",
+      "instructions_en": "You are buying the weekly basics for a family of five. Buy one of each item on the shopping list. Try to stay within your budget.",
+      "instructions_ur": "آپ پانچ افراد کے گھرانے کے لیے ہفتے بھر کا بنیادی سامان خرید رہے ہیں۔ فہرست میں سے ہر چیز ایک ایک خریدیں۔ کوشش کریں کہ بجٹ کے اندر رہیں۔",
+      "budget": 4300,
       "requiredItems": [
-        { "id": "blanket", "description": "a picnic blanket", "candidateProductIds": ["po-01", "po-02", "po-03"] },
-        { "id": "cooler", "description": "a bag or box to keep food cool", "candidateProductIds": ["po-04", "po-05", "po-06"] },
-        { "id": "tableware", "description": "reusable plates for four people", "candidateProductIds": ["po-07", "kt-01", "kt-02"] },
-        { "id": "drinks", "description": "cold drinks to share", "candidateProductIds": ["fs-01", "fs-02"] },
-        { "id": "snacks", "description": "snacks to share", "candidateProductIds": ["fs-03", "fs-04"] },
-        { "id": "game", "description": "an outdoor game", "candidateProductIds": ["sp-10", "sp-11", "gf-12"] }
+        { "id": "atta", "description_en": "atta (wheat flour)", "description_ur": "آٹا", "candidateProductIds": ["gr-01", "gr-07"] },
+        { "id": "rice", "description_en": "rice", "description_ur": "چاول", "candidateProductIds": ["gr-02", "gr-08", "gr-12"] },
+        { "id": "daal", "description_en": "daal (lentils)", "description_ur": "دال", "candidateProductIds": ["gr-03", "gr-04", "gr-05", "gr-10"] },
+        { "id": "oil", "description_en": "cooking oil", "description_ur": "کوکنگ آئل", "candidateProductIds": ["oi-01", "oi-02", "oi-07"] },
+        { "id": "sugar", "description_en": "sugar or gur", "description_ur": "چینی یا گڑ", "candidateProductIds": ["gr-06", "gr-11"] },
+        { "id": "tea", "description_en": "tea", "description_ur": "چائے کی پتی", "candidateProductIds": ["tb-01", "tb-02", "tb-03"] }
       ]
     },
     {
-      "id": "homeoffice",
-      "title": "Home office setup",
-      "instructions": "You are setting up a small desk at home for working and studying. Buy everything on the shopping list below. Try to stay within your budget.",
-      "budget": 88,
+      "id": "breakfast",
+      "title_en": "Breakfast for the family",
+      "title_ur": "گھر والوں کے لیے ناشتہ",
+      "instructions_en": "You are buying breakfast for the whole family. Buy one of each item on the shopping list. Try to stay within your budget.",
+      "instructions_ur": "آپ پورے گھرانے کے لیے ناشتے کا سامان خرید رہے ہیں۔ فہرست میں سے ہر چیز ایک ایک خریدیں۔ کوشش کریں کہ بجٹ کے اندر رہیں۔",
+      "budget": 1800,
       "requiredItems": [
-        { "id": "lamp", "description": "a desk lamp", "candidateProductIds": ["ho-01", "ho-02", "ho-03"] },
-        { "id": "notebook", "description": "something to write notes in", "candidateProductIds": ["ho-04", "ho-05", "ho-06"] },
-        { "id": "organiser", "description": "a holder for pens and desk supplies", "candidateProductIds": ["ho-07", "ho-08", "ho-09"] },
-        { "id": "mug", "description": "a mug for hot drinks", "candidateProductIds": ["kt-03", "kt-04", "kt-05"] },
-        { "id": "hotdrink", "description": "coffee or tea", "candidateProductIds": ["fs-05", "fs-06", "fs-07"] },
-        { "id": "plant", "description": "a small plant for the desk", "candidateProductIds": ["ho-10", "gf-10", "gf-11"] }
+        { "id": "eggs", "description_en": "eggs", "description_ur": "انڈے", "candidateProductIds": ["da-02", "da-06", "da-13"] },
+        { "id": "bread", "description_en": "bread", "description_ur": "ڈبل روٹی", "candidateProductIds": ["bk-01", "bk-02", "bk-08"] },
+        { "id": "milk", "description_en": "milk", "description_ur": "دودھ", "candidateProductIds": ["da-01", "da-07", "da-15"] },
+        { "id": "butter", "description_en": "butter", "description_ur": "مکھن", "candidateProductIds": ["da-03", "da-11"] },
+        { "id": "spread", "description_en": "jam or honey", "description_ur": "جام یا شہد", "candidateProductIds": ["bk-07", "bk-12", "tb-12", "tb-05"] },
+        { "id": "rusk", "description_en": "rusk", "description_ur": "رس", "candidateProductIds": ["bk-03", "bk-04"] }
       ]
     },
     {
-      "id": "giftbasket",
-      "title": "Birthday gift basket",
-      "instructions": "A friend's birthday is coming up and you want to put together a gift basket. Buy everything on the shopping list below. Try to stay within your budget.",
-      "budget": 80,
+      "id": "dinner",
+      "title_en": "Ingredients for a family dinner",
+      "title_ur": "گھر کے کھانے کا سامان",
+      "instructions_en": "You are cooking dinner for the family. Buy one of each item on the shopping list. The shop has no meat, so choose paneer, chickpeas or cauliflower as the main ingredient. Try to stay within your budget.",
+      "instructions_ur": "آپ گھر والوں کے لیے رات کا کھانا پکا رہے ہیں۔ فہرست میں سے ہر چیز ایک ایک خریدیں۔ دکان میں گوشت نہیں ہے، اس لیے اصل جزو کے طور پر پنیر، چنے یا پھول گوبھی چنیں۔ کوشش کریں کہ بجٹ کے اندر رہیں۔",
+      "budget": 1550,
       "requiredItems": [
-        { "id": "container", "description": "a basket or box to put the gifts in", "candidateProductIds": ["gf-01", "gf-02", "gf-03"] },
-        { "id": "chocolate", "description": "chocolates", "candidateProductIds": ["fs-08", "fs-09", "fs-10"] },
-        { "id": "candle", "description": "a scented candle", "candidateProductIds": ["gf-04", "gf-05", "gf-06"] },
-        { "id": "card", "description": "a birthday card", "candidateProductIds": ["gf-07", "gf-08", "gf-09"] },
-        { "id": "biscuits", "description": "biscuits or cookies", "candidateProductIds": ["fs-11", "fs-12"] },
-        { "id": "teapot", "description": "a teapot", "candidateProductIds": ["kt-06", "kt-07", "kt-08"] }
+        { "id": "onions", "description_en": "onions", "description_ur": "پیاز", "candidateProductIds": ["fv-04", "fv-15"] },
+        { "id": "tomatoes", "description_en": "tomatoes", "description_ur": "ٹماٹر", "candidateProductIds": ["fv-05", "fv-14"] },
+        { "id": "gingergarlic", "description_en": "ginger and garlic (fresh, or a paste)", "description_ur": "ادرک اور لہسن (تازہ یا پیسٹ)", "candidateProductIds": ["fv-11", "fv-12", "sp-06"] },
+        { "id": "spices", "description_en": "spices for the curry", "description_ur": "سالن کے مصالحے", "candidateProductIds": ["sp-07", "sp-04", "sp-01"] },
+        { "id": "oil", "description_en": "oil or ghee", "description_ur": "تیل یا گھی", "candidateProductIds": ["oi-03", "oi-05", "oi-06"] },
+        { "id": "main", "description_en": "a main ingredient instead of chicken: paneer, chickpeas or cauliflower", "description_ur": "چکن کی جگہ اصل جزو: پنیر، چنے یا پھول گوبھی", "candidateProductIds": ["da-05", "gr-09", "fv-13"] }
       ]
     },
     {
-      "id": "runner",
-      "title": "Sports kit for a beginner runner",
-      "instructions": "You have decided to start running and need some basic equipment. Buy everything on the shopping list below. Try to stay within your budget.",
-      "budget": 128,
+      "id": "cleaning",
+      "title_en": "Household cleaning supplies",
+      "title_ur": "گھر کی صفائی کا سامان",
+      "instructions_en": "You are stocking up on cleaning supplies for the house, including vinegar and baking soda for natural cleaning. Buy one of each item on the shopping list. Try to stay within your budget.",
+      "instructions_ur": "آپ گھر کی صفائی کا سامان خرید رہے ہیں، جس میں قدرتی صفائی کے لیے سرکہ اور میٹھا سوڈا بھی شامل ہے۔ فہرست میں سے ہر چیز ایک ایک خریدیں۔ کوشش کریں کہ بجٹ کے اندر رہیں۔",
+      "budget": 1700,
       "requiredItems": [
-        { "id": "shoes", "description": "a pair of running shoes", "candidateProductIds": ["sp-01", "sp-02", "sp-03"] },
-        { "id": "bottle", "description": "a water bottle", "candidateProductIds": ["sp-04", "kt-09", "po-08"] },
-        { "id": "socks", "description": "running socks", "candidateProductIds": ["sp-05", "sp-06"] },
-        { "id": "energy", "description": "an energy snack for after running", "candidateProductIds": ["fs-13", "fs-14", "fs-15"] },
-        { "id": "phoneholder", "description": "something to carry your phone while running", "candidateProductIds": ["sp-07", "sp-08"] },
-        { "id": "towel", "description": "a quick-drying towel", "candidateProductIds": ["sp-09", "po-09"] }
+        { "id": "dishes", "description_en": "something to wash the dishes", "description_ur": "برتن دھونے کی چیز", "candidateProductIds": ["cl-01", "cl-05"] },
+        { "id": "laundry", "description_en": "laundry detergent", "description_ur": "کپڑے دھونے کا سرف", "candidateProductIds": ["cl-02", "cl-10"] },
+        { "id": "floor", "description_en": "floor cleaner", "description_ur": "فرش کلینر", "candidateProductIds": ["cl-03", "cl-11"] },
+        { "id": "scrub", "description_en": "sponges or scrubbers", "description_ur": "اسپنج یا اسکربر", "candidateProductIds": ["cl-04", "cl-09"] },
+        { "id": "vinegar", "description_en": "vinegar", "description_ur": "سرکہ", "candidateProductIds": ["sp-11", "sp-13"] },
+        { "id": "soda", "description_en": "baking soda", "description_ur": "میٹھا سوڈا", "candidateProductIds": ["bk-10", "bk-11"] }
       ]
     }
   ],
   "practiceTask": {
     "id": "practice",
-    "title": "Practice: breakfast for one",
-    "instructions": "This is a practice task to get to know the shop. Buy the three things on the shopping list below, then click Finish task.",
-    "budget": 30,
+    "title_en": "Practice: fruit for guests",
+    "title_ur": "مشق: مہمانوں کے لیے پھل",
+    "instructions_en": "This is a practice task to get to know the shop. Buy the three things on the shopping list, then press Finish task.",
+    "instructions_ur": "یہ دکان سے واقف ہونے کے لیے ایک مشق ہے۔ فہرست کی تین چیزیں خریدیں، پھر \"کام ختم کریں\" دبائیں۔",
+    "budget": 1000,
     "requiredItems": [
-      { "id": "hotdrink", "description": "coffee or tea", "candidateProductIds": ["fs-05", "fs-06", "fs-07"] },
-      { "id": "mug", "description": "a mug", "candidateProductIds": ["kt-03", "kt-05"] },
-      { "id": "biscuits", "description": "biscuits or cookies", "candidateProductIds": ["fs-11", "fs-12"] }
+      { "id": "bananas", "description_en": "bananas", "description_ur": "کیلے", "candidateProductIds": ["fv-01"] },
+      { "id": "fruit", "description_en": "apples or mangoes", "description_ur": "سیب یا آم", "candidateProductIds": ["fv-02", "fv-10"] },
+      { "id": "kinnow", "description_en": "kinnow oranges", "description_ur": "کینو", "candidateProductIds": ["fv-03"] }
     ]
   }
 }

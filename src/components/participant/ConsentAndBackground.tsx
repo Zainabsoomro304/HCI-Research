@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MIN_AGE } from "@/config/study";
+import { SETTING_KEYS, SETTING_LEVELS } from "@/config/uiSpace";
 import {
   BackgroundSchema,
   GENDERS,
+  NO_PREFERENCE,
   OCCUPATIONS,
-  PREF_DETAIL,
-  PREF_LAYOUT,
-  PREF_MENU,
-  PREF_TEXT_SIZE,
-  PREF_THEME,
+  PREF_ITEMS,
+  READING_LANGUAGES,
   SHOPPING_FREQUENCIES,
+  USE_FREQUENCIES,
+  YES_NO,
+  YES_NO_SOMETIMES,
 } from "@/lib/questionnaire/background";
 import type { StringKey } from "@/lib/strings";
 import { useHydrated } from "@/lib/useHydrated";
@@ -26,7 +29,7 @@ export function ConsentStep({ markdown, hash, onAgree }: { markdown: string; has
     <StudyPage>
       <Card>
         <Markdown text={markdown} />
-        <label className="mt-8 flex cursor-pointer items-center gap-3 rounded-lg border border-[var(--c-border)] p-4 text-[16px] font-semibold">
+        <label className="mt-[1.6em] flex cursor-pointer items-center gap-[0.7em] rounded-[0.6em] border-2 border-[var(--c-border)] p-[0.9em] font-bold">
           <input
             type="checkbox"
             checked={agreed}
@@ -34,12 +37,12 @@ export function ConsentStep({ markdown, hash, onAgree }: { markdown: string; has
               setAgreed(e.target.checked);
               setError(false);
             }}
-            className="size-5 accent-[var(--c-accent)]"
+            className="size-[1.4em] shrink-0 accent-[#1E6B4B]"
           />
           {t("consent.agree")}
         </label>
-        {error && <p className="mt-2 text-[14px] text-[var(--c-warning)]">{t("consent.mustAgree")}</p>}
-        <div className="mt-6 flex justify-end">
+        {error && <p className="mt-[0.5em] font-bold text-[var(--c-warning)]">{t("consent.mustAgree")}</p>}
+        <div className="mt-[1.4em] flex justify-end">
           <Button disabled={!hydrated} onClick={() => (agreed ? onAgree(hash) : setError(true))}>
             {t("common.continue")}
           </Button>
@@ -54,33 +57,30 @@ type Answers = Record<string, string>;
 function Question({ id, label, error, children, hint }: { id: string; label: string; error?: boolean; hint?: string; children: React.ReactNode }) {
   const t = useT();
   return (
-    <fieldset
-      id={`q-${id}`}
-      className={`flex flex-col gap-3 rounded-xl border p-5 ${error ? "border-[var(--c-warning)] bg-[var(--c-warning-soft)]" : "border-[var(--c-border)]"}`}
-    >
+    <fieldset id={`q-${id}`} className={`flex flex-col gap-[0.6em] rounded-[0.8em] border-2 p-[1em] ${error ? "border-[var(--c-warning)] bg-[var(--c-warning-soft)]" : "border-[var(--c-border)]"}`}>
       <legend className="sr-only">{label}</legend>
-      <p className="text-[16px] font-semibold" aria-hidden>
+      <p className="font-bold" aria-hidden>
         {label}
       </p>
-      {hint && <p className="-mt-2 text-[14px] text-[var(--c-muted)]">{hint}</p>}
+      {hint && <p className="-mt-[0.4em] text-[0.9em] text-[var(--c-muted)]">{hint}</p>}
       {children}
-      {error && <p className="text-[14px] font-semibold text-[var(--c-warning)]">{t("bg.required")}</p>}
+      {error && <p className="font-bold text-[var(--c-warning)]">{t("bg.required")}</p>}
     </fieldset>
   );
 }
 
+const choice = (selected: boolean) =>
+  `flex min-h-[52px] cursor-pointer items-center gap-[0.5em] rounded-[0.6em] border-2 px-[0.9em] ${
+    selected ? "border-[#1E6B4B] bg-[#E3F1EA] font-bold" : "border-[#c9cec9] bg-white hover:bg-[#eef1ef]"
+  }`;
+
 function Radios({ name, options, value, onChange, labelPrefix }: { name: string; options: readonly string[]; value?: string; onChange: (v: string) => void; labelPrefix: string }) {
   const t = useT();
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-[0.5em]">
       {options.map((o) => (
-        <label
-          key={o}
-          className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3.5 py-2 text-[15px] ${
-            value === o ? "border-[var(--c-accent)] bg-[var(--c-accent-soft)] font-semibold" : "border-[var(--c-border)] bg-[var(--c-surface)] hover:bg-[var(--c-surface-hover)]"
-          }`}
-        >
-          <input type="radio" name={name} value={o} checked={value === o} onChange={() => onChange(o)} className="accent-[var(--c-accent)]" />
+        <label key={o} className={choice(value === o)}>
+          <input type="radio" name={name} value={o} checked={value === o} onChange={() => onChange(o)} className="size-[1.1em] accent-[#1E6B4B]" />
           {t(`${labelPrefix}.${o}` as StringKey)}
         </label>
       ))}
@@ -88,21 +88,17 @@ function Radios({ name, options, value, onChange, labelPrefix }: { name: string;
   );
 }
 
-function PrefRadios({ name, options, value, onChange, labelPrefix, illPrefix }: { name: string; options: readonly string[]; value?: string; onChange: (v: string) => void; labelPrefix: string; illPrefix: string }) {
+function PrefRadios({ name, setting, value, onChange }: { name: string; setting: (typeof SETTING_KEYS)[number]; value?: string; onChange: (v: string) => void }) {
   const t = useT();
+  const options = [...SETTING_LEVELS[setting], NO_PREFERENCE];
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-[0.6em]">
       {options.map((o) => (
-        <label
-          key={o}
-          className={`flex w-[150px] cursor-pointer flex-col items-center gap-2 rounded-xl border p-3 text-center text-[14px] ${
-            value === o ? "border-[var(--c-accent)] bg-[var(--c-accent-soft)] font-semibold" : "border-[var(--c-border)] bg-[var(--c-surface)] hover:bg-[var(--c-surface-hover)]"
-          }`}
-        >
-          {o === "noPreference" ? <span className="grid h-[80px] w-[120px] place-items-center text-[28px] text-[var(--c-muted)]">–</span> : <PrefIllustration id={`${illPrefix}.${o}`} />}
-          <span className="flex items-center gap-1.5">
-            <input type="radio" name={name} value={o} checked={value === o} onChange={() => onChange(o)} className="accent-[var(--c-accent)]" />
-            {o === "noPreference" ? t("bg.noPreference") : t(`${labelPrefix}.${o}` as StringKey)}
+        <label key={o} className={`flex w-[9.2em] cursor-pointer flex-col items-center gap-[0.4em] rounded-[0.8em] border-2 p-[0.6em] text-center ${value === o ? "border-[#1E6B4B] bg-[#E3F1EA] font-bold" : "border-[#c9cec9] bg-white hover:bg-[#eef1ef]"}`}>
+          {o === NO_PREFERENCE ? <span className="grid h-[80px] w-[120px] place-items-center text-[1.6em] text-[var(--c-muted)]">–</span> : <PrefIllustration id={`${setting}.${o}`} />}
+          <span className="flex items-center gap-[0.4em]">
+            <input type="radio" name={name} value={o} checked={value === o} onChange={() => onChange(o)} className="size-[1.1em] accent-[#1E6B4B]" />
+            {o === NO_PREFERENCE ? t("bg.noPreference") : t(`bg.${name}.${o}` as StringKey)}
           </span>
         </label>
       ))}
@@ -141,7 +137,16 @@ function useDraft(key: string) {
   return [a, setA, clear] as const;
 }
 
-export function BackgroundStep({ token, onSubmit }: { token: string; onSubmit: (answers: unknown) => Promise<boolean> }) {
+export function BackgroundStep({
+  token,
+  onSubmit,
+  onScreenOut,
+}: {
+  token: string;
+  onSubmit: (answers: unknown) => Promise<boolean>;
+  /** Age under MIN_AGE: only the age is sent, nothing else. */
+  onScreenOut: (age: number) => Promise<boolean>;
+}) {
   const t = useT();
   const [a, setA, clearDraft] = useDraft(`bg-draft:${token}`);
   const hydrated = useHydrated();
@@ -156,12 +161,15 @@ export function BackgroundStep({ token, onSubmit }: { token: string; onSubmit: (
   };
 
   const submit = () => {
+    const age = Number(a.age);
+    if (a.age && Number.isInteger(age) && age > 0 && age < MIN_AGE) {
+      void onScreenOut(age).then((saved) => saved && clearDraft());
+      return;
+    }
     const candidate = {
       ...a,
-      age: a.age ? Number(a.age) : undefined,
+      age: a.age ? age : undefined,
       techConfidence: a.techConfidence ? Number(a.techConfidence) : undefined,
-      field: a.field ?? "",
-      genderSelfDescribe: a.genderSelfDescribe || undefined,
       occupationOther: a.occupationOther || undefined,
     };
     const r = BackgroundSchema.safeParse(candidate);
@@ -175,13 +183,18 @@ export function BackgroundStep({ token, onSubmit }: { token: string; onSubmit: (
   };
 
   const err = (k: string) => errors.has(k);
+  const radios = (id: string, label: StringKey, options: readonly string[], prefix: string) => (
+    <Question id={id} label={t(label)} error={err(id)}>
+      <Radios name={id} options={options} value={a[id]} onChange={set(id)} labelPrefix={prefix} />
+    </Question>
+  );
   return (
-    <StudyPage>
+    <StudyPage wide>
       <Card>
-        <h1 className="text-[24px] font-bold">{t("bg.title")}</h1>
-        <p className="mt-2 text-[16px] text-[var(--c-muted)]">{t("bg.intro")}</p>
+        <h1 className="text-[1.45em] font-bold">{t("bg.title")}</h1>
+        <p className="mt-[0.4em] text-[var(--c-muted)]">{t("bg.intro")}</p>
         <form
-          className="mt-6 flex flex-col gap-4"
+          className="mt-[1.2em] flex flex-col gap-[0.9em]"
           onSubmit={(e) => {
             e.preventDefault();
             submit();
@@ -193,96 +206,55 @@ export function BackgroundStep({ token, onSubmit }: { token: string; onSubmit: (
               type="number"
               inputMode="numeric"
               min={18}
-              max={99}
+              max={110}
               value={a.age ?? ""}
               onChange={(e) => set("age")(e.target.value)}
               aria-label={t("bg.age")}
-              className="w-32 rounded-lg border border-[var(--c-border)] bg-white px-3 py-2 text-[16px]"
+              dir="ltr"
+              className="min-h-[52px] w-[6em] rounded-[0.6em] border-2 border-[#c9cec9] bg-white px-[0.6em] text-[1.05em]"
             />
           </Question>
-          <Question id="gender" label={t("bg.gender")} error={err("gender") || err("genderSelfDescribe")}>
-            <Radios name="gender" options={GENDERS} value={a.gender} onChange={set("gender")} labelPrefix="bg.gender" />
-            {a.gender === "selfDescribe" && (
-              <input
-                type="text"
-                maxLength={100}
-                value={a.genderSelfDescribe ?? ""}
-                onChange={(e) => set("genderSelfDescribe")(e.target.value)}
-                placeholder={t("bg.genderSelfDescribe")}
-                aria-label={t("bg.genderSelfDescribe")}
-                className="max-w-sm rounded-lg border border-[var(--c-border)] bg-white px-3 py-2 text-[16px]"
-              />
-            )}
-          </Question>
+          {radios("gender", "bg.gender", GENDERS, "bg.gender")}
           <Question id="occupation" label={t("bg.occupation")} error={err("occupation")}>
             <Radios name="occupation" options={OCCUPATIONS} value={a.occupation} onChange={set("occupation")} labelPrefix="bg.occupation" />
-            {a.occupation === "other" && (
-              <input
-                type="text"
-                maxLength={100}
-                value={a.occupationOther ?? ""}
-                onChange={(e) => set("occupationOther")(e.target.value)}
-                placeholder={t("bg.occupationOther")}
-                aria-label={t("bg.occupationOther")}
-                className="max-w-sm rounded-lg border border-[var(--c-border)] bg-white px-3 py-2 text-[16px]"
-              />
-            )}
           </Question>
-          <Question id="field" label={t("bg.field")} hint={t("bg.fieldHint")} error={err("field")}>
-            <input
-              type="text"
-              maxLength={200}
-              value={a.field ?? ""}
-              onChange={(e) => set("field")(e.target.value)}
-              aria-label={t("bg.field")}
-              className="max-w-md rounded-lg border border-[var(--c-border)] bg-white px-3 py-2 text-[16px]"
-            />
-          </Question>
-          <Question id="csOrIt" label={t("bg.csOrIt")} error={err("csOrIt")}>
-            <Radios name="csOrIt" options={["yes", "no"]} value={a.csOrIt} onChange={set("csOrIt")} labelPrefix="bg" />
-          </Question>
+          {radios("csOrIt", "bg.csOrIt", YES_NO, "bg")}
           <Question id="techConfidence" label={t("bg.techConfidence")} error={err("techConfidence")}>
-            <div className="flex items-center gap-3">
-              <span className="w-28 text-right text-[13px] text-[var(--c-muted)]">{t("bg.techConfidence.low")}</span>
-              <div className="flex gap-1.5" role="radiogroup" aria-label={t("bg.techConfidence")}>
+            <div className="flex flex-wrap items-center gap-[0.6em]">
+              <span className="w-[8em] text-end text-[0.85em] text-[var(--c-muted)]">{t("bg.techConfidence.low")}</span>
+              <div className="flex gap-[0.4em]" role="radiogroup" aria-label={t("bg.techConfidence")}>
                 {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                   <label
                     key={n}
-                    className={`grid size-11 cursor-pointer place-items-center rounded-lg border text-[16px] font-semibold ${
-                      a.techConfidence === String(n) ? "border-[var(--c-accent)] bg-[var(--c-accent)] text-white" : "border-[var(--c-border)] bg-white hover:bg-[var(--c-surface-hover)]"
-                    }`}
+                    className={`grid size-[52px] cursor-pointer place-items-center rounded-[0.6em] border-2 font-bold ${a.techConfidence === String(n) ? "border-[#1E6B4B] bg-[#1E6B4B] text-white" : "border-[#c9cec9] bg-white hover:bg-[#eef1ef]"}`}
                   >
                     <input type="radio" name="techConfidence" value={n} checked={a.techConfidence === String(n)} onChange={() => set("techConfidence")(String(n))} className="sr-only" />
                     {n}
                   </label>
                 ))}
               </div>
-              <span className="w-28 text-[13px] text-[var(--c-muted)]">{t("bg.techConfidence.high")}</span>
+              <span className="w-[8em] text-[0.85em] text-[var(--c-muted)]">{t("bg.techConfidence.high")}</span>
             </div>
           </Question>
-          <Question id="shoppingFrequency" label={t("bg.shopping")} error={err("shoppingFrequency")}>
-            <Radios name="shoppingFrequency" options={SHOPPING_FREQUENCIES} value={a.shoppingFrequency} onChange={set("shoppingFrequency")} labelPrefix="bg.shopping" />
-          </Question>
+          {radios("smartphoneUse", "bg.smartphoneUse", USE_FREQUENCIES, "bg.freq")}
+          {radios("computerUse", "bg.computerUse", USE_FREQUENCIES, "bg.freq")}
+          {radios("shoppingFrequency", "bg.shopping", SHOPPING_FREQUENCIES, "bg.shopping")}
+          {radios("groceriesOnline", "bg.groceriesOnline", YES_NO, "bg")}
+          {radios("readingGlasses", "bg.readingGlasses", YES_NO_SOMETIMES, "bg")}
+          {radios("readingLanguage", "bg.readingLanguage", READING_LANGUAGES, "bg.readingLanguage")}
 
-          <h2 className="mt-4 text-[19px] font-bold">{t("bg.prefsTitle")}</h2>
-          <p className="-mt-2 text-[15px] text-[var(--c-muted)]">{t("bg.prefsIntro")}</p>
-          <Question id="prefLayout" label={t("bg.prefLayout")} error={err("prefLayout")}>
-            <PrefRadios name="prefLayout" options={PREF_LAYOUT} value={a.prefLayout} onChange={set("prefLayout")} labelPrefix="bg.prefLayout" illPrefix="layout" />
-          </Question>
-          <Question id="prefTextSize" label={t("bg.prefTextSize")} error={err("prefTextSize")}>
-            <PrefRadios name="prefTextSize" options={PREF_TEXT_SIZE} value={a.prefTextSize} onChange={set("prefTextSize")} labelPrefix="bg.prefTextSize" illPrefix="text" />
-          </Question>
-          <Question id="prefDetail" label={t("bg.prefDetail")} error={err("prefDetail")}>
-            <PrefRadios name="prefDetail" options={PREF_DETAIL} value={a.prefDetail} onChange={set("prefDetail")} labelPrefix="bg.prefDetail" illPrefix="detail" />
-          </Question>
-          <Question id="prefTheme" label={t("bg.prefTheme")} error={err("prefTheme")}>
-            <PrefRadios name="prefTheme" options={PREF_THEME} value={a.prefTheme} onChange={set("prefTheme")} labelPrefix="bg.prefTheme" illPrefix="theme" />
-          </Question>
-          <Question id="prefMenu" label={t("bg.prefMenu")} error={err("prefMenu")}>
-            <PrefRadios name="prefMenu" options={PREF_MENU} value={a.prefMenu} onChange={set("prefMenu")} labelPrefix="bg.prefMenu" illPrefix="menu" />
-          </Question>
+          <h2 className="mt-[0.8em] text-[1.2em] font-bold">{t("bg.prefsTitle")}</h2>
+          <p className="-mt-[0.4em] text-[var(--c-muted)]">{t("bg.prefsIntro")}</p>
+          {SETTING_KEYS.map((k) => {
+            const item = PREF_ITEMS[k];
+            return (
+              <Question key={k} id={item} label={t(`bg.${item}` as StringKey)} error={err(item)}>
+                <PrefRadios name={item} setting={k} value={a[item]} onChange={set(item)} />
+              </Question>
+            );
+          })}
 
-          {errors.size > 0 && <p className="text-[15px] font-semibold text-[var(--c-warning)]">{t("bg.fixErrors")}</p>}
+          {errors.size > 0 && <p className="font-bold text-[var(--c-warning)]">{t("bg.fixErrors")}</p>}
           <div className="flex justify-end">
             <Button type="submit" disabled={!hydrated}>
               {t("bg.submit")}

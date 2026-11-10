@@ -19,6 +19,16 @@ blocks$condition <- factor(blocks$condition, levels = conditions)
 blocks$position <- factor(blocks$position)
 blocks$task <- factor(blocks$task)
 blocks$participant <- factor(blocks$participant)
+# Study language (en / ur) is a participant-level covariate. With a single language it is left out.
+blocks$language <- factor(blocks$language)
+language_term <- if (nlevels(blocks$language) > 1) " + language" else ""
+# If language is confounded with the design (e.g. every Urdu participant on the same Latin-square rows) it cannot be
+# estimated alongside condition, position and task; then it is left out and the status table says so.
+if (nzchar(language_term)) {
+  without <- qr(model.matrix(~ condition + position + task, data = blocks))$rank
+  with <- qr(model.matrix(~ condition + position + task + language, data = blocks))$rank
+  if (with <= without) language_term <- ""
+}
 
 # Each adaptive condition vs static, and cluster5 vs personalFull.
 wanted <- list(
@@ -36,7 +46,7 @@ fit_outcome <- function(outcome, logistic = FALSE) {
     messages <<- c(messages, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
-  formula <- as.formula(paste(outcome, "~ condition + position + task + (1 | participant)"))
+  formula <- as.formula(paste0(outcome, " ~ condition + position + task", language_term, " + (1 | participant)"))
   model <- withCallingHandlers(
     if (logistic) {
       glmer(formula, data = d, family = binomial, control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
@@ -47,6 +57,7 @@ fit_outcome <- function(outcome, logistic = FALSE) {
   )
   status[[length(status) + 1]] <<- data.frame(
     outcome = outcome, n_rows = nrow(d), n_participants = length(unique(d$participant)),
+    language_covariate = nzchar(language_term),
     singular = isSingular(model), warnings = paste(unique(messages), collapse = " | ")
   )
   grid <- if (logistic) emmeans(model, ~condition) else emmeans(model, ~condition, lmer.df = "satterthwaite")
@@ -70,13 +81,28 @@ fit_outcome <- function(outcome, logistic = FALSE) {
   )
 }
 
+# QUIS is primary and must fit. A secondary outcome that has no variation (e.g. everyone found all 6 items) or cannot be
+# fitted is skipped, with the reason in status.csv, rather than stopping the whole analysis.
+secondary <- function(outcome, logistic = FALSE) {
+  d <- blocks[!is.na(blocks[[outcome]]), ]
+  skip <- function(reason) {
+    status[[length(status) + 1]] <<- data.frame(
+      outcome = outcome, n_rows = nrow(d), n_participants = length(unique(d$participant)),
+      language_covariate = nzchar(language_term), singular = NA, warnings = paste("not fitted:", reason)
+    )
+    NULL
+  }
+  if (length(unique(d[[outcome]])) < 2) return(skip("no variation in this outcome"))
+  tryCatch(fit_outcome(outcome, logistic), error = function(e) skip(conditionMessage(e)))
+}
 fits <- list(
   quis = fit_outcome("quis"),
-  ues = fit_outcome("ues"),
-  log_time = fit_outcome("log_time"),
-  items_found = fit_outcome("items_found"),
-  success = fit_outcome("success", logistic = TRUE)
+  ues = secondary("ues"),
+  log_time = secondary("log_time"),
+  items_found = secondary("items_found"),
+  success = secondary("success", logistic = TRUE)
 )
+fits <- fits[!vapply(fits, is.null, logical(1))]
 write.csv(do.call(rbind, lapply(fits, `[[`, "contrasts")), file.path(out_dir, "contrasts.csv"), row.names = FALSE)
 write.csv(do.call(rbind, lapply(fits, `[[`, "means")), file.path(out_dir, "means.csv"), row.names = FALSE)
 write.csv(do.call(rbind, status), file.path(out_dir, "status.csv"), row.names = FALSE)

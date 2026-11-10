@@ -34,8 +34,8 @@ If `Rscript` isn't on your PATH or in the standard Windows folder, set `HCI_RSCR
 |---|---|
 | `hci simulate --n 32 --seed 1 --out data/synthetic_export.zip` | Writes a SYNTHETIC export with the platform's exact files and columns, plus its ground truth |
 | `hci validate --export X.zip` | Loads and checks an export, and lists counts, exclusions and flags |
-| `hci phase2 --export X.zip` | RQ1, RQ2, RQ3, RQ5: consistency and fatigue, learning curves, starting points, clusters |
-| `hci phase3 --export X.zip` | RQ4, RQ5: questionnaire scores, mixed models, the H4b equivalence test, rankings |
+| `hci phase2 --export X.zip` | RQ1, RQ2, RQ3: consistency and fatigue, learning curves, starting points, clusters, background description, scene / language check |
+| `hci phase3 --export X.zip` | RQ4: questionnaire scores, mixed models (language as a covariate), the H4b equivalence test, rankings |
 | `hci power` | Power simulation for H4b, including N = 16 and 32 |
 | `hci prereg` | Writes `PREREG_DRAFT.md` from the config |
 | `hci report` | An index page linking the latest reports |

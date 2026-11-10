@@ -4,7 +4,8 @@
  */
 import rawClips from "@data/clips.json";
 import { PLAN_ENGINE } from "@/config/planEngine";
-import { COMPARISON_DESIGN, CONDITIONS, MAX_FAILED_ATTENTION_CHECKS } from "@/config/study";
+import { CLIP_SCENES, LANGUAGES } from "@/config/shop";
+import { COMPARISON_DESIGN, CONDITIONS, MAX_FAILED_ATTENTION_CHECKS, MIN_AGE } from "@/config/study";
 import { DEFAULT_CONFIG_ID, SETTING_KEYS, SETTING_LEVELS } from "@/config/uiSpace";
 import { parseClipsFile } from "@/lib/clipsFile";
 import { TABLES } from "@/lib/export/tables";
@@ -17,6 +18,9 @@ const info = {
   settingLevels: SETTING_LEVELS,
   baseConfigId: DEFAULT_CONFIG_ID,
   conditions: CONDITIONS,
+  scenes: CLIP_SCENES,
+  languages: LANGUAGES,
+  minAge: MIN_AGE,
   maxFailedAttentionChecks: MAX_FAILED_ATTENTION_CHECKS,
   design: COMPARISON_DESIGN[3],
   planEngine: PLAN_ENGINE,

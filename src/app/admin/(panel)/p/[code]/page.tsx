@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { stillUrl } from "@/lib/media";
 import { notFound } from "next/navigation";
 import { ParticipantEditForm, PlanUpload, UnlockButton } from "@/components/admin/ParticipantDetail";
 import { CopyButton } from "@/components/admin/widgets";
@@ -16,7 +17,7 @@ function Thumb({ configId, caption }: { configId: string; caption: string }) {
   return (
     <figure className="w-44 shrink-0">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/stills/${configId}.png`} alt={configId} className="aspect-[16/10] w-full rounded-md border border-[#dfe3e8] object-cover" />
+      <img src={stillUrl(configId, "en")} alt={configId} className="aspect-[16/10] w-full rounded-md border border-[#dfe3e8] object-cover" />
       <figcaption className="mt-1 text-[11px] leading-tight text-[#566070]">
         {caption}
         <br />
@@ -79,7 +80,7 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
           studyPhase={p.studyPhase}
           group={p.group}
           language={p.language}
-          languages={LANGUAGES}
+          languages={[...LANGUAGES]}
           seed={p.seed}
           seedLocked={summary.scheduleGenerated}
           notes={p.notes ?? ""}

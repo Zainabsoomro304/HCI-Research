@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { stillUrl } from "@/lib/media";
 import { FreezePanel, LatePlanActions, ReinstateButton, TestTools, UnfreezePanel, WithdrawButton } from "@/components/admin/Phase3";
 import { CopyButton } from "@/components/admin/widgets";
 import { ACTIVE_FREEZE_PHRASE } from "@/config/planEngine";
@@ -23,7 +24,7 @@ function Thumb({ id }: { id: string }) {
   return (
     <figure className="w-28">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/stills/${id}.png`} alt={id} loading="lazy" className="aspect-[16/10] w-full rounded border border-[#dfe3e8] object-cover" />
+      <img src={stillUrl(id, "en")} alt={id} loading="lazy" className="aspect-[16/10] w-full rounded border border-[#dfe3e8] object-cover" />
       <figcaption className="mt-0.5 break-all font-mono text-[10px] leading-tight text-[#566070]">{id}</figcaption>
     </figure>
   );

@@ -8,17 +8,12 @@
  * cannot be separated from w. A Gaussian prior w ~ N(mu, sigma^2 I) is the starting point: with no comparisons the
  * estimate is mu, and each comparison pulls it towards the person's own preferences.
  */
-import { SETTING_KEYS } from "@/config/uiSpace";
+import { SETTING_KEYS, SETTING_LEVELS } from "@/config/uiSpace";
 
-/** Levels with the base first. The order fixes the features and the order of configs when breaking exact ties. */
-export const SETTINGS: Record<(typeof SETTING_KEYS)[number], readonly string[]> = {
-  layout: ["list", "grid2", "grid3"],
-  fontSize: ["default", "small", "large"],
-  density: ["detailed", "partial", "summary"],
-  theme: ["light", "dark"],
-  menu: ["sidebar", "dropdown"],
-};
-export const FEATURES = SETTING_KEYS.flatMap((k) => SETTINGS[k].slice(1));
+/** Levels with the base first (as in uiSpace). The order fixes the features and the order of configs for exact ties. */
+export const SETTINGS: Record<(typeof SETTING_KEYS)[number], readonly string[]> = SETTING_LEVELS;
+/** Feature names "setting.level" (two settings have a level called "large"). */
+export const FEATURES = SETTING_KEYS.flatMap((k) => SETTINGS[k].slice(1).map((l) => `${k}.${l}`));
 export const N_FEATURES = FEATURES.length;
 export const BASE_CONFIG_ID = SETTING_KEYS.map((k) => SETTINGS[k][0]).join("-");
 

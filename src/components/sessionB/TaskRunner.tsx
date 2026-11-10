@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CartApi, CartLine } from "@/components/shop/context";
+import { ActionButton } from "@/components/shop/ActionButton";
+import { useShop } from "@/components/shop/context";
 import { Shop } from "@/components/shop/Shop";
 import { formatPrice } from "@/config/shop";
 import { DEFAULT_CONFIG, DEFAULT_CONFIG_ID, fromConfigId, toConfigId } from "@/config/uiSpace";
@@ -9,7 +11,7 @@ import type { EventSink } from "@/lib/eventLogger";
 import type { EventType } from "@/lib/events";
 import { stepsDue } from "@/lib/plans";
 import type { BlockView } from "@/lib/session/sessionBTypes";
-import { useT } from "../participant/ui";
+import { useLang, useT } from "../participant/ui";
 
 export interface TaskFinish {
   blockIndex: number;
@@ -22,11 +24,13 @@ export interface TaskFinish {
 
 function TaskPanel({ block, cart, onFinish, saving }: { block: BlockView; cart: CartApi; onFinish: () => void; saving: boolean }) {
   const t = useT();
+  const { lang } = useShop();
+  const price = (n: number) => formatPrice(n, lang);
   const [confirming, setConfirming] = useState(false);
   const remaining = block.task.budget - cart.total;
   const over = remaining < 0;
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-5 text-fg shadow-card">
+    <div className="flex flex-col gap-[0.9em] rounded-[0.8em] border-[length:var(--bw)] border-line bg-surface p-[1em] text-fg shadow-card">
       <div>
         <div className="flex items-center gap-2">
           <span className="text-caption font-semibold uppercase tracking-wider text-muted">{t("task.title")}</span>
@@ -48,41 +52,26 @@ function TaskPanel({ block, cart, onFinish, saving }: { block: BlockView; cart: 
       <dl className="flex flex-col gap-1.5 border-t border-line pt-3 text-small">
         <div className="flex justify-between">
           <dt className="text-muted">{t("task.budget")}</dt>
-          <dd className="font-semibold tabular-nums">{formatPrice(block.task.budget)}</dd>
+          <dd className="font-semibold tabular-nums">{price(block.task.budget)}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-muted">{t("task.spent")}</dt>
-          <dd className="font-semibold tabular-nums">{formatPrice(cart.total)}</dd>
+          <dd className="font-semibold tabular-nums">{price(cart.total)}</dd>
         </div>
         <div className={`-mx-2 flex justify-between rounded-md px-2 py-1 ${over ? "bg-warning-soft text-warning" : ""}`} aria-live="polite">
-          <dt className={over ? "font-semibold" : "text-muted"}>{over ? t("task.overBudget", { amount: formatPrice(-remaining) }) : t("task.remaining")}</dt>
-          <dd className="font-bold tabular-nums">{over ? `−${formatPrice(-remaining)}` : formatPrice(remaining)}</dd>
+          <dt className={over ? "font-semibold" : "text-muted"}>{over ? t("task.overBudget", { amount: price(-remaining) }) : t("task.remaining")}</dt>
+          <dd className="font-bold tabular-nums">{over ? `−${price(-remaining)}` : price(remaining)}</dd>
         </div>
       </dl>
       {!confirming ? (
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="rounded-lg bg-accent px-4 py-2.5 text-body font-semibold text-on-accent transition-colors hover:bg-accent-hover"
-        >
-          {t("task.finish")}
-        </button>
+        <ActionButton label={t("task.finish")} onClick={() => setConfirming(true)} alwaysLabel wide className="text-body" />
       ) : (
         <div role="alertdialog" aria-label={t("task.confirmTitle")} className="flex flex-col gap-2 rounded-lg border border-line bg-surface-hover p-3">
           <p className="text-small font-semibold">{t("task.confirmTitle")}</p>
           <p className="text-caption text-muted">{t("task.confirmBody")}</p>
-          <div className="mt-1 flex gap-2">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={onFinish}
-              className="flex-1 rounded-lg bg-accent px-3 py-2 text-small font-semibold text-on-accent hover:bg-accent-hover disabled:opacity-60"
-            >
-              {t("task.confirmYes")}
-            </button>
-            <button type="button" onClick={() => setConfirming(false)} className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-small font-semibold hover:bg-surface-hover">
-              {t("task.confirmNo")}
-            </button>
+          <div className="mt-[0.3em] flex flex-wrap gap-[var(--tap-gap)]">
+            <ActionButton label={t("task.confirmYes")} onClick={onFinish} disabled={saving} alwaysLabel className="flex-1 text-small" />
+            <ActionButton tone="secondary" label={t("task.confirmNo")} onClick={() => setConfirming(false)} alwaysLabel className="flex-1 text-small" />
           </div>
         </div>
       )}
@@ -95,6 +84,7 @@ function TaskPanel({ block, cart, onFinish, saving }: { block: BlockView; cart: 
  * applied at their trigger times (afterMs since task start / afterEvents deliberate events since the last step).
  */
 export function TaskRunner({ block, sink, saving, onFinish }: { block: BlockView; sink: EventSink; saving: boolean; onFinish: (f: TaskFinish) => Promise<boolean> }) {
+  const lang = useLang();
   const resume = block.resume;
   const [applied, setApplied] = useState(resume?.appliedSteps ?? 0);
   const appliedRef = useRef(applied);
@@ -159,6 +149,7 @@ export function TaskRunner({ block, sink, saving, onFinish }: { block: BlockView
   return (
     <Shop
       config={config}
+      lang={lang}
       mode={block.isPractice ? "practice" : "task"}
       sink={sink}
       initialCart={resume?.cart}

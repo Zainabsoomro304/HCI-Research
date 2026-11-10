@@ -22,7 +22,7 @@ async function reset() {
 }
 
 async function simulatedCohort(count: number, attentionErrorRate = 0) {
-  await createSimulatedParticipants({ count, csShare: 0.5, seed: 7, attentionErrorRate });
+  await createSimulatedParticipants({ count, urduShare: 0.5, seed: 7, attentionErrorRate });
   const people = await prisma.participant.findMany({ where: { isSimulated: true }, orderBy: { number: "asc" } });
   for (const p of people) await simulateSessionA(p.id);
   return people;
@@ -40,13 +40,13 @@ afterAll(async () => {
 
 describe("test-mode safety", () => {
   it("cannot create or simulate participants with test tools off", async () => {
-    await createSimulatedParticipants({ count: 1, csShare: 1, seed: 1 });
+    await createSimulatedParticipants({ count: 1, urduShare: 1, seed: 1 });
     const person = await prisma.participant.findFirstOrThrow({ where: { isSimulated: true } });
     delete process.env.ALLOW_TEST_TOOLS;
-    await expect(createSimulatedParticipants({ count: 1, csShare: 1, seed: 1 })).rejects.toThrow(/Test tools are off/);
+    await expect(createSimulatedParticipants({ count: 1, urduShare: 1, seed: 1 })).rejects.toThrow(/Test tools are off/);
     await expect(simulateSessionA(person.id)).rejects.toThrow(/Test tools are off/);
     process.env.ALLOW_TEST_TOOLS = "false";
-    await expect(createSimulatedParticipants({ count: 1, csShare: 1, seed: 1 })).rejects.toThrow(/Test tools are off/);
+    await expect(createSimulatedParticipants({ count: 1, urduShare: 1, seed: 1 })).rejects.toThrow(/Test tools are off/);
   });
 
   it("refuses to freeze with test tools off if any simulated participant exists", async () => {
@@ -65,7 +65,7 @@ describe("test-mode safety", () => {
   });
 
   it("marks simulated participants, with codes the plan schema accepts", async () => {
-    const [code] = await createSimulatedParticipants({ count: 1, csShare: 1, seed: 1 });
+    const [code] = await createSimulatedParticipants({ count: 1, urduShare: 1, seed: 1 });
     expect(code).toMatch(/^P3-S\d{3}$/);
     expect((await prisma.participant.findUniqueOrThrow({ where: { code: code! } })).isSimulated).toBe(true);
   });
@@ -243,7 +243,7 @@ describe("freezing rules", () => {
     async () => {
       await simulatedCohort(3);
       const { version } = await freezeAndGenerate();
-      const [lateCode] = await createSimulatedParticipants({ count: 1, csShare: 1, seed: 9, attentionErrorRate: 0 });
+      const [lateCode] = await createSimulatedParticipants({ count: 1, urduShare: 1, seed: 9, attentionErrorRate: 0 });
       const late = await prisma.participant.findUniqueOrThrow({ where: { code: lateCode! } });
       await expect(generateLatePlan(late.id)).rejects.toThrow(/has not completed Session A/);
       await simulateSessionA(late.id);
@@ -269,7 +269,7 @@ describe("freezing rules", () => {
       const people = await simulatedCohort(3);
       await freezeAndGenerate();
       const code = people[1]!.code;
-      const steps = { steps: [{ trigger: { type: "afterMs" as const, value: 8000 }, config: "grid2-default-partial-light-sidebar" }] };
+      const steps = { steps: [{ trigger: { type: "afterMs" as const, value: 8000 }, config: "standard-large-flat-iconText-standard-grid3-none" }] };
       const uploaded = await savePlanFile(people[1]!.id, { participantCode: code, conditions: { static: { steps: [] }, global: steps, cluster5: steps, personalFull: steps } }, "mine.json");
       expect(uploaded.ok).toBe(true);
       await freezeAndGenerate();
@@ -309,7 +309,7 @@ describe("Session B requirements", () => {
       const plans = await prisma.adaptationPlan.findMany({ where: { participantId: people[0]!.id } });
       for (const b of blocks) {
         const steps = plans.find((p) => p.condition === b.condition)!.steps as unknown as PlanStep[];
-        expect(b.finalConfigId).toBe(steps.at(-1)?.config ?? "list-default-detailed-light-sidebar");
+        expect(b.finalConfigId).toBe(steps.at(-1)?.config ?? "standard-standard-flat-iconOnly-standard-grid3-none");
         expect(b.durationMs).toBeGreaterThan(1000);
       }
       expect(await prisma.ranking.count({ where: { sessionId: session.id } })).toBe(4);

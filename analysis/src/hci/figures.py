@@ -27,7 +27,6 @@ START_LABELS = {
     "cluster_questionnaire": "Questionnaire cluster start",
 }
 START_ORDER = tuple(START_LABELS)
-GROUP_LABELS = {"cs": "CS", "nonCs": "Non-CS"}
 
 plt.rcParams.update(
     {
@@ -178,29 +177,20 @@ def k90_distribution(run: Run, table: pd.DataFrame, ks: list[int]) -> None:
     _save(fig, run, "k90_distribution")
 
 
-def consistency_by_group(run: Run, participants: pd.DataFrame) -> None:
-    groups = [g for g in ("cs", "nonCs") if (participants["group"] == g).any()]
+def consistency_distribution(run: Run, participants: pd.DataFrame) -> None:
     bins = np.round(np.arange(0, 11) / 10, 1)
-    fig, axes = plt.subplots(1, len(groups), figsize=(6.4, 2.5), sharey=True, squeeze=False)
-    for index, (ax, group) in enumerate(zip(axes[0], groups, strict=True)):
-        values = participants.loc[participants["group"] == group, "self_consistency"].astype(float).dropna().round(1)
-        ax.bar(bins, [(values == b).sum() for b in bins], width=0.08, color=SERIES[index])
-        ax.axvline(values.mean(), color=INK, ls=(0, (4, 3)), lw=1)
-        ax.text(
-            values.mean() - 0.015,
-            ax.get_ylim()[1] * 0.92,
-            f"mean {values.mean():.2f}",
-            ha="right",
-            fontsize=8,
-            color=INK,
-        )
-        ax.set_title(f"{GROUP_LABELS[group]} (n = {len(values)})", loc="left")
-        ax.set_xlim(0.25, 1.05)
-        ax.grid(axis="y", color=GRID, lw=0.7)
-        ax.set_xlabel("Self-consistency (share of 10 repeats)")
-    axes[0][0].set_ylabel("Participants")
+    values = participants["self_consistency"].astype(float).dropna().round(1)
+    fig, ax = plt.subplots(figsize=(4.6, 2.6))
+    ax.bar(bins, [(values == b).sum() for b in bins], width=0.08, color=SERIES[0])
+    ax.axvline(values.mean(), color=INK, ls=(0, (4, 3)), lw=1)
+    ax.text(values.mean() - 0.015, ax.get_ylim()[1] * 0.92, f"mean {values.mean():.2f}", ha="right", fontsize=8, color=INK)
+    ax.set_title(f"All participants (n = {len(values)})", loc="left")
+    ax.set_xlim(0.25, 1.05)
+    ax.grid(axis="y", color=GRID, lw=0.7)
+    ax.set_xlabel("Self-consistency (share of 10 repeats)")
+    ax.set_ylabel("Participants")
     fig.tight_layout()
-    _save(fig, run, "consistency_by_group")
+    _save(fig, run, "consistency_distribution")
 
 
 def _dot_rows(ax: plt.Axes, series: list[tuple[str, np.ndarray, np.ndarray | None]]) -> None:
@@ -228,64 +218,12 @@ def _dot_rows(ax: plt.Axes, series: list[tuple[str, np.ndarray, np.ndarray | Non
 
 
 def cluster_profiles(run: Run, weights: np.ndarray, sizes: list[int]) -> None:
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
+    fig, ax = plt.subplots(figsize=(6.4, 4.2))
     _dot_rows(ax, [(f"Cluster {i + 1} (n = {sizes[i]})", weights[i], None) for i in range(len(weights))])
     ax.set_xlabel("Preference weight relative to the base level (log odds)")
     ax.set_title("Choice-based cluster profiles", loc="left")
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=len(weights), frameon=False, fontsize=8)
     _save(fig, run, "cluster_profiles")
-
-
-def weights_by_group(run: Run, table: pd.DataFrame) -> None:
-    """table: group, feature, mean, ci_low, ci_high. Descriptive only."""
-    series = []
-    for group in ("cs", "nonCs"):
-        rows = table[table["group"] == group].set_index("feature").reindex(list(FEATURES))
-        if rows["mean"].notna().any():
-            series.append(
-                (
-                    GROUP_LABELS[group],
-                    rows["mean"].to_numpy(float),
-                    (rows["ci_low"].to_numpy(float), rows["ci_high"].to_numpy(float)),
-                )
-            )
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
-    _dot_rows(ax, series)
-    ax.set_xlabel("Mean preference weight (log odds, 95% bootstrap CI)")
-    ax.set_title("Mean weights by group (descriptive only)", loc="left")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=2, frameon=False, fontsize=8)
-    _save(fig, run, "weights_by_group")
-
-
-def curves_by_group(run: Run, table: pd.DataFrame) -> None:
-    """table: group, k, mean, ci_low, ci_high for the scratch model. Descriptive only."""
-    fig, ax = plt.subplots(figsize=(5.2, 3.2))
-    for index, group in enumerate(("cs", "nonCs")):
-        rows = table[table["group"] == group].sort_values("k")
-        if rows.empty:
-            continue
-        xs = np.log(rows["k"].to_numpy(float))
-        ax.fill_between(xs, rows["ci_low"], rows["ci_high"], color=SERIES[index], alpha=0.13, lw=0)
-        ax.plot(
-            xs,
-            rows["mean"],
-            color=SERIES[index],
-            marker=MARKERS[index],
-            ms=5.5,
-            mec="white",
-            mew=0.7,
-            label=GROUP_LABELS[group],
-        )
-    ks = sorted(table["k"].unique())
-    ax.set_xticks(np.log(ks), [str(k) for k in ks])
-    ax.axhline(0.5, color=INK_2, ls=":", lw=1)
-    ax.set_ylim(0.45, min(1.0, table["ci_high"].max() + 0.03))
-    ax.set_xlabel("Comparisons (k, log scale)")
-    ax.set_ylabel("Accuracy on held-out trials")
-    ax.grid(axis="y", color=GRID, lw=0.7)
-    ax.set_title("Scratch model by group (descriptive only)", loc="left")
-    ax.legend(frameon=False, fontsize=8, loc="lower right")
-    _save(fig, run, "curves_by_group")
 
 
 def condition_means(run: Run, means: pd.DataFrame) -> None:

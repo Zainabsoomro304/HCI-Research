@@ -4,6 +4,7 @@
  */
 import fs from "node:fs";
 import rawClips from "@data/clips.json";
+import { CLIP_SCENES } from "@/config/shop";
 import { COMPARISON_DESIGN } from "@/config/study";
 import { parseClipsFile } from "@/lib/clipsFile";
 import { blockAssignments, latinRows } from "@/lib/latinSquare";
@@ -23,6 +24,7 @@ const output = input.map(({ number, seed }) => {
       practiceClips: clips.practiceClips.map((c) => c.id),
       design: COMPARISON_DESIGN[3],
       seed,
+      scenes: CLIP_SCENES,
     }),
     blocks: blockAssignments(conditionRow, taskRow),
   };

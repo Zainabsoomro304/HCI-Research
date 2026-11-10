@@ -5,6 +5,7 @@
 import type { Participant, Prisma, Session } from "@prisma/client";
 import { z } from "zod";
 import { CONDITIONS, DELIBERATE_EVENT_TYPES } from "@/config/study";
+import { isLang, type Lang } from "@/config/shop";
 import { DEFAULT_CONFIG_ID, isConfigId } from "@/config/uiSpace";
 import { productsById } from "../catalog";
 import { prisma } from "../db";
@@ -12,7 +13,7 @@ import { blockAssignments, latinRows } from "../latinSquare";
 import { stillUrl } from "../media";
 import { PlanStepSchema, type PlanStep } from "../plans";
 import { loadInstrument, validateResponses } from "../questionnaire/instruments";
-import { PRACTICE_TASK, getTask, scoreTask } from "../tasks";
+import { PRACTICE_TASK, getTask, scoreTask, taskText } from "../tasks";
 import { ActionError } from "./comparison";
 import { SessionBActionSchema, type BlockView, type SessionBState, type SessionBStep } from "./sessionBTypes";
 
@@ -56,7 +57,7 @@ export async function unlockSessionB(sessionId: string) {
       await tx.taskBlock.create({
         data: { participantId: s.participantId, sessionId: s.id, blockIndex: b.blockIndex, condition: b.condition, taskId: b.taskId, planSnapshot: planFor.get(b.condition) ?? [] },
       });
-    return tx.session.update({ where: { id: s.id }, data: { unlockedAt: new Date(), conditionRow, taskRow, currentStep: "welcome", currentIndex: 0 } });
+    return tx.session.update({ where: { id: s.id }, data: { unlockedAt: new Date(), conditionRow, taskRow, currentStep: "welcome", currentIndex: 0, language: s.participant.language } });
   });
 }
 
@@ -95,22 +96,29 @@ async function reconstruct(blockId: string): Promise<BlockView["resume"]> {
   };
 }
 
+/** Session B uses the language the participant chose in Session A (copied onto the session when it is unlocked). */
+function sbLang(s: S): Lang {
+  const l = s.language ?? s.participant.language;
+  return isLang(l) ? l : "en";
+}
+
 export async function buildSessionBState(s: S): Promise<SessionBState> {
   const step = s.currentStep as SessionBStep;
-  const state: SessionBState = { kind: "sessionB", step: s.unlockedAt ? step : "locked", lang: s.participant.language, totalBlocks: BLOCKS };
+  const lang = sbLang(s);
+  const state: SessionBState = { kind: "sessionB", step: s.unlockedAt ? step : "locked", lang, totalBlocks: BLOCKS };
   if (!s.unlockedAt) return state;
 
   if (step === "practice_task" || step === "block_intro" || step === "task") {
     const blockIndex = step === "practice_task" ? -1 : s.currentIndex;
     const b = await prisma.taskBlock.findUnique({ where: { sessionId_blockIndex: { sessionId: s.id, blockIndex } } });
     if (b) {
-      const task = getTask(b.taskId);
+      const task = taskText(getTask(b.taskId), lang);
       state.block = {
         blockId: b.id,
         blockIndex,
         number: blockIndex + 1,
         isPractice: b.isPractice,
-        task: { title: task.title, instructions: task.instructions, budget: task.budget, requiredItems: task.requiredItems.map((i) => ({ id: i.id, description: i.description })) },
+        task,
         steps: step === "block_intro" ? [] : parseSteps(b.planSnapshot),
         elapsedMs: b.startedAt ? Date.now() - b.startedAt.getTime() : null,
         resume: b.startedAt ? await reconstruct(b.id) : undefined,
@@ -118,12 +126,12 @@ export async function buildSessionBState(s: S): Promise<SessionBState> {
     }
   }
   if (step === "quis" || step === "ues_sf") {
-    const inst = loadInstrument(step, s.participant.language);
+    const inst = loadInstrument(step, lang);
     state.questionnaire = { instrument: step, blockIndex: s.currentIndex, number: s.currentIndex + 1, title: inst.title, instructions: inst.instructions, items: inst.items };
   }
   if (step === "ranking") {
     const blocks = await prisma.taskBlock.findMany({ where: { sessionId: s.id, isPractice: false }, orderBy: { blockIndex: "asc" } });
-    state.ranking = { interfaces: blocks.map((b) => ({ blockIndex: b.blockIndex, number: b.blockIndex + 1, imageUrl: stillUrl(b.finalConfigId ?? DEFAULT_CONFIG_ID) })) };
+    state.ranking = { interfaces: blocks.map((b) => ({ blockIndex: b.blockIndex, number: b.blockIndex + 1, imageUrl: stillUrl(b.finalConfigId ?? DEFAULT_CONFIG_ID, lang) })) };
   }
   return state;
 }
@@ -203,7 +211,7 @@ export async function applySessionBAction(s: S, body: unknown): Promise<void> {
     case "questionnaire": {
       expectStep(s, action.instrument);
       if (action.blockIndex !== s.currentIndex) throw new ActionError("Not the current block");
-      const inst = loadInstrument(action.instrument, s.participant.language);
+      const inst = loadInstrument(action.instrument, sbLang(s));
       const v = validateResponses(inst, action.responses);
       if (!v.ok) throw new ActionError(v.error, 400);
       const block = await prisma.taskBlock.findUniqueOrThrow({ where: { sessionId_blockIndex: { sessionId: s.id, blockIndex: action.blockIndex } } });

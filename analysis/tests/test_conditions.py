@@ -81,10 +81,10 @@ def test_targets_are_restricted_and_static_stays_at_base(people, config):
 
 
 def test_restriction_changes_the_argmax_when_the_best_config_is_outside_the_range():
-    all_positive = np.full(8, 1.0)
-    assert num_changed(unrestricted_argmax(all_positive)) == 5
+    all_positive = np.full(10, 1.0)
+    assert num_changed(unrestricted_argmax(all_positive)) == 7
     assert num_changed(restricted_argmax(all_positive, 2, 4)) == 4
-    all_negative = np.full(8, -1.0)
+    all_negative = np.full(10, -1.0)
     assert unrestricted_argmax(all_negative) == BASE_CONFIG_ID
     assert num_changed(restricted_argmax(all_negative, 2, 4)) == 2
     assert restricted_argmax(all_positive, 2, 4) in ALL_CONFIG_IDS

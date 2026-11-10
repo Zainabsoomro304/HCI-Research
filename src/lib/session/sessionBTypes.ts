@@ -1,5 +1,6 @@
 /** Session B participant state. Never contains condition names. */
 import { z } from "zod";
+import type { Lang } from "@/config/shop";
 import type { PlanStep } from "../plans";
 import type { InstrumentItem } from "../questionnaire/instruments";
 
@@ -36,7 +37,7 @@ export interface BlockView {
 export interface SessionBState {
   kind: "sessionB";
   step: SessionBStep;
-  lang: string;
+  lang: Lang;
   block?: BlockView;
   totalBlocks?: number;
   questionnaire?: {

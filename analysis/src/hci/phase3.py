@@ -1,4 +1,5 @@
-"""Phase 3 statistics (RQ4, RQ5): questionnaire scores, mixed models, the H4b equivalence test and rankings.
+"""Phase 3 statistics (RQ4): questionnaire scores, mixed models (with study language as a covariate), the H4b
+equivalence test and rankings. There are no subgroup analyses.
 
 Item metadata comes from the export and the platform's instrument files, never from this code, so the licensed items
 can replace the placeholders without any change here.
@@ -25,10 +26,24 @@ from hci.rstats import as_arg, r_versions, run_r
 CONDITIONS = ["static", "global", "cluster5", "personalFull"]
 
 
-def read_instrument(name: str) -> tuple[dict[str, Any], str]:
+LANGUAGES = ("en", "ur")
+
+
+def read_instrument(name: str, lang: str = "en") -> tuple[dict[str, Any], str]:
     """The instrument file and its hash, computed the way the platform does."""
-    raw = (REPO_ROOT / "content" / "questionnaires" / f"{name}.en.json").read_bytes()
+    raw = (REPO_ROOT / "content" / "questionnaires" / f"{name}.{lang}.json").read_bytes()
     return json.loads(raw.decode("utf-8")), hashlib.sha256(raw).hexdigest()[:16]
+
+
+def _instrument_versions(name: str) -> set[str]:
+    """Version labels of every language file of an instrument; all share item IDs, scales and reverse coding."""
+    versions = set()
+    for lang in LANGUAGES:
+        path = REPO_ROOT / "content" / "questionnaires" / f"{name}.{lang}.json"
+        if path.exists():
+            file, file_hash = read_instrument(name, lang)
+            versions.add(f"{file['version']}#{file_hash}")
+    return versions
 
 
 def score_questionnaires(answers: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
@@ -45,10 +60,11 @@ def score_questionnaires(answers: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFr
         if unknown:
             raise ValueError(f"{instrument}: the export has items that are not in the instrument file: {unknown}")
         versions = set(group["instrument_version"].dropna().astype(str))
-        stale = [v for v in versions if not v.endswith("#SYNTHETIC") and v != f"{file['version']}#{file_hash}"]
+        current = _instrument_versions(str(instrument))
+        stale = [v for v in versions if not v.endswith("#SYNTHETIC") and v not in current]
         if stale:
             notes.append(
-                f"{instrument}: answers were given on item file {stale}, but the current file is {file['version']}#{file_hash}."
+                f"{instrument}: answers were given on item file {stale}, but the current files are {sorted(current)}."
             )
         if file.get("placeholder"):
             notes.append(f"{instrument}: placeholder items, to be replaced by the licensed versions before the study.")
@@ -89,10 +105,11 @@ def build_blocks(
     scores, subscales, notes = score_questionnaires(
         export.questionnaire_task[export.questionnaire_task["participant_code"].isin(participants)]
     )
+    language = export.participants.set_index("participant_code")["language"].fillna("en").astype(str)
     frame = pd.DataFrame(
         {
             "participant": tasks["participant_code"].astype(str),
-            "group": tasks["group"].astype(str),
+            "language": tasks["participant_code"].astype(str).map(language).fillna("en"),
             "condition": tasks["condition"].astype(str),
             "position": tasks["block_index"].astype(int),
             "block_index": tasks["block_index"].astype(int),
@@ -129,26 +146,6 @@ def _h4b_text(tost: pd.Series, n: int, full_n: int) -> str:
     if n < full_n:
         return f"Estimation is primary, because N = {n} is below {full_n}: {interval}. Secondary TOST: {verdict} the margin of ±{tost['margin']:g}, p = {tost['p_tost']:.3f}."
     return f"TOST: {verdict} the margin of ±{tost['margin']:g} (p = {tost['p_tost']:.3f}): {interval}."
-
-
-def _group_descriptives(blocks: pd.DataFrame, config: Config) -> pd.DataFrame:
-    rng = np.random.default_rng(config.seeds.bootstrap)
-    records = []
-    for (group, condition), rows in blocks[blocks["group"].isin(["cs", "nonCs"])].groupby(["group", "condition"]):
-        means = rows.groupby("participant")["quis"].mean().sort_index().to_numpy()
-        low, high = bootstrap_mean_ci(means, rng, config.phase2.bootstrap_samples)
-        records.append(
-            {
-                "group": group,
-                "condition": condition,
-                "n": len(means),
-                "quis_mean": means.mean(),
-                "ci_low": low,
-                "ci_high": high,
-                "success_rate": rows["success"].mean(),
-            }
-        )
-    return pd.DataFrame(records)
 
 
 def run_phase3(export_path: Path, config: Config, *, output_root: Path | None = None) -> Path:
@@ -215,7 +212,6 @@ def run_phase3(export_path: Path, config: Config, *, output_root: Path | None = 
         )
         sensitivity_attention = _run_models(all_blocks, all_rank_frame, work / "attention_kept", margin)
 
-    group_table = _group_descriptives(blocks, config)
     mean_ranks = rank_frame.groupby("condition", as_index=False)["rank"].mean().rename(columns={"rank": "mean_rank"})
     rank_counts = rank_frame.groupby(["condition", "rank"]).size().rename("count").reset_index()
 
@@ -236,7 +232,6 @@ def run_phase3(export_path: Path, config: Config, *, output_root: Path | None = 
         subscales.groupby(["instrument", "section"], as_index=False)["value"].mean(),
         "Mean subscale scores",
     )
-    run.write_table("group_descriptive", group_table, "Descriptive only: CS vs non-CS")
 
     figures.condition_means(run, primary["means"])
     figures.rank_distribution(run, rank_counts)
@@ -256,7 +251,7 @@ def run_phase3(export_path: Path, config: Config, *, output_root: Path | None = 
         report.banner(note)
     report.h2("RQ4: adaptive interfaces vs static (H4a)")
     report.p(
-        "outcome ~ condition + position + task + (1|participant). Linear mixed models for QUIS, UES and log task time, logistic for task success (all 6 items found and within budget). Items found is secondary. Holm across the 4 contrasts within each outcome."
+        "outcome ~ condition + position + task + language + (1|participant). Study language (English or Urdu) is a covariate; it is dropped if only one language was used or if it is confounded with the design (status table, language_covariate). Linear mixed models for QUIS, UES and log task time, logistic for task success (all 6 items found and within budget). Items found is secondary. Holm across the 4 contrasts within each outcome. A secondary outcome with no variation is not fitted (see the status table)."
     )
     report.figure("condition_means", "Condition means with 95% CIs")
     report.table(primary["contrasts"])
@@ -301,9 +296,6 @@ def run_phase3(export_path: Path, config: Config, *, output_root: Path | None = 
         report.p(f"Adds back: {', '.join(kept_failures)}.")
         report.table(sensitivity_attention["contrasts"][sensitivity_attention["contrasts"]["outcome"] == "quis"])
         report.table(sensitivity_attention["tost"])
-    report.h2("RQ5: CS and non-CS (descriptive only)")
-    report.p("Descriptive only: no significance tests and no confirmatory claims.")
-    report.table(group_table)
     path = report.write()
     write_manifest(
         run,

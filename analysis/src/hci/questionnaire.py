@@ -1,7 +1,7 @@
 """Encodes the self-rated preference items for questionnaire-based clustering.
 
 Centred one-hot coding: the chosen level gets 1 - 1/L, every other level of that item gets -1/L, and "noPreference"
-gets 0 on all of them. Plain dummy coding is not an option, because the reference level ("list") and "noPreference"
+gets 0 on all of them. Plain dummy coding is not an option, because the reference level (the base) and "noPreference"
 would both be all zeros and the two answers would look identical.
 """
 
@@ -10,13 +10,19 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-ITEMS: dict[str, tuple[str, ...]] = {
-    "prefLayout": ("list", "grid2", "grid3"),
-    "prefTextSize": ("small", "medium", "large"),
-    "prefDetail": ("lots", "some", "minimal"),
-    "prefTheme": ("light", "dark"),
-    "prefMenu": ("side", "dropdown"),
+from hci.encoding import SETTINGS
+
+# One self-rated preference item per interface setting; its answer options are the setting's levels.
+PREF_ITEMS: dict[str, str] = {
+    "textSize": "prefTextSize",
+    "targetSize": "prefTargetSize",
+    "buttonStyle": "prefButtonStyle",
+    "iconLabels": "prefIconLabels",
+    "contrast": "prefContrast",
+    "layout": "prefLayout",
+    "guidance": "prefGuidance",
 }
+ITEMS: dict[str, tuple[str, ...]] = {PREF_ITEMS[setting]: levels for setting, levels in SETTINGS.items()}
 NO_PREFERENCE = "noPreference"
 N_DIMENSIONS = sum(len(levels) for levels in ITEMS.values())
 

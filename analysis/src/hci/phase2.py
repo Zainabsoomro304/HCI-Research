@@ -1,4 +1,5 @@
-"""Phase 2 analysis: self-consistency and fatigue, learning curves, starting points, clusters and CS / non-CS descriptives."""
+"""Phase 2 analysis: self-consistency and fatigue, learning curves, starting points, clusters, a background description
+and a scene / language nuisance check. There are no subgroup analyses."""
 
 from __future__ import annotations
 
@@ -37,6 +38,7 @@ from hci.learning import (
 from hci.loo import select_sigma_nested
 from hci.model import Nuisance, by_participant, estimate_nuisance, fit_map, use_curvature
 from hci.outputs import Report, Run, new_run, write_manifest
+from hci.platform import platform_info
 from hci.questionnaire import questionnaire_vectors
 from hci.rstats import as_arg, r_versions, run_r, run_r_many
 
@@ -219,66 +221,66 @@ def _gamma_sensitivity(scratch: pd.DataFrame, config: Config) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-def _group_tables(
-    data: CleanData, curves: pd.DataFrame, k90_table: pd.DataFrame, description: ClusterDescription, config: Config
-) -> dict[str, pd.DataFrame]:
-    rng = np.random.default_rng(config.seeds.bootstrap)
-    participants = data.participants.assign(self_consistency=data.participants["self_consistency"].astype(float))
-    groups = [g for g in ("cs", "nonCs") if (participants["group"] == g).any()]
-    code_group = participants.set_index("participant_code")["group"].astype(str)
-    samples = config.phase2.bootstrap_samples
+BACKGROUND_NUMERIC = ("age", "techConfidence")
+BACKGROUND_CATEGORICAL = (
+    "gender", "occupation", "csOrIt", "smartphoneUse", "computerUse", "shoppingFrequency", "groceriesOnline",
+    "readingGlasses", "readingLanguage",
+)  # fmt: skip
 
-    consistency = []
-    for group in groups:
-        values = participants.loc[participants["group"] == group, "self_consistency"].dropna().to_numpy()
-        low, high = bootstrap_mean_ci(values, rng, samples)
-        consistency.append({"group": group, "n": len(values), "mean": values.mean(), "ci_low": low, "ci_high": high})
 
-    weights = []
-    for group in groups:
-        rows = description.scratch.loc[[c for c in description.scratch.index if code_group[c] == group]]
-        for feature in FEATURES:
-            low, high = bootstrap_mean_ci(rows[feature].to_numpy(), rng, samples)
-            weights.append(
-                {"group": group, "feature": feature, "mean": rows[feature].mean(), "ci_low": low, "ci_high": high}
-            )
-
-    scratch = curves[(curves["start"] == "scratch") & (curves["k"] > 0)].assign(
-        group=lambda d: d["participant"].map(code_group)
-    )
-    curve_rows = []
-    for (group, k), rows in scratch.groupby(["group", "k"]):
-        if group not in groups:
+def background_description(background: pd.DataFrame, participants: pd.DataFrame, codes: list[str]) -> pd.DataFrame:
+    """Descriptive only: who took part. Mean (SD) and range for age and tech confidence, counts and shares for
+    everything else, and the study language from participants.csv."""
+    rows = background[background["participant_code"].isin(codes)].drop_duplicates("participant_code", keep="last")
+    n = len(codes)
+    records = [{"item": "participants", "level": "", "value": str(n)}]
+    for item in BACKGROUND_NUMERIC:
+        if item not in rows:
             continue
-        low, high = bootstrap_mean_ci(rows.sort_values("participant")["accuracy"].to_numpy(), rng, samples)
-        curve_rows.append(
-            {"group": group, "k": int(k), "mean": rows["accuracy"].mean(), "ci_low": low, "ci_high": high}
-        )
+        v = pd.to_numeric(rows[item], errors="coerce").dropna()
+        if len(v):
+            sd = v.std(ddof=1) if len(v) > 1 else 0.0
+            records.append({"item": item, "level": "mean (SD)", "value": f"{v.mean():.1f} ({sd:.1f})"})
+            records.append({"item": item, "level": "range", "value": f"{v.min():g}-{v.max():g}"})
+    language = participants[participants["participant_code"].isin(codes)]["language"].fillna("missing")
+    for level, count in language.value_counts().sort_index().items():
+        records.append({"item": "study language", "level": str(level), "value": f"{count} ({100 * count / n:.0f}%)"})
+    for item in BACKGROUND_CATEGORICAL:
+        if item not in rows:
+            continue
+        for level, count in rows[item].fillna("missing").astype(str).value_counts().sort_index().items():
+            records.append({"item": item, "level": level, "value": f"{count} ({100 * count / n:.0f}%)"})
+    return pd.DataFrame(records)
 
-    k90_groups = []
-    tagged = k90_table.assign(group=k90_table["participant"].map(code_group))
-    for (group, start), rows in tagged[tagged["group"].isin(groups)].groupby(["group", "start"]):
-        usable = rows.loc[~rows["not_meaningful"], "k90"].to_numpy(float)
-        k90_groups.append(
-            {
-                "group": group,
-                "start": start,
-                "n_usable": len(usable),
-                "median_k90": format_k(censored_median(usable)),
-                "n_censored_over_50": int(np.isinf(usable).sum()),
-            }
-        )
 
-    labels = description.labels.rename("cluster") + 1
-    crosstab = pd.crosstab(labels, labels.index.map(code_group)).reset_index()
-    crosstab.columns.name = None
-    return {
-        "consistency": pd.DataFrame(consistency),
-        "weights": pd.DataFrame(weights),
-        "curves": pd.DataFrame(curve_rows),
-        "k90": pd.DataFrame(k90_groups),
-        "crosstab": crosstab,
-    }
+def scene_language_check(main: pd.DataFrame, weights: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Nuisance check, descriptive only. Both clips of a trial show the same scene (product category) in the same
+    language, so the scene cannot favour either clip; it could still change how carefully people look. For each scene
+    and each language: trials, share of Option A choices, median RT, and agreement of the choices with the person's own
+    full-data weights (in-sample, so optimistic; compare rows, do not read it as an accuracy)."""
+    main = main.copy()
+    left = np.array([encode(str(c)) for c in main["left_clip_id"]])
+    right = np.array([encode(str(c)) for c in main["right_clip_id"]])
+    w = weights.reindex(main["participant_code"].astype(str)).to_numpy(float)
+    predicted_left = ((left - right) * w).sum(axis=1) >= 0
+    main["agrees"] = predicted_left == (main["choice"] == "left").to_numpy()
+    main["chose_a"] = main["choice"] == "left"
+    out = {}
+    for column in ("scene", "language"):
+        if column not in main:
+            continue
+        out[column] = (
+            main.groupby(column)
+            .agg(
+                trials=("trial_id", "count"),
+                participants=("participant_code", "nunique"),
+                share_option_a=("chose_a", "mean"),
+                median_rt_ms=("rt_ms", "median"),
+                agreement_with_own_weights=("agrees", "mean"),
+            )
+            .reset_index()
+        )
+    return out
 
 
 def _recovery_checks(
@@ -343,16 +345,7 @@ def _recovery_checks(
         f"informativeness {config.simulate.questionnaire_informativeness:.2f}",
         f"k = 0: cluster_questionnaire {accuracy('cluster_questionnaire', 0):.3f}, global {accuracy('global', 0):.3f}; k = 5: cluster_questionnaire {accuracy('cluster_questionnaire', 5):.3f}, cluster_choice {accuracy('cluster_choice', 5):.3f}",
     )
-    means = (
-        data.participants.assign(c=consistency.reindex(data.participants["participant_code"]).to_numpy())
-        .groupby("group")["c"]
-        .mean()
-    )
-    add(
-        "Non-CS extra lapse",
-        f"{config.simulate.noncs_extra_lapse:.2f}",
-        f"mean consistency: {', '.join(f'{g} {v:.2f}' for g, v in means.items())}",
-    )
+    add("Scene and language", "no effect built in", "see the nuisance check: rows should look alike")
     add(
         "Fatigue (lapse rate at session end)",
         f"+{config.simulate.fatigue_lapse_slope:.2f}",
@@ -453,7 +446,8 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
     zero = _zero_baselines(curves, config)
     description = _describe_clusters(data, primary["answers"], config)
     gamma = _gamma_sensitivity(description.scratch, config)
-    groups = _group_tables(data, curves, primary["k90_raw"], description, config)
+    background = background_description(export_data.background, export_data.participants, data.codes())
+    nuisance_check = scene_language_check(data.main, description.scratch)
 
     per_person = curves[(curves["start"] == "scratch") & (curves["k"] > 0)].copy()
     per_person["ceiling"] = per_person["participant"].map(raw)
@@ -516,7 +510,7 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
     run.write_table("exclusions", exclusions, "Exclusions and flags")
     run.write_table(
         "self_consistency",
-        data.participants[["participant_code", "group", "n_consistent", "n_repeats", "self_consistency"]],
+        data.participants[["participant_code", "language", "n_consistent", "n_repeats", "self_consistency"]],
         "Self-consistency per participant",
     )
     run.write_table("fatigue", fatigue, "Fatigue models. Half and gap: consistent ~ half + gap + (1|participant).")
@@ -540,8 +534,9 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
     run.write_table("loo_models", loo_summary, "Leave-one-out sigma, cluster counts and nuisance terms")
     run.write_table("gamma_sensitivity", gamma, "Personal targets that move under an assumed linear busyness bias")
     run.write_table("mlp_robustness", mlp, "Secondary MLP vs the primary logistic model, scratch")
-    for name, table in groups.items():
-        run.write_table(f"group_{name}", table, f"Descriptive only: CS vs non-CS, {name}")
+    run.write_table("background", background, "Background of the eligible participants (descriptive only)")
+    for name, table in nuisance_check.items():
+        run.write_table(f"by_{name}", table, f"Nuisance check by {name} (descriptive only)")
     if slopes is not None:
         run.write_table("contrasts_slopes_sensitivity", slopes, "Sensitivity: contrasts with (start|participant)")
     if sensitivity is not None:
@@ -555,12 +550,10 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
     figures.k90_distribution(
         run, primary["k90_raw"][~primary["k90_raw"]["not_meaningful"]], [0, *config.phase2.k_values]
     )
-    figures.consistency_by_group(run, data.participants)
+    figures.consistency_distribution(run, data.participants)
     figures.cluster_profiles(
         run, description.weights, [int((description.labels == c).sum()) for c in range(description.k)]
     )
-    figures.weights_by_group(run, groups["weights"])
-    figures.curves_by_group(run, groups["curves"])
 
     # Report.
     report = Report(run, "Phase 2 analysis report")
@@ -572,6 +565,11 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
     report.table(exclusions)
     if n < config.study.n_min:
         report.banner(f"Fewer eligible participants ({n}) than the configured minimum ({config.study.n_min}).")
+    report.h3("Participants (descriptive only)")
+    report.p(
+        f"Everyone is aged {platform_info()['minAge']} or over (screened at the start of Session A). Background items are described only: they are never used to form groups or in tests. The CS/IT item is recorded only."
+    )
+    report.table(background)
     report.h2("Model")
     report.p(
         "Bradley-Terry / logistic model fitted by MAP: P(choose left) = sigmoid(w . dx + beta_side + kappa . dcurv). Configs are scored with w . x only."
@@ -580,7 +578,7 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
         "Prior = starting point. Fitting with a Gaussian prior w ~ N(mu, sigma^2 I) is how fine-tuning from a group model works: with no comparisons the estimate is exactly mu, and each comparison pulls it towards the person's own preferences. Scratch uses mu = 0, global uses the pooled weights of everyone else, and the cluster starts use the pooled weights of the assigned cluster. One sigma applies to every starting point, chosen by held-out log-loss averaged over all starting points and k, inside the other participants."
     )
     report.p(
-        "Linear busyness is not in the model: numChangedSettings is the exact sum of the 8 dummies, so its coefficient cannot be separated from w. The weights therefore include any general liking for more or less change. Curvature, (busy - 3)^2, is identifiable for this clip set and is included as a nuisance term."
+        "Linear busyness is not in the model: numChangedSettings is the exact sum of the 10 dummies, so its coefficient cannot be separated from w. The weights therefore include any general liking for more or less change. Curvature, (busy - 3)^2, is identifiable for this clip set and is included as a nuisance term."
     )
     report.p(
         "Leave-one-out: for each participant the nuisance terms, sigma, global model, clusters and cluster models are rebuilt from everyone else. Their own data only enters through their first k training comparisons."
@@ -593,7 +591,7 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
     report.p(
         f"Mean self-consistency {group_ceiling:.3f} (95% bootstrap CI {low:.3f} to {high:.3f}), from 10 repeats per person."
     )
-    report.figure("consistency_by_group", "Self-consistency by group")
+    report.figure("consistency_distribution", "Self-consistency")
     report.p(
         "The fatigue model is consistent ~ half + trial_gap + (1|participant). Half is second vs first half of the session (trial 42 onwards), controlling for the gap. The position and RT rows are extra checks across the session."
     )
@@ -637,14 +635,13 @@ def run_phase2(export_path: Path, config: Config, *, output_root: Path | None = 
     report.table(cluster_summary)
     report.figure("cluster_profiles", "Choice-based cluster weight profiles")
 
-    report.h2("RQ5: CS and non-CS (descriptive only)")
-    report.p("Descriptive only: no confirmatory claims and no significance tests.")
-    report.table(groups["consistency"])
-    report.figure("weights_by_group", "Mean preference weights by group")
-    report.figure("curves_by_group", "Scratch learning curve by group")
-    report.table(groups["k90"])
-    report.h3("Clusters by group")
-    report.table(groups["crosstab"])
+    report.h2("Nuisance check: scene and language")
+    report.p(
+        "Both clips of a trial always show the same scene (product category) in the same language, and scenes are balanced within each participant, so neither can favour one clip. This check looks for scenes or languages where people chose differently in general: the share of Option A, the median response time and the agreement of choices with each person's own weights (in-sample; compare the rows only). Language is chosen by the person, so its rows also differ by who chose each language."
+    )
+    for name, table in nuisance_check.items():
+        report.h3(f"By {name}")
+        report.table(table)
 
     report.h2("Robustness: secondary MLP model")
     report.p(

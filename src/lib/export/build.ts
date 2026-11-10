@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import type { Participant, Session } from "@prisma/client";
 import { MAX_FAILED_ATTENTION_CHECKS } from "@/config/study";
+import { DEFAULT_CONFIG_ID, SETTING_KEYS } from "@/config/uiSpace";
 import { prisma } from "../db";
 import { computeQuality } from "../admin/quality";
 import { latinRows } from "../latinSquare";
@@ -136,6 +137,8 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
         repeat_of_trial_index: t.repeatOfTrialId ? trialIndexById.get(t.repeatOfTrialId) : null,
         repeat_gap: t.repeatOfTrialId ? t.trialIndex - trialIndexById.get(t.repeatOfTrialId)! : null,
         is_attention_check: t.isAttentionCheck,
+        scene: t.scene,
+        language: t.language,
         left_clip_id: t.leftClipId,
         ...configSettings("left", t.leftClipId),
         left_numChangedSettings: t.leftNumChangedSettings,
@@ -321,8 +324,9 @@ export function codebook(filters: ExportFilters, counts: Record<string, number>)
     "",
     "## Design notes",
     "",
-    "- Config IDs have the form `layout-fontSize-density-theme-menu`; the base configuration is `list-default-detailed-light-sidebar`.",
-    "- Attention checks show the same clip on both sides and ask the participant to choose B (right).",
+    `- Config IDs have the form \`${SETTING_KEYS.join("-")}\`; the base configuration is \`${DEFAULT_CONFIG_ID}\`.`,
+    "- Each comparison trial shows one scene (product category) in one language in both clips. In Urdu the page is right to left: left_* is Option A, shown on the right.",
+    "- Attention checks show the same clip on both sides and ask the participant to choose Option B (choice = right).",
     `- A participant fails the attention criterion if more than ${MAX_FAILED_ATTENTION_CHECKS} attention check(s) are answered wrongly.`,
     "- Repeat trials copy an earlier main trial with sides swapped; consistency compares the chosen clip, not the side.",
     "- `numChangedSettings` is the number of settings (0-5) a clip's target differs from the base config (transition busyness).",
