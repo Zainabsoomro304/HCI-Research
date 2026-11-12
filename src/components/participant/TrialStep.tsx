@@ -20,10 +20,10 @@ function useSideBySide(): boolean {
 export interface TrialResponse {
   trialId: string;
   choice: "left" | "right";
-  rtMs: number;
+  rtMs: number | null;
   replayCount: number;
   clientShownAt: number;
-  clientBothEndedAt: number;
+  clientBothEndedAt: number | null;
   clientRespondedAt: number;
 }
 
@@ -113,17 +113,18 @@ export function TrialStep({
 
   const choose = useCallback(
     (choice: Side) => {
-      if (phase !== "ready" || saving || chosen.current || bothEndedPerf.current === null) return;
+      // Participants may choose as soon as the clips are playing; they do not have to wait for the end.
+      if ((phase !== "ready" && phase !== "playing") || saving || chosen.current) return;
       chosen.current = true;
       left.current?.pause();
       right.current?.pause();
       void onChoose({
         trialId: trial.id,
         choice,
-        rtMs: Math.round(performance.now() - bothEndedPerf.current),
+        rtMs: bothEndedPerf.current === null ? null : Math.round(performance.now() - bothEndedPerf.current),
         replayCount,
         clientShownAt: shownAt.current,
-        clientBothEndedAt: bothEndedAt.current!,
+        clientBothEndedAt: bothEndedAt.current,
         clientRespondedAt: Date.now(),
       }).then((saved) => {
         if (!saved) chosen.current = false; // not accepted (e.g. another request in flight): allow choosing again
@@ -143,7 +144,7 @@ export function TrialStep({
     return () => window.removeEventListener("keydown", onKey);
   }, [choose, rtl]);
 
-  const ready = phase === "ready" && !saving;
+  const ready = (phase === "ready" || phase === "playing") && !saving;
   const progressLabel = trial.isPractice
     ? t("trial.practiceProgress", { current: trial.trialIndex, total: trial.total })
     : t("trial.progress", { current: trial.trialIndex, total: trial.total });
@@ -217,7 +218,7 @@ export function TrialStep({
                 ↻ {t("trial.replay")}
               </Button>
               <p className="text-[0.85em] text-[var(--c-muted)]">
-                {phase === "ready" ? t(rtl ? "trial.keyboardHintRtl" : "trial.keyboardHint") : phase === "loading" ? t("trial.loading") : t("trial.watchFirst")}
+                {phase === "ready" ? t(rtl ? "trial.keyboardHintRtl" : "trial.keyboardHint") : phase === "loading" ? t("trial.loading") : t(rtl ? "trial.keyboardHintRtl" : "trial.keyboardHint")}
               </p>
             </>
           )}

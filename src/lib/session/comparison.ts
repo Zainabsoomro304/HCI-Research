@@ -238,7 +238,7 @@ export async function applyComparisonAction(s: SessionWithParticipant, action: C
             rtMs: action.rtMs,
             replayCount: action.replayCount,
             clientShownAt: new Date(action.clientShownAt),
-            clientBothEndedAt: new Date(action.clientBothEndedAt),
+            clientBothEndedAt: action.clientBothEndedAt === null ? null : new Date(action.clientBothEndedAt),
             clientRespondedAt: new Date(action.clientRespondedAt),
             serverRespondedAt: now,
           },

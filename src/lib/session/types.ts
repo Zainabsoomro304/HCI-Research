@@ -53,10 +53,11 @@ export const ComparisonActionSchema = z.discriminatedUnion("type", [
     type: z.literal("trial"),
     trialId: z.string(),
     choice: z.enum(["left", "right"]),
-    rtMs: z.number().int().min(0).max(24 * 3600 * 1000),
+    /** From the moment both clips finished; null when the participant chose before they finished. */
+    rtMs: z.number().int().min(0).max(24 * 3600 * 1000).nullable(),
     replayCount: z.number().int().min(0).max(1000),
     clientShownAt: ts,
-    clientBothEndedAt: ts,
+    clientBothEndedAt: ts.nullable(),
     clientRespondedAt: ts,
   }),
   z.object({ type: z.literal("break_end"), clientTs: ts }),
