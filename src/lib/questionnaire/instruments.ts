@@ -4,8 +4,13 @@ import path from "node:path";
 import { z } from "zod";
 
 /**
- * Post-task questionnaires (QUIS, UES-SF). Item texts and scales come only from
- * content/questionnaires/<instrument>.<lang>.json; nothing is hard-coded here.
+ * Post-task questionnaires (QUIS, UES-SF). Item texts and scales come only from instrument files; nothing is hard-coded here.
+ *
+ * Licensed instruments must not be published in the (public) repository, so a private copy takes precedence:
+ *   1. environment variable INSTRUMENT_<NAME>_<LANG>, e.g. INSTRUMENT_QUIS_EN, holding the whole JSON file (deployments)
+ *   2. content/questionnaires/private/<instrument>.<lang>.json (gitignored; local machine)
+ *   3. content/questionnaires/<instrument>.<lang>.json (committed; placeholders for licensed instruments)
+ * For each step the language file is tried before falling back to English.
  */
 export const INSTRUMENTS = ["quis", "ues_sf"] as const;
 export type Instrument = (typeof INSTRUMENTS)[number];
@@ -45,14 +50,27 @@ export const InstrumentFileSchema = z
 export type InstrumentFile = z.infer<typeof InstrumentFileSchema>;
 export type InstrumentItem = z.infer<typeof ItemSchema>;
 
-export function loadInstrument(instrument: Instrument, lang = "en"): InstrumentFile & { hash: string } {
+/** Where an instrument's text comes from, for the admin overview. */
+export type InstrumentOrigin = "env" | "private" | "repo";
+
+function readInstrumentRaw(instrument: Instrument, lang: string): { raw: string; file: string; origin: InstrumentOrigin } {
   const dir = path.resolve(process.cwd(), "content/questionnaires");
+  for (const l of lang === "en" ? ["en"] : [lang, "en"]) {
+    const env = process.env[`INSTRUMENT_${instrument.toUpperCase()}_${l.toUpperCase()}`];
+    if (env?.trim()) return { raw: env, file: `INSTRUMENT_${instrument.toUpperCase()}_${l.toUpperCase()}`, origin: "env" };
+    const priv = path.join(dir, "private", `${instrument}.${l}.json`);
+    if (fs.existsSync(priv)) return { raw: fs.readFileSync(priv, "utf8"), file: `private/${instrument}.${l}.json`, origin: "private" };
+  }
   const file = fs.existsSync(path.join(dir, `${instrument}.${lang}.json`)) ? `${instrument}.${lang}.json` : `${instrument}.en.json`;
-  const raw = fs.readFileSync(path.join(dir, file), "utf8");
+  return { raw: fs.readFileSync(path.join(dir, file), "utf8"), file, origin: "repo" };
+}
+
+export function loadInstrument(instrument: Instrument, lang = "en"): InstrumentFile & { hash: string; origin: InstrumentOrigin } {
+  const { raw, file, origin } = readInstrumentRaw(instrument, lang);
   const r = InstrumentFileSchema.safeParse(JSON.parse(raw));
   if (!r.success) throw new Error(`Invalid ${file}:\n${z.prettifyError(r.error)}`);
   if (r.data.instrument !== instrument) throw new Error(`${file} declares instrument "${r.data.instrument}"`);
-  return { ...r.data, hash: createHash("sha256").update(raw).digest("hex").slice(0, 16) };
+  return { ...r.data, origin, hash: createHash("sha256").update(raw).digest("hex").slice(0, 16) };
 }
 
 /** Responses: one value per item, an integer on the item's scale or "NA" where allowed. Every item must be answered. */

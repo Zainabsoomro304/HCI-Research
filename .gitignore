@@ -16,6 +16,9 @@ tmp/
 .vercel/
 .next-prod/
 
+# Licensed questionnaire items (e.g. QUIS): kept out of the public repo; see README "Questionnaires"
+content/questionnaires/private/
+
 # Analysis pipeline: real participant data, models and results must never be committed (public repo)
 analysis/data/
 analysis/output/

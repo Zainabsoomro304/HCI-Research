@@ -4,6 +4,7 @@ import path from "node:path";
 import JSZip from "jszip";
 import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "@/lib/db";
+import { loadInstrument } from "@/lib/questionnaire/instruments";
 import type { FrozenResult } from "@/lib/phase3/freeze";
 import type { Lang } from "@/config/shop";
 import { doConsentAndBackground, fastVideos, newParticipant, runComparisons, tr, trRe } from "./helpers";
@@ -23,8 +24,7 @@ async function login(page: Page) {
 /** The scripted real participant does the whole study in Urdu (REAL_LANG=en for English). */
 const LANG: Lang = process.env.REAL_LANG === "en" ? "en" : "ur";
 const t = tr(LANG);
-const instrumentTitle = (name: string) =>
-  (JSON.parse(fs.readFileSync(path.resolve(`content/questionnaires/${name}.${LANG}.json`), "utf8")) as { title: string }).title;
+const instrumentTitle = (name: "quis" | "ues_sf") => loadInstrument(name, LANG).title;
 
 async function completeSessionA(page: Page, token: string) {
   await fastVideos(page);

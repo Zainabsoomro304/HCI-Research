@@ -46,13 +46,20 @@ describe("translation files", () => {
     }
   });
 
-  it("have per-language questionnaire files, still marked as placeholders", () => {
-    for (const inst of ["quis", "ues_sf"]) {
-      for (const lang of ["en", "ur"]) {
-        const file = JSON.parse(fs.readFileSync(path.resolve(`content/questionnaires/${inst}.${lang}.json`), "utf8"));
-        expect(file.placeholder, `${inst}.${lang}`).toBe(true);
-      }
+  it("have per-language questionnaire files: real UES-SF in the repo, QUIS only as a placeholder (it is licensed)", () => {
+    const read = (inst: string, lang: string) => JSON.parse(fs.readFileSync(path.resolve(`content/questionnaires/${inst}.${lang}.json`), "utf8"));
+    for (const lang of ["en", "ur"]) {
+      expect(read("quis", lang).placeholder, `quis.${lang}`).toBe(true);
+      const ues = read("ues_sf", lang);
+      expect(ues.placeholder, `ues_sf.${lang}`).toBe(false);
+      expect(ues.items).toHaveLength(12);
+      expect(JSON.stringify(ues)).not.toMatch(/PLACEHOLDER|عارضی/);
     }
+    // Both languages share item IDs, scales and reverse coding (the analysis scores them together).
+    const shape = (f: { items: { id: string; scale: { min: number; points: number }; reverse: boolean }[] }) =>
+      f.items.map((i) => [i.id, i.scale.min, i.scale.points, i.reverse]);
+    expect(shape(read("ues_sf", "ur"))).toEqual(shape(read("ues_sf", "en")));
+    expect(read("ues_sf", "en").items.filter((i: { reverse: boolean }) => i.reverse).map((i: { id: string }) => i.id)).toEqual(["ues_04", "ues_05", "ues_06"]);
     expect(fs.existsSync(path.resolve("content/consent.ur.md"))).toBe(true);
   });
 });

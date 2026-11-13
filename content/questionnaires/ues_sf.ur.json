@@ -1,25 +1,27 @@
 {
   "instrument": "ues_sf",
-  "version": "placeholder-0",
-  "placeholder": true,
-  "title": "[عارضی – مطالعے سے پہلے تبدیل کریں] آپ کا تجربہ",
-  "instructions": "[عارضی – مطالعے سے پہلے تبدیل کریں] سوالنامے کی ہدایات یہاں آئیں گی۔",
+  "version": "ues-sf-2018-1",
+  "placeholder": false,
+  "source": "O'Brien, H. L., Cairns, P., & Hall, M. (2018). A practical approach to measuring user engagement with the refined user engagement scale (UES) and new UES short form. International Journal of Human-Computer Studies, 112, 28-39. https://doi.org/10.1016/j.ijhcs.2017.12.002",
+  "note": "DRAFT Urdu translation (not a validated version): needs review by a native speaker and ideally back-translation before the study. Same item IDs, scale and reverse coding as the English file.",
+  "title": "دکان کے ساتھ آپ کا تجربہ",
+  "instructions": "براہِ کرم بتائیں کہ آپ ہر بیان سے کتنا متفق ہیں۔ یہ بیانات اُس دکان کے بارے میں ہیں جو آپ نے ابھی استعمال کی۔",
   "items": [
     {
       "id": "ues_01",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 1",
-      "section": "[عارضی] Subscale A",
+      "text": "اس تجربے کے دوران مجھے اپنے اردگرد کا ہوش نہیں رہا۔",
+      "section": "مکمل توجہ",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -27,19 +29,19 @@
     },
     {
       "id": "ues_02",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 2",
-      "section": "[عارضی] Subscale A",
+      "text": "اس دکان کو استعمال کرتے ہوئے وقت کا پتا ہی نہیں چلا۔",
+      "section": "مکمل توجہ",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -47,19 +49,19 @@
     },
     {
       "id": "ues_03",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 3",
-      "section": "[عارضی] Subscale A",
+      "text": "یہ تجربہ میری پوری توجہ کا مرکز رہا۔",
+      "section": "مکمل توجہ",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -67,19 +69,19 @@
     },
     {
       "id": "ues_04",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 4",
-      "section": "[عارضی] Subscale B",
+      "text": "اس دکان کو استعمال کرتے ہوئے مجھے جھنجھلاہٹ محسوس ہوئی۔",
+      "section": "استعمال میں آسانی",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -87,19 +89,19 @@
     },
     {
       "id": "ues_05",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 5",
-      "section": "[عارضی] Subscale B",
+      "text": "اس دکان کو استعمال کرنا مجھے الجھا دینے والا لگا۔",
+      "section": "استعمال میں آسانی",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -107,19 +109,19 @@
     },
     {
       "id": "ues_06",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 6",
-      "section": "[عارضی] Subscale B",
+      "text": "اس دکان کو استعمال کرنا تھکا دینے والا تھا۔",
+      "section": "استعمال میں آسانی",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -127,19 +129,19 @@
     },
     {
       "id": "ues_07",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 7",
-      "section": "[عارضی] Subscale C",
+      "text": "یہ دکان دلکش تھی۔",
+      "section": "ظاہری کشش",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -147,19 +149,19 @@
     },
     {
       "id": "ues_08",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 8",
-      "section": "[عارضی] Subscale C",
+      "text": "یہ دکان دیکھنے میں خوبصورت تھی۔",
+      "section": "ظاہری کشش",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -167,19 +169,19 @@
     },
     {
       "id": "ues_09",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 9",
-      "section": "[عارضی] Subscale C",
+      "text": "یہ دکان دیکھنے میں بھلی اور خوشگوار لگی۔",
+      "section": "ظاہری کشش",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -187,19 +189,19 @@
     },
     {
       "id": "ues_10",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 10",
-      "section": "[عارضی] Subscale D",
+      "text": "اس دکان کو استعمال کرنا مفید تھا۔",
+      "section": "فائدہ اور دلچسپی",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -207,19 +209,19 @@
     },
     {
       "id": "ues_11",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 11",
-      "section": "[عارضی] Subscale D",
+      "text": "میرا تجربہ اطمینان بخش رہا۔",
+      "section": "فائدہ اور دلچسپی",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,
@@ -227,19 +229,19 @@
     },
     {
       "id": "ues_12",
-      "text": "[عارضی – مطالعے سے پہلے تبدیل کریں] نمونہ سوال 12",
-      "section": "[عارضی] Subscale D",
+      "text": "یہ تجربہ میرے لیے دلچسپ تھا۔",
+      "section": "فائدہ اور دلچسپی",
       "scale": {
         "min": 1,
         "points": 5,
-        "leftAnchor": "[عارضی] Strongly disagree",
-        "rightAnchor": "[عارضی] Strongly agree",
+        "leftAnchor": "بالکل متفق نہیں",
+        "rightAnchor": "بالکل متفق",
         "labels": [
-          "[عارضی] 1",
-          "[عارضی] 2",
-          "[عارضی] 3",
-          "[عارضی] 4",
-          "[عارضی] 5"
+          "بالکل متفق نہیں",
+          "متفق نہیں",
+          "نہ متفق نہ غیر متفق",
+          "متفق",
+          "بالکل متفق"
         ]
       },
       "allowNA": false,

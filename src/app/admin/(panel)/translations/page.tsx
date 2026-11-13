@@ -24,7 +24,7 @@ export default async function TranslationsPage({ searchParams }: { searchParams:
       </div>
       <p className="max-w-3xl text-sm text-[#566070]">
         Every Urdu string was drafted without native review. Mark a string as reviewed once a native speaker has checked it, or correct it in
-        <code> content/strings.ur.json</code>, <code>data/catalog.json</code> or <code>data/tasks.json</code> first. Consent and questionnaire texts are placeholders and are not listed here.
+        <code> content/strings.ur.json</code>, <code>data/catalog.json</code> or <code>data/tasks.json</code> first. Consent text (a placeholder) and the questionnaires are not listed here: review the Urdu questionnaire files in content/questionnaires/ directly.
       </p>
       {(Object.keys(GROUPS) as (keyof typeof GROUPS)[]).map((group) => {
         const rows = list.filter((i) => i.group === group);

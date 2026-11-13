@@ -207,7 +207,12 @@ Unit tests cover the 432-config space, contrast (AA/AAA), the trial schedule (in
 ## 8. Pre-study checklist
 
 1. **Native Urdu review** of every string (Admin → Translations, or `pnpm translations:status`), the catalogue and the tasks. Mark each as reviewed.
-2. **Replace placeholders** (search for `[PLACEHOLDER` and `[عارضی`): `content/consent.en.md` and `consent.ur.md` (approved information sheet and consent); `content/questionnaires/{quis,ues_sf}.{en,ur}.json` – the licensed/validated items in both languages (validated Urdu versions where they exist), same item IDs, scales and reverse flags in both files; set `"placeholder": false` and bump `"version"`.
+2. **Replace placeholders** (search for `[PLACEHOLDER` and `[عارضی`): `content/consent.en.md` and `consent.ur.md` (approved information sheet and consent), and the licensed QUIS items (see "Questionnaires" below). Admin → Phase 3 preparation lists which questionnaire text each language will show and flags placeholders.
+
+### Questionnaires
+
+- **UES-SF** (O'Brien, Cairns & Hall, 2018) is in `content/questionnaires/ues_sf.{en,ur}.json`: the 12 published items with "[Application]" replaced by "this shop", 5-point agreement scale, the 3 perceived-usability items reverse-coded. The **Urdu file is a draft translation**, not a validated version: have a native speaker review it (ideally with back-translation) and bump `"version"` if it changes.
+- **QUIS** is licensed, so its items must **not** be committed to this public repository. The committed `quis.{en,ur}.json` files are placeholders. Put your licensed copy in `content/questionnaires/private/quis.en.json` and `quis.ur.json` (the folder is gitignored; same format as the placeholder file, same item IDs, scales and reverse flags in both languages, `"placeholder": false`). For a deployment, set the environment variables `INSTRUMENT_QUIS_EN` and `INSTRUMENT_QUIS_UR` to the whole contents of those files, e.g. `vercel env add INSTRUMENT_QUIS_EN production < content/questionnaires/private/quis.en.json`. Lookup order everywhere (platform and analysis): environment variable, then `private/`, then the committed file. Run the analysis on the machine that has the `private/` files so scoring uses the same items.
 3. **Tablets:** try a session on the tablets you will use, in landscape, in both languages.
 4. **In-person option:** decide who does Session A in person on the lab laptop (e.g. participants with little computer experience) and book the room.
 5. **Clips and screenshots:** if anything visual changed, run `pnpm screenshots` and inspect, then `pnpm clips:record` and commit `public/m` and `data/media-manifest.json`.

@@ -34,6 +34,11 @@ function answers(instrument: "quis" | "ues_sf") {
   const inst = loadInstrument(instrument);
   return Object.fromEntries(inst.items.map((i) => [i.id, i.scale.min + Math.floor(i.scale.points / 2)]));
 }
+/** "NA" for the first item that allows it, so N/A answers are exercised whatever the (possibly licensed) item file is. */
+function naFirst(instrument: "quis" | "ues_sf") {
+  const item = loadInstrument(instrument).items.find((i) => i.allowNA);
+  return item ? { [item.id]: "NA" as const } : {};
+}
 
 describe("Session B", () => {
   it("stays locked until unlocked, and cannot be unlocked without all 4 plans", async () => {
@@ -92,7 +97,7 @@ describe("Session B", () => {
       expect(st.step).toBe("quis");
       expect(st.questionnaire!.items.length).toBeGreaterThan(0);
       await expect(act(sb.token, { type: "questionnaire", blockIndex: bi, instrument: "quis", responses: {} })).rejects.toMatchObject({ status: 400 });
-      st = await act(sb.token, { type: "questionnaire", blockIndex: bi, instrument: "quis", responses: { ...answers("quis"), quis_01: "NA" } });
+      st = await act(sb.token, { type: "questionnaire", blockIndex: bi, instrument: "quis", responses: { ...answers("quis"), ...naFirst("quis") } });
       expect(st.step).toBe("ues_sf");
       st = await act(sb.token, { type: "questionnaire", blockIndex: bi, instrument: "ues_sf", responses: answers("ues_sf") });
     }

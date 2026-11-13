@@ -187,8 +187,9 @@ def _simulate_background(person: Person, sim: Any) -> dict[str, str]:
 
 
 def _read_instrument(name: str, lang: str = "en") -> dict[str, Any]:
-    path = REPO_ROOT / "content" / "questionnaires" / f"{name}.{lang}.json"
-    return json.loads(path.read_text(encoding="utf-8"))
+    from hci.phase3 import read_instrument  # same lookup as the platform (private licensed copy first)
+
+    return read_instrument(name, lang)[0]
 
 
 def _instrument_label(file: dict[str, Any]) -> str:

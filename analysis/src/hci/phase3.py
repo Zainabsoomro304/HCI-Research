@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -29,9 +30,26 @@ CONDITIONS = ["static", "global", "cluster5", "personalFull"]
 LANGUAGES = ("en", "ur")
 
 
+def instrument_raw(name: str, lang: str = "en") -> bytes | None:
+    """The instrument file's bytes, looked up the way the platform does: environment variable INSTRUMENT_<NAME>_<LANG>,
+    then the gitignored content/questionnaires/private/ copy (licensed items), then the committed file."""
+    env = os.environ.get(f"INSTRUMENT_{name.upper()}_{lang.upper()}", "")
+    if env.strip():
+        return env.encode("utf-8")
+    for path in (
+        REPO_ROOT / "content" / "questionnaires" / "private" / f"{name}.{lang}.json",
+        REPO_ROOT / "content" / "questionnaires" / f"{name}.{lang}.json",
+    ):
+        if path.exists():
+            return path.read_bytes()
+    return None
+
+
 def read_instrument(name: str, lang: str = "en") -> tuple[dict[str, Any], str]:
     """The instrument file and its hash, computed the way the platform does."""
-    raw = (REPO_ROOT / "content" / "questionnaires" / f"{name}.{lang}.json").read_bytes()
+    raw = instrument_raw(name, lang)
+    if raw is None:
+        raise FileNotFoundError(f"No instrument file for {name} ({lang})")
     return json.loads(raw.decode("utf-8")), hashlib.sha256(raw).hexdigest()[:16]
 
 
@@ -39,8 +57,7 @@ def _instrument_versions(name: str) -> set[str]:
     """Version labels of every language file of an instrument; all share item IDs, scales and reverse coding."""
     versions = set()
     for lang in LANGUAGES:
-        path = REPO_ROOT / "content" / "questionnaires" / f"{name}.{lang}.json"
-        if path.exists():
+        if instrument_raw(name, lang) is not None:
             file, file_hash = read_instrument(name, lang)
             versions.add(f"{file['version']}#{file_hash}")
     return versions

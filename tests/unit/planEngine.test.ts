@@ -134,7 +134,7 @@ describe("value-iteration agent", () => {
       if (topGap(w, 2, 4) < 1e-4) continue;
       expect(solveMdp(w, options).finalConfig).toBe(restrictedArgmax(w, 2, 4));
     }
-  });
+  }, 30_000); // 500 MDP solves: about 4 s alone, more when the machine is busy
 
   it("is restricted to 2-4 changes when every change is good or every change is bad", () => {
     const good = new Array(10).fill(1);

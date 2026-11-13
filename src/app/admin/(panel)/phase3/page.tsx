@@ -6,6 +6,23 @@ import { ACTIVE_FREEZE_PHRASE } from "@/config/planEngine";
 import { activeFrozenModel, freezeReadiness, phase3Status, testToolsEnabled, type ExcludedEntry, type FrozenResult } from "@/lib/phase3/freeze";
 import type { SimulatedTruth } from "@/lib/phase3/simulate";
 import { prisma } from "@/lib/db";
+import { INSTRUMENTS, loadInstrument } from "@/lib/questionnaire/instruments";
+
+const ORIGIN_LABEL = { env: "from environment variable", private: "from private local file", repo: "from repository" } as const;
+
+/** Which questionnaire text Session B will show, per instrument and language; placeholders are flagged. */
+function QuestionnaireStatus() {
+  const rows = INSTRUMENTS.flatMap((name) => (["en", "ur"] as const).map((lang) => ({ name, lang, inst: loadInstrument(name, lang) })));
+  return (
+    <ul className="mt-3 text-sm" data-testid="questionnaire-status">
+      {rows.map(({ name, lang, inst }) => (
+        <li key={`${name}-${lang}`} className={inst.placeholder ? "font-semibold text-[#b03a27]" : "text-[#1d4d41]"}>
+          {name.toUpperCase().replace("_", "-")} ({lang}): {inst.placeholder ? "PLACEHOLDER items" : `${inst.items.length} items, version ${inst.version}`}, {ORIGIN_LABEL[inst.origin]}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +105,7 @@ export default async function Phase3Page() {
             ))}
           </ul>
         )}
+        <QuestionnaireStatus />
         {readiness.unfinished.length > 0 && (
           <table className="mt-4 w-full text-sm">
             <thead>
