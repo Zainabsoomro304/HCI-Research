@@ -1,6 +1,6 @@
-"""Power simulation for the H4b equivalence test in the planned within-subject design.
+"""Power simulation for the H4b equivalence test (SUS) in the within-subject design.
 
-Each simulated study draws every participant's QUIS score in cluster5 and personalFull from a bivariate normal with the
+Each simulated study draws every participant's SUS score in cluster5 and personalFull from a bivariate normal with the
 given SD and correlation, then runs TOST on the paired differences. In a balanced Latin square this matches the mixed-model
 contrast. The SDs and correlations are assumptions, set in config.yaml.
 """
@@ -44,7 +44,7 @@ def power_table(config: Config) -> pd.DataFrame:
             for true_difference in settings.true_differences:
                 for n in settings.sample_sizes:
                     power = tost_power(
-                        n, sd, correlation, config.phase3.equivalence_margin, true_difference, settings.simulations, rng
+                        n, sd, correlation, config.evaluation.equivalence_margin, true_difference, settings.simulations, rng
                     )
                     records.append(
                         {
@@ -91,15 +91,15 @@ def run_power(config: Config, *, output_root: Path | None = None) -> Path:
     highlight.columns = [f"power_n{c}" if isinstance(c, int | np.integer) else str(c) for c in highlight.columns]
     run.write_table("power", table, "TOST power by SD, correlation, true difference and N")
     run.write_table("power_n_needed", needed, "Smallest simulated N reaching 80% and 90% power")
-    run.write_table("power_design_sizes", highlight, "TOST power at the design sizes")
+    run.write_table("power_design_sizes", highlight, "TOST power at N = 16, 32, 48 and 64")
     report = Report(run, "Power simulation for H4b")
     report.p(
-        f"{config.power.simulations} simulated studies per cell. TOST on paired differences, margin ±{config.phase3.equivalence_margin:g} scale points, alpha 5%. The Latin square balances in multiples of 16, so N = 16, 32 and 48 are the natural sizes."
+        f"{config.power.simulations} simulated studies per cell. TOST on paired SUS differences, margin ±{config.evaluation.equivalence_margin:g} SUS points, alpha 5%, no true difference. The number of participants is not fixed; the Latin squares balance in groups of 16."
     )
     report.p(
-        "Assumptions: the SDs come from the study brief (Gaspar-Figueiredo et al., 2025; not checked against the paper here). The correlation between conditions is unknown, so a range is shown."
+        f"Assumptions: SUS SD {', '.join(f'{s:g}' for s in config.power.sds)} (Anam, Sadiq & Jamil 2020 report an SD of about 12 for the Urdu SUS). The correlation between a person's SUS in two conditions is unknown, so a range is shown."
     )
-    report.h2("At the design sizes")
+    report.h2("At N = 16, 32, 48 and 64")
     report.table(highlight)
     report.h2("N needed")
     report.table(needed)

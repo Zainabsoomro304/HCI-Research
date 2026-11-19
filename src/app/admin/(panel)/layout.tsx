@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { LogoutButton } from "@/components/admin/widgets";
-import { testToolsEnabled } from "@/lib/phase3/freeze";
+import { testToolsEnabled } from "@/lib/prepare/freeze";
 
 export const metadata = { title: "Study admin" };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const nav = [
     ["/admin", "Participants"],
-    ["/admin/phase3", "Phase 3 preparation"],
+    ["/admin/prepare", "Prepare shopping sessions"],
     ["/admin/translations", "Translations"],
     ["/admin/monitor", "Live monitor"],
     ["/admin/export", "Export"],

@@ -1,5 +1,5 @@
 /**
- * Plan engine: leave-one-out shared models, the four condition models and their targets, from Session A comparisons.
+ * Plan engine: leave-one-out shared models, the four condition models and their targets, from the Session 1 comparisons.
  * Pure and deterministic: no database and no clock. Ported from analysis/src/hci (loo.py, conditions.py).
  */
 import { PLAN_ENGINE } from "@/config/planEngine";
@@ -39,6 +39,8 @@ export interface ParticipantModels {
   nuisance: Nuisance;
   clusterCount: number;
   assignedCluster: number;
+  /** The clustering this person's models were built with (training people in sorted code order). */
+  clustering: { codes: string[]; labels: number[] };
   globalW: number[];
   clusterW: number[];
   cluster5W: number[];
@@ -83,13 +85,22 @@ export function makeSplit(nMain: number, nTest: number, seed: number): { test: n
   return { test, pool: Array.from({ length: nMain }, (_, i) => i).filter((i) => !held.has(i)) };
 }
 
+/** Every cluster has at least PLAN_ENGINE.minClusterSize members. */
+export function clustersLargeEnough(labels: readonly number[], k: number): boolean {
+  const counts = new Array<number>(k).fill(0);
+  for (const l of labels) counts[l]!++;
+  return counts.every((c) => c >= PLAN_ENGINE.minClusterSize);
+}
+
+/** Highest silhouette among the cluster counts whose clusters all have at least minClusterSize people; else 1 cluster. */
 function chooseClusters(points: number[][], useClusters: boolean, seed: number): { labels: number[]; k: number; silhouette: number | null } {
   const fallback = { labels: points.map(() => 0), k: 1, silhouette: null };
   if (!useClusters) return fallback;
   let best: { labels: number[]; k: number; silhouette: number } | null = null;
   for (const k of [...PLAN_ENGINE.clusterCandidates].sort((a, b) => a - b)) {
-    if (k >= points.length) continue;
+    if (k * PLAN_ENGINE.minClusterSize > points.length) continue;
     const { labels } = kmeans(points, k, seed, PLAN_ENGINE.kmeansInits);
+    if (!clustersLargeEnough(labels, k)) continue;
     const s = silhouette(points, labels);
     if (!best || s > best.silhouette) best = { labels, k, silhouette: s };
   }
@@ -233,6 +244,7 @@ function modelsFor(code: string, own: Comparisons, shared: SharedModels, basis: 
     nuisance,
     clusterCount: shared.clusterWeights.length,
     assignedCluster: assigned,
+    clustering: { codes: shared.clusterCodes, labels: shared.clusterLabels },
     globalW: shared.globalW,
     clusterW,
     cluster5W,
@@ -257,24 +269,87 @@ export function computePlans(included: readonly EngineParticipant[], outside: re
   const pool = computePool(included);
   const participants = sortedCodes(new Map(included.map((p) => [p.code, p]))).map((code) => computeLeaveOneOut(code, included));
   for (const p of outside) participants.push(planFromPool(p, pool));
-  return { pool, participants, warnings: engineWarnings(included.length) };
+  return { pool, participants, warnings: engineWarnings(included.length, pool) };
 }
 
-export function engineWarnings(eligible: number): string[] {
-  return eligible >= PLAN_ENGINE.minEligibleForClusters ? [] : [`Only ${eligible} eligible participants: using 1 cluster (cluster = global). Cluster results are meaningless at this size.`];
+export function engineWarnings(eligible: number, pool?: Pick<SharedModels, "clusterWeights">): string[] {
+  const warnings: string[] = [];
+  const smallest = 2 * PLAN_ENGINE.minClusterSize + 1;
+  if (eligible < smallest)
+    warnings.push(`Only ${eligible} eligible participants: clusters need at least ${PLAN_ENGINE.minClusterSize} people each under leave-one-out (${smallest}+ participants), so 1 cluster is used (cluster = global).`);
+  else if (pool && pool.clusterWeights.length === 1) warnings.push(`No split into 2 or 3 clusters gave every cluster at least ${PLAN_ENGINE.minClusterSize} people, so 1 cluster is used (cluster = global).`);
+  return warnings;
+}
+
+/** Adjusted Rand index between two labelings of the same items (1 = identical partitions, about 0 = chance). */
+export function adjustedRand(a: readonly number[], b: readonly number[]): number {
+  const n = a.length;
+  if (n < 2) return 1;
+  const table = new Map<string, number>();
+  const rows = new Map<number, number>();
+  const cols = new Map<number, number>();
+  a.forEach((x, i) => {
+    const y = b[i]!;
+    table.set(`${x}|${y}`, (table.get(`${x}|${y}`) ?? 0) + 1);
+    rows.set(x, (rows.get(x) ?? 0) + 1);
+    cols.set(y, (cols.get(y) ?? 0) + 1);
+  });
+  const pairs = (v: number) => (v * (v - 1)) / 2;
+  const sumTable = [...table.values()].reduce((s, v) => s + pairs(v), 0);
+  const sumRows = [...rows.values()].reduce((s, v) => s + pairs(v), 0);
+  const sumCols = [...cols.values()].reduce((s, v) => s + pairs(v), 0);
+  const expected = (sumRows * sumCols) / pairs(n);
+  const max = (sumRows + sumCols) / 2;
+  return max === expected ? 1 : (sumTable - expected) / (max - expected);
+}
+
+export interface ClusterReport {
+  /** Clusters in the model built from everyone included. */
+  poolK: number;
+  poolSizes: number[];
+  silhouette: number | null;
+  /** How many leave-one-out fits used 1, 2 or 3 clusters. */
+  looK: Record<string, number>;
+  /** Adjusted Rand index between each leave-one-out clustering and the full clustering of the same people. */
+  meanAgreement: number | null;
+  minAgreement: number | null;
+}
+
+/** The cluster choice and its stability across the leave-one-out fits, for the freeze report. */
+export function clusterReport(pool: SharedModels, results: readonly Pick<ParticipantModels, "basis" | "clusterCount" | "clustering">[]): ClusterReport {
+  const poolOf = new Map(pool.clusterCodes.map((c, i) => [c, pool.clusterLabels[i]!]));
+  const looK: Record<string, number> = {};
+  const agreements: number[] = [];
+  for (const r of results) {
+    if (r.basis !== "loo") continue;
+    looK[String(r.clusterCount)] = (looK[String(r.clusterCount)] ?? 0) + 1;
+    if (!r.clustering) continue;
+    const both = r.clustering.codes.map((c, i) => [poolOf.get(c), r.clustering.labels[i]!] as const).filter(([p]) => p !== undefined);
+    if (both.length >= 2) agreements.push(adjustedRand(both.map(([p]) => p!), both.map(([, l]) => l)));
+  }
+  const sizes = new Array<number>(pool.clusterWeights.length).fill(0);
+  for (const l of pool.clusterLabels) sizes[l]!++;
+  return {
+    poolK: pool.clusterWeights.length,
+    poolSizes: sizes,
+    silhouette: pool.silhouette,
+    looK,
+    meanAgreement: agreements.length ? agreements.reduce((s, v) => s + v, 0) / agreements.length : null,
+    minAgreement: agreements.length ? Math.min(...agreements) : null,
+  };
 }
 
 /** The models from everyone included, used for people outside the training data. */
 export function computePool(included: readonly EngineParticipant[]): SharedModels {
-  return sharedFrom(new Map(included.map((p) => [p.code, comparisons(p.trials)])), included.length >= PLAN_ENGINE.minEligibleForClusters);
+  return sharedFrom(new Map(included.map((p) => [p.code, comparisons(p.trials)])), true);
 }
 
-/** One included participant's models, built from everyone else. The cluster rule depends on the full eligible count. */
+/** One included participant's models, built from everyone else (the minimum cluster size applies to the others). */
 export function computeLeaveOneOut(code: string, included: readonly EngineParticipant[]): ParticipantModels {
   const own = included.find((p) => p.code === code);
   if (!own) throw new Error(`${code} is not among the included participants`);
   const others = new Map(included.filter((p) => p.code !== code).map((p) => [p.code, comparisons(p.trials)]));
-  return modelsFor(code, comparisons(own.trials), sharedFrom(others, included.length >= PLAN_ENGINE.minEligibleForClusters), "loo");
+  return modelsFor(code, comparisons(own.trials), sharedFrom(others, true), "loo");
 }
 
 /** A plan for someone outside the frozen data, from the stored pool models. */

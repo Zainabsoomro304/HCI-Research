@@ -27,16 +27,15 @@ _BOOL = {
     "is_attention_check",
     "attention_failed",
     "within_budget",
-    "is_na",
     "reverse_coded",
     "is_simulated",
     "flag_agent_mismatch",
     "flag_attention_failed",
     "flag_late",
 }
-_FLOAT = {"consistency_pct", "value", "sigma"}
+_FLOAT = {"consistency_pct", "value", "sigma", "item_contribution", "instrument_score"}
 _INT = {
-    "study_phase", "number", "seed", "condition_row", "task_row", "attention_total", "attention_correct",
+    "number", "seed", "condition_row", "task_row", "attention_total", "attention_correct",
     "repeats_answered", "repeats_consistent", "age", "techConfidence", "seq", "trial_index", "repeat_of_trial_index",
     "repeat_gap", "left_numChangedSettings", "right_numChangedSettings", "rt_ms", "replay_count", "after_trial_index",
     "duration_ms", "block_index", "interface_number", "budget", "required_items_found", "total_spent", "extra_items",
@@ -45,15 +44,22 @@ _INT = {
 _DATETIME_EXACT = {"client_ts", "server_ts", "at"}
 
 _DOMAINS: dict[str, dict[str, set[str]]] = {
-    "participants.csv": {"group": {"cs", "nonCs", "unknown"}, "language": {"en", "ur"}},
+    "participants.csv": {
+        "group": {"cs", "nonCs", "unknown"},
+        "language": {"en", "ur"},
+        "protocol": {"current", "earlier-version"},
+    },
+    "questionnaire_background.csv": {"session_type": {"comparison"}},
     "comparison_trials.csv": {
         "choice": {"left", "right"},
         "group": {"cs", "nonCs", "unknown"},
         "language": {"en", "ur"},
+        "session_type": {"comparison"},
         "scene": {"fruitsVeg", "grains", "dairy", "spices", "tea", "cleaning"},
     },
     "task_trials.csv": {"condition": {"static", "global", "cluster5", "personalFull", "practice"}},
-    "questionnaire_task.csv": {"instrument": {"quis", "ues_sf"}},
+    "questionnaire_task.csv": {"instrument": {"seq", "sus"}},
+    "events.csv": {"session_type": {"comparison", "shopping"}},
     "rankings.csv": {"condition": {"static", "global", "cluster5", "personalFull"}},
 }
 

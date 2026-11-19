@@ -3,8 +3,8 @@ import { prisma } from "@/lib/db";
 import { answerTrial, currentTrial, doConsentAndBackground, fastVideos, newParticipant } from "./helpers";
 
 test("resumes exactly where the participant stopped after closing the browser", async ({ browser }) => {
-  const p = await newParticipant(1);
-  const token = p.sessions[0]!.token;
+  const p = await newParticipant();
+  const token = p.sessions.find((s) => s.type === "comparison")!.token;
 
   const ctx1 = await browser.newContext();
   const page1 = await ctx1.newPage();

@@ -29,7 +29,7 @@ def _flipped(data: Comparisons) -> Comparisons:
 
 
 def test_held_out_persons_data_never_changes_their_shared_models(people, config):
-    code = "P3-004"
+    code = "P-S004"
     original = _models(code, people, config)
     changed = _models(code, {**people, code: _flipped(people[code])}, config)
     assert original.nuisance == changed.nuisance
@@ -39,16 +39,16 @@ def test_held_out_persons_data_never_changes_their_shared_models(people, config)
 
 
 def test_removing_the_person_entirely_gives_the_same_shared_models(people, config):
-    """Shared models computed for P3-004 are unaffected by P3-004's existence, but do depend on everyone else."""
-    code = "P3-004"
+    """Shared models computed for P-S004 are unaffected by P-S004's existence, but do depend on everyone else."""
+    code = "P-S004"
     base = _models(code, people, config)
-    other = "P3-005"
+    other = "P-S005"
     changed = _models(code, {**people, other: _flipped(people[other])}, config)
     assert not np.array_equal(base.global_w, changed.global_w)
 
 
 def test_cluster_assignment_and_fine_tuning_only_use_the_first_five_comparisons(people, config):
-    code = "P3-004"
+    code = "P-S004"
     data = people[code]
     later_flipped = np.concatenate([data.y[:5], 1 - data.y[5:]])
     original = _models(code, people, config)
@@ -58,7 +58,7 @@ def test_cluster_assignment_and_fine_tuning_only_use_the_first_five_comparisons(
 
 
 def test_first_five_comparisons_do_change_the_fine_tuned_model(people, config):
-    code = "P3-004"
+    code = "P-S004"
     data = people[code]
     early_flipped = np.concatenate([1 - data.y[:5], data.y[5:]])
     assert not np.array_equal(
@@ -68,12 +68,12 @@ def test_first_five_comparisons_do_change_the_fine_tuned_model(people, config):
 
 
 def test_cluster_counts_stay_in_the_allowed_range(people, config):
-    assert _models("P3-001", people, config).cluster_k in config.clusters.candidates
+    assert _models("P-S001", people, config).cluster_k in config.clusters.candidates
 
 
 def test_targets_are_restricted_and_static_stays_at_base(people, config):
     targets = condition_targets(
-        _models("P3-001", people, config), config.targets.min_changed, config.targets.max_changed
+        _models("P-S001", people, config), config.targets.min_changed, config.targets.max_changed
     )
     assert targets["static"] == BASE_CONFIG_ID
     for condition in ("global", "cluster5", "personalFull"):

@@ -5,8 +5,8 @@ import { POST } from "@/app/api/events/route";
 let token = "";
 
 beforeAll(async () => {
-  const p = await prisma.participant.create({ data: { code: "P1-901", studyPhase: 1, number: 901, seed: 42 } });
-  const s = await prisma.session.create({ data: { participantId: p.id, type: "phase1", token: "tok-events-test-0001" } });
+  const p = await prisma.participant.create({ data: { code: "P-901", number: 901, seed: 42 } });
+  const s = await prisma.session.create({ data: { participantId: p.id, type: "comparison", token: "tok-events-test-0001" } });
   token = s.token;
 });
 afterAll(async () => {

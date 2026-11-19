@@ -2,7 +2,7 @@ import { z } from "zod";
 import { SETTING_KEYS, SETTING_LEVELS, type SettingKey } from "@/config/uiSpace";
 
 /**
- * Background questionnaire (Session A), stored as structured JSON. The CS/IT item is recorded but not used for any
+ * Background questionnaire (Session 1), stored as structured JSON. The CS/IT item is recorded but not used for any
  * subgroup analysis. One self-rated preference item per interface setting, each with "noPreference".
  */
 export const GENDERS = ["woman", "man", "preferNot"] as const;

@@ -48,6 +48,6 @@ def test_check_catches_a_force_added_file(tmp_path: Path):
     git("init", "-q")
     leaked = tmp_path / "analysis" / "data" / "participants.csv"
     leaked.parent.mkdir(parents=True)
-    leaked.write_text("participant_code\nP3-001\n")
+    leaked.write_text("participant_code\nP-S001\n")
     git("add", "-f", "analysis/data/participants.csv")
     assert tracked_forbidden_files(tmp_path) == ["analysis/data/participants.csv"]

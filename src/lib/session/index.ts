@@ -13,17 +13,17 @@ export async function getSessionByToken(token: string) {
 type LoadedSession = NonNullable<Awaited<ReturnType<typeof getSessionByToken>>>;
 
 export async function buildState(s: LoadedSession): Promise<ParticipantState> {
-  if (s.type === "p3_sessionB") {
-    const { buildSessionBState } = await import("./sessionB");
-    return buildSessionBState(s);
+  if (s.type === "shopping") {
+    const { buildShoppingState } = await import("./shopping");
+    return buildShoppingState(s);
   }
   return buildComparisonState(s);
 }
 
 export async function applyAction(s: LoadedSession, body: unknown): Promise<void> {
-  if (s.type === "p3_sessionB") {
-    const { applySessionBAction } = await import("./sessionB");
-    return applySessionBAction(s, body);
+  if (s.type === "shopping") {
+    const { applyShoppingAction } = await import("./shopping");
+    return applyShoppingAction(s, body);
   }
   const parsed = ComparisonActionSchema.safeParse(body);
   if (!parsed.success) throw new ActionError(z.prettifyError(parsed.error), 400);

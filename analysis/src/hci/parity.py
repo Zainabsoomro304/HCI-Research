@@ -49,7 +49,7 @@ def _shared_from(people: dict[str, Comparisons], config: Config, *, use_clusters
 def python_plans(main: pd.DataFrame, config: Config) -> dict[str, dict[str, Any]]:
     """Every included participant's leave-one-out models and targets, computed in Python."""
     people = by_participant(main)
-    use_clusters = len(people) >= config.clusters.min_eligible
+    use_clusters = True  # the minimum cluster size decides
     low, high = config.targets.min_changed, config.targets.max_changed
     out: dict[str, dict[str, Any]] = {}
     for code in sorted(people):

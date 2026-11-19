@@ -11,13 +11,13 @@ import { DEFAULT_CONFIG_ID, SETTING_KEYS, SETTING_LEVELS, fromConfigId, toConfig
 import { prisma } from "@/lib/db";
 import { createParticipants } from "@/lib/participants";
 import { savePlanFile } from "@/lib/planStore";
-import { loadInstrument } from "@/lib/questionnaire/instruments";
+import { itemScale, loadInstrument } from "@/lib/questionnaire/instruments";
 import { createRng, type Rng } from "@/lib/random";
 import { applyAction, buildState, getSessionByToken } from "@/lib/session";
 import { loadConsent } from "@/lib/session/comparison";
-import { unlockSessionB } from "@/lib/session/sessionB";
-import type { SessionBState } from "@/lib/session/sessionBTypes";
-import type { ComparisonState } from "@/lib/session/types";
+import { unlockShopping } from "@/lib/session/shopping";
+import type { ShoppingState } from "@/lib/session/shoppingTypes";
+import { CONSENT_CONFIRMATIONS, type ComparisonState } from "@/lib/session/types";
 import { PREF_ITEMS } from "@/lib/questionnaire/background";
 import { getTask } from "@/lib/tasks";
 
@@ -62,7 +62,7 @@ async function runComparison(token: string, r: Rng, opts: { stopAfter?: number; 
   const choose = makeChooser(r);
   await act(token, { type: "start", viewport: { w: 1440, h: 900 }, userAgent: "demo-seed" });
   await act(token, { type: "language", lang: opts.lang ?? "en" });
-  await act(token, { type: "consent", agreed: true, hash: loadConsent(opts.lang ?? "en").hash, clientTs: Date.now() });
+  await act(token, { type: "consent", agreed: true, hash: loadConsent(opts.lang ?? "en").hash, confirmations: CONFIRMED, clientTs: Date.now() });
   await act(token, { type: "background", answers: background(r), clientTs: Date.now() });
   let st = (await act(token, { type: "instructions_done" })) as ComparisonState;
   const s = (await getSessionByToken(token))!;
@@ -101,21 +101,27 @@ function demoPlan(code: string, r: Rng) {
   return { participantCode: code, conditions: { static: { steps: [] }, global: step(cfg()), cluster5: step(cfg()), personalFull: step(cfg()) } };
 }
 
-/** Runs Session B up to (and excluding) block `stopAtBlock` if given. */
-async function runSessionB(sessionId: string, token: string, r: Rng, stopAtBlock?: number) {
-  await unlockSessionB(sessionId);
+const CONFIRMED = Object.fromEntries(CONSENT_CONFIRMATIONS.map((k) => [k, true]));
+
+/** Runs the shopping session up to (and excluding) block `stopAtBlock` if given. */
+async function runShopping(sessionId: string, token: string, lang: string, r: Rng, stopAtBlock?: number) {
+  await unlockShopping(sessionId);
   await act(token, { type: "start", viewport: { w: 1920, h: 1080 }, userAgent: "demo-seed" });
+  await act(token, { type: "consent", agreed: true, hash: loadConsent(lang).hash, confirmations: CONFIRMED, clientTs: Date.now() });
   await act(token, { type: "welcome_done" });
   await act(token, { type: "task_finish", blockIndex: -1, cart: [{ productId: "fv-01", quantity: 1 }], firstInteractionAt: Date.now() - 60_000, finalConfigId: DEFAULT_CONFIG_ID, appliedConfigs: [], clientTs: Date.now() });
   const blocks = await prisma.taskBlock.findMany({ where: { sessionId, isPractice: false }, orderBy: { blockIndex: "asc" } });
-  const answers = (i: "quis" | "ues_sf") => Object.fromEntries(loadInstrument(i).items.map((it) => [it.id, it.scale.min + r.int(0, it.scale.points - 1)]));
+  const answers = (i: "seq" | "sus") => {
+    const file = loadInstrument(i);
+    return Object.fromEntries(file.items.map((it) => [it.id, itemScale(file, it).min + r.int(0, itemScale(file, it).points - 1)]));
+  };
   for (const b of blocks) {
     if (stopAtBlock !== undefined && b.blockIndex === stopAtBlock) {
       await act(token, { type: "block_intro_done", blockIndex: b.blockIndex });
       return;
     }
     await act(token, { type: "block_intro_done", blockIndex: b.blockIndex });
-    const st = (await buildState((await getSessionByToken(token))!)) as SessionBState;
+    const st = (await buildState((await getSessionByToken(token))!)) as ShoppingState;
     const task = getTask(b.taskId);
     const cart = task.requiredItems.filter(() => r.next() < 0.9).map((i) => ({ productId: r.pick(i.candidateProductIds), quantity: 1 }));
     const steps = st.block!.steps;
@@ -128,8 +134,8 @@ async function runSessionB(sessionId: string, token: string, r: Rng, stopAtBlock
       appliedConfigs: steps.map((s, i) => ({ step: i + 1, configId: s.config, atMs: 8000 + i * 20000 })),
       clientTs: Date.now(),
     });
-    await act(token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "quis", responses: answers("quis") });
-    await act(token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "ues_sf", responses: answers("ues_sf") });
+    await act(token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "seq", responses: answers("seq") });
+    await act(token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "sus", responses: answers("sus") });
   }
   const order = r.shuffle([0, 1, 2, 3]);
   await act(token, { type: "ranking", ranks: order.map((blockIndex, i) => ({ blockIndex, rank: i + 1, reason: i === 0 ? r.pick(["Easy to read", "Felt calm", "Found things quickly"]) : "" })) });
@@ -142,29 +148,29 @@ async function main() {
     console.error(`Refusing: the database already has ${real} non-demo participant(s). Use a development database, or pass --force.`);
     process.exit(1);
   }
-  console.log("Phase 1 …");
-  const p1 = await createParticipants({ studyPhase: 1, count: 8, notes: "DEMO participant" });
-  for (const [i, p] of p1.entries()) {
-    const token = p.sessions[0]!.token;
-    if (i < 6) await runComparison(token, rng, { failAttention: i === 5, lang: i % 2 ? "ur" : "en" });
-    else if (i === 6) await runComparison(token, rng, { stopAfter: 42 });
-    console.log(`  ${p.code} ${i < 6 ? "completed" : i === 6 ? "in progress" : "not started"}`);
-  }
-  console.log("Phase 3 …");
-  const p3 = await createParticipants({ studyPhase: 3, count: 5, notes: "DEMO participant" });
-  for (const [i, p] of p3.entries()) {
-    const a = p.sessions.find((s) => s.type === "p3_sessionA")!;
-    const b = p.sessions.find((s) => s.type === "p3_sessionB")!;
-    if (i === 4) {
-      await runComparison(a.token, rng, { stopAfter: 12 });
-      console.log(`  ${p.code} Session A in progress`);
+  const people = await createParticipants({ count: 9, notes: "DEMO participant" });
+  for (const [i, p] of people.entries()) {
+    const a = p.sessions.find((s) => s.type === "comparison")!;
+    const b = p.sessions.find((s) => s.type === "shopping")!;
+    const lang = i % 2 ? "ur" : "en";
+    if (i === 6 || i === 8) {
+      await runComparison(a.token, rng, { stopAfter: i === 6 ? 42 : 12 });
+      console.log(`  ${p.code} Session 1 in progress`);
       continue;
     }
-    await runComparison(a.token, rng, { lang: i % 2 ? "ur" : "en" });
+    if (i === 7) {
+      console.log(`  ${p.code} not started`);
+      continue;
+    }
+    await runComparison(a.token, rng, { failAttention: i === 5, lang });
+    if (i === 5) {
+      console.log(`  ${p.code} Session 1 complete (failed attention checks)`);
+      continue;
+    }
     await savePlanFile(p.id, demoPlan(p.code, rng), "demo-plan.json");
-    if (i <= 1) await runSessionB(b.id, b.token, rng);
-    else if (i === 2) await runSessionB(b.id, b.token, rng, 2);
-    console.log(`  ${p.code} ${i <= 1 ? "Session B completed" : i === 2 ? "in Session B (task 3)" : "ready for Session B"}`);
+    if (i <= 1) await runShopping(b.id, b.token, lang, rng);
+    else if (i === 2) await runShopping(b.id, b.token, lang, rng, 2);
+    console.log(`  ${p.code} ${i <= 1 ? "Session 2 complete" : i === 2 ? "in Session 2 (task 3)" : "Session 1 complete, ready for Session 2"}`);
   }
   console.log(`Done. Conditions: ${CONDITIONS.join(", ")}. Open /admin to explore.`);
 }

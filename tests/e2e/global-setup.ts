@@ -30,6 +30,8 @@ export default async function globalSetup() {
   process.env.SESSION_SECRET = "e2e-secret-e2e-secret-e2e-secret-1234";
   process.env.PUBLIC_BASE_URL = `http://localhost:${PORT}`;
   process.env.ALLOW_TEST_TOOLS = "true";
+  // Fictional researcher details so the consent form is complete; the repo's content/study-info.json stays empty.
+  process.env.STUDY_INFO_FILE = path.resolve("tests/fixtures/study-info.example.json");
   execSync("pnpm exec prisma db push --skip-generate --accept-data-loss", { stdio: "ignore", env: process.env });
   // Separate build directory so the E2E server never clashes with a running `pnpm dev`.
   const server = spawn("pnpm", ["exec", "next", "dev", "--port", String(PORT)], {

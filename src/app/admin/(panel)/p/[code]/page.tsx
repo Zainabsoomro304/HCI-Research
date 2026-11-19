@@ -34,7 +34,7 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
   const p = summary.participant;
   const plans = await prisma.adaptationPlan.findMany({ where: { participantId: p.id } });
   const blocks = await prisma.taskBlock.findMany({ where: { participantId: p.id, isPractice: false }, orderBy: { blockIndex: "asc" } });
-  const sessionB = summary.sessions.find((s) => s.type === "p3_sessionB");
+  const shopping = summary.sessions.find((s) => s.type === "shopping");
   const derived = latinRows(p.number);
 
   return (
@@ -44,7 +44,8 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
           ← Participants
         </Link>
         <h1 className="font-mono text-2xl font-bold">{p.code}</h1>
-        <span className="rounded-full bg-[#eef1f4] px-2 py-0.5 text-xs">Phase {p.studyPhase}</span>
+        {p.legacyCode && <span className="rounded-full bg-[#eef1f4] px-2 py-0.5 text-xs">was {p.legacyCode}</span>}
+        {p.protocol !== "current" && <span className="rounded-full bg-[#fbe9e5] px-2 py-0.5 text-xs font-semibold text-[#7d2a1c]">protocol: {p.protocol}</span>}
       </div>
 
       <section className="rounded-xl border border-[#dfe3e8] bg-white p-5">
@@ -77,7 +78,6 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
         <ParticipantEditForm
           id={p.id}
           code={p.code}
-          studyPhase={p.studyPhase}
           group={p.group}
           language={p.language}
           languages={[...LANGUAGES]}
@@ -87,25 +87,25 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
           conditionRowOverride={p.conditionRowOverride}
           taskRowOverride={p.taskRowOverride}
           derivedRows={derived}
-          latinLocked={!!sessionB?.unlocked}
+          latinLocked={!!shopping?.unlocked}
         />
       </section>
 
-      {p.studyPhase === 3 && sessionB && (
+      {shopping && (
         <section className="rounded-xl border border-[#dfe3e8] bg-white p-5">
-          <h2 className="font-bold">Adaptation plans &amp; Session B</h2>
+          <h2 className="font-bold">Adaptation plans &amp; Session 2 (shopping)</h2>
           <p className="mt-1 text-sm text-[#566070]">
-            Plans normally come from <Link href="/admin/phase3" className="underline">Phase 3 preparation</Link>. The override replaces them with a JSON file holding all four conditions, flagged as uploaded in the data. A started Session B keeps the snapshot it started with.
+            Plans normally come from <Link href="/admin/prepare" className="underline">Prepare shopping sessions</Link>. The override replaces them with a JSON file holding all four conditions, flagged as uploaded in the data. A started Session 2 keeps the snapshot it started with.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-6">
             <PlanUpload participantId={p.id} />
             <UnlockButton
-              sessionId={sessionB.id}
-              link={sessionB.link}
-              unlocked={sessionB.unlocked}
+              sessionId={shopping.id}
+              link={shopping.link}
+              unlocked={shopping.unlocked}
               ready={plans.length === CONDITIONS.length}
               withdrawn={!!p.withdrawnAt}
-              sessionACompleted={summary.sessions.some((s) => s.type === "p3_sessionA" && s.status === "completed")}
+              comparisonCompleted={summary.sessions.some((s) => s.type === "comparison" && s.status === "completed")}
             />
           </div>
           <div className="mt-5 flex flex-col gap-5">

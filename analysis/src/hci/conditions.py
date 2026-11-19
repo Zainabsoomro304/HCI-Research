@@ -1,6 +1,6 @@
-"""Per-participant condition models for Session B, built leave-one-out.
+"""Per-participant condition models for the shopping session (Session 2), built leave-one-out.
 
-One group does Session A and then Session B, so each participant's global and cluster models come from everyone except
+One group does Session 1 (comparisons) and then Session 2 (shopping), so each participant's global and cluster models come from everyone except
 that participant. Their own comparisons only enter through the fine-tuning (cluster5) and personal (personalFull) fits.
 """
 
@@ -64,7 +64,7 @@ def condition_models(
         nuisance=nuisance,
         config=config,
         seed=config.seeds.clustering,
-        use_clusters=len(people) >= config.clusters.min_eligible,
+        use_clusters=True,  # the minimum cluster size decides
     )
     first = own.first(fine_tune_k)
     assigned = assign_by_likelihood(first, shared.choice.weights, nuisance)

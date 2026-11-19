@@ -69,7 +69,7 @@ def test_half_uses_the_configured_boundary(synthetic_zip: Path, config):
 
 
 def test_attention_failure_is_excluded_or_kept_by_switch_and_always_logged(synthetic_zip: Path, tmp_path: Path, config):
-    victim = "P3-003"
+    victim = "P-S003"
 
     def fail(df: pd.DataFrame) -> pd.DataFrame:
         row = df.index[(df["participant_code"] == victim) & (df["is_attention_check"] == "1")][0]
@@ -97,7 +97,7 @@ def test_fast_responses_are_flagged_and_kept_by_default(synthetic_zip: Path, tmp
             (df["is_practice"] == "0")
             & (df["is_repeat"] == "0")
             & (df["is_attention_check"] == "0")
-            & (df["participant_code"] == "P3-001")
+            & (df["participant_code"] == "P-S001")
         ]
         df.loc[main[:5], "rt_ms"] = "100"
         return df
@@ -106,11 +106,11 @@ def test_fast_responses_are_flagged_and_kept_by_default(synthetic_zip: Path, tmp
     flagged = clean(export, config, exclude_attention=False)
     assert _rule(flagged, "RT <").action == "flagged"
     assert _rule(flagged, "RT <").count >= 5
-    assert (flagged.main["participant_code"] == "P3-001").sum() == 70
+    assert (flagged.main["participant_code"] == "P-S001").sum() == 70
 
     strict = config.model_copy(deep=True)
     strict.cleaning.exclude_fast_rt = True
-    assert (clean(export, strict, exclude_attention=False).main["participant_code"] == "P3-001").sum() <= 65
+    assert (clean(export, strict, exclude_attention=False).main["participant_code"] == "P-S001").sum() <= 65
 
 
 def test_incomplete_sessions_are_counted_not_silently_dropped(tmp_path: Path, config):
@@ -122,8 +122,26 @@ def test_incomplete_sessions_are_counted_not_silently_dropped(tmp_path: Path, co
     simulate_export(cfg, n=8, seed=3, out=out)
     data = clean(load_export(out), cfg, exclude_attention=False)
     entry = _rule(data, "not completed")
-    assert entry.ids == ["P3-007", "P3-008"]
-    assert "P3-007" not in data.codes()
+    assert entry.ids == ["P-S007", "P-S008"]
+    assert "P-S007" not in data.codes()
     kept = cfg.model_copy(deep=True)
     kept.cleaning.require_completed_session = False
     assert _rule(clean(load_export(out), kept, exclude_attention=False), "unanswered").count > 0
+
+
+def test_earlier_protocol_participants_are_flagged_and_can_be_left_out(synthetic_zip: Path, tmp_path: Path, config):
+    def flag(name: str, text: str):
+        if name != "participants.csv":
+            return text
+        frame = pd.read_csv(io.StringIO(text), dtype=str, keep_default_na=False)
+        frame.loc[frame["participant_code"] == "P-S003", "protocol"] = "earlier-version"
+        return frame.to_csv(index=False, lineterminator="\n")
+
+    export = load_export(rewrite_zip(synthetic_zip, tmp_path / "x.zip", flag))
+    kept = clean(export, config)
+    entry = next(e for e in kept.log if e.rule == "earlier protocol version")
+    assert (entry.action, entry.ids) == ("flagged", ["P-S003"])
+    assert "P-S003" in kept.codes()
+    left_out = clean(export, config, exclude_earlier_protocol=True)
+    assert "P-S003" not in left_out.codes()
+    assert next(e for e in left_out.log if e.rule == "earlier protocol version").action == "excluded"

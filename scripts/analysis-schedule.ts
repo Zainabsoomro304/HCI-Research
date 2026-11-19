@@ -22,7 +22,7 @@ const output = input.map(({ number, seed }) => {
     schedule: generateSchedule({
       clips: clips.clips.map((c) => c.id),
       practiceClips: clips.practiceClips.map((c) => c.id),
-      design: COMPARISON_DESIGN[3],
+      design: COMPARISON_DESIGN,
       seed,
       scenes: CLIP_SCENES,
     }),

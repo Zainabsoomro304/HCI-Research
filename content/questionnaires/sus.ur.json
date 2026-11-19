@@ -1,0 +1,75 @@
+{
+  "instrument": "sus",
+  "version": "sus-ur-draft-1",
+  "language": "ur",
+  "source": "Brooke, J. (1996). SUS: A 'quick and dirty' usability scale. In P. W. Jordan, B. Thomas, B. A. Weerdmeester & I. L. McClelland (Eds.), Usability Evaluation in Industry (pp. 189-194). Taylor & Francis. Free to use with citation. Urdu: DRAFT translation by the research team, to be replaced by the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78.",
+  "adaptation": "Draft Urdu translation of the 10 SUS items ('website' for 'system'), written without gendered verb forms. Same item IDs, scale and reverse coding as the English file. Replace the item texts with Anam et al. (2020) when available (no code change needed).",
+  "title": "اس ویب سائٹ کے بارے میں آپ کی رائے",
+  "instructions": "براہِ کرم اُس دکان کے بارے میں سوچیں جو آپ نے ابھی استعمال کی۔ ہر بیان کے لیے بتائیں کہ آپ اس سے کتنا متفق یا غیر متفق ہیں۔ براہِ کرم ہر بیان کا جواب دیں۔ اگر آپ کو یقین نہ ہو تو درمیان والا جواب چُن لیں۔",
+  "scale": {
+    "min": 1,
+    "points": 5,
+    "leftAnchor": "بالکل متفق نہیں",
+    "rightAnchor": "بالکل متفق",
+    "labels": [
+      "بالکل متفق نہیں",
+      "متفق نہیں",
+      "نہ متفق نہ غیر متفق",
+      "متفق",
+      "بالکل متفق"
+    ]
+  },
+  "scoring": "sus",
+  "items": [
+    {
+      "id": "sus_01",
+      "text": "مجھے یہ ویب سائٹ بار بار استعمال کرنا اچھا لگے گا۔",
+      "reverse": false
+    },
+    {
+      "id": "sus_02",
+      "text": "مجھے یہ ویب سائٹ غیر ضروری طور پر پیچیدہ لگی۔",
+      "reverse": true
+    },
+    {
+      "id": "sus_03",
+      "text": "میرے خیال میں اس ویب سائٹ کو استعمال کرنا آسان تھا۔",
+      "reverse": false
+    },
+    {
+      "id": "sus_04",
+      "text": "میرے خیال میں اس ویب سائٹ کو استعمال کرنے کے لیے مجھے کسی تکنیکی ماہر کی مدد کی ضرورت پڑے گی۔",
+      "reverse": true
+    },
+    {
+      "id": "sus_05",
+      "text": "مجھے لگا کہ اس ویب سائٹ کے مختلف حصے آپس میں اچھی طرح جڑے ہوئے تھے۔",
+      "reverse": false
+    },
+    {
+      "id": "sus_06",
+      "text": "مجھے لگا کہ اس ویب سائٹ میں بہت زیادہ بے ربطی تھی، یعنی چیزیں ایک جیسی طرح کام نہیں کرتی تھیں۔",
+      "reverse": true
+    },
+    {
+      "id": "sus_07",
+      "text": "میرا خیال ہے کہ زیادہ تر لوگ اس ویب سائٹ کو بہت جلد استعمال کرنا سیکھ جائیں گے۔",
+      "reverse": false
+    },
+    {
+      "id": "sus_08",
+      "text": "مجھے اس ویب سائٹ کو استعمال کرنا بہت مشکل اور بوجھل لگا۔",
+      "reverse": true
+    },
+    {
+      "id": "sus_09",
+      "text": "اس ویب سائٹ کو استعمال کرتے ہوئے مجھے پورا اعتماد محسوس ہوا۔",
+      "reverse": false
+    },
+    {
+      "id": "sus_10",
+      "text": "اس ویب سائٹ کو استعمال کرنا شروع کرنے سے پہلے مجھے بہت سی چیزیں سیکھنی پڑیں۔",
+      "reverse": true
+    }
+  ]
+}

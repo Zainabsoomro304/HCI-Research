@@ -24,15 +24,22 @@ class ChoiceClusters:
         return len(self.weights)
 
 
+def clusters_large_enough(labels: np.ndarray, k: int, min_size: int) -> bool:
+    return bool(np.all(np.bincount(labels, minlength=k) >= min_size))
+
+
 def choose_k(
-    points: np.ndarray, candidates: list[int], *, seed: int, n_init: int
+    points: np.ndarray, candidates: list[int], *, seed: int, n_init: int, min_size: int
 ) -> tuple[int, np.ndarray, float | None]:
-    """Highest silhouette among the candidate cluster counts; ties go to the smaller k. One cluster if none can fit."""
+    """Highest silhouette among the candidate cluster counts whose clusters all have at least min_size people; ties go
+    to the smaller k. One cluster if none qualifies."""
     best: tuple[int, np.ndarray, float | None] | None = None
     for k in sorted(candidates):
-        if k >= len(points):
+        if k * min_size > len(points):
             continue
         labels = kmeans(points, k, seed, n_init).labels
+        if not clusters_large_enough(labels, k, min_size):
+            continue
         score = silhouette(points, labels)
         if best is None or score > best[2]:
             best = (k, labels, score)
@@ -48,11 +55,12 @@ def fit_choice_clusters(
     n_init: int,
     sigma_pool: float,
     nuisance: Nuisance,
+    min_size: int,
     use_clusters: bool = True,
 ) -> ChoiceClusters:
-    """With use_clusters False (too few eligible participants), the single cluster is the global model."""
+    """With use_clusters False, or when no split gives every cluster min_size people, one cluster = the global model."""
     k, labels, score = (
-        choose_k(weights, candidates, seed=seed, n_init=n_init)
+        choose_k(weights, candidates, seed=seed, n_init=n_init, min_size=min_size)
         if use_clusters
         else (1, np.zeros(len(people), dtype=int), None)
     )

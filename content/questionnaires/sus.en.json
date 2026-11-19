@@ -1,0 +1,75 @@
+{
+  "instrument": "sus",
+  "version": "sus-en-website-1",
+  "language": "en",
+  "source": "Brooke, J. (1996). SUS: A 'quick and dirty' usability scale. In P. W. Jordan, B. Thomas, B. A. Weerdmeester & I. L. McClelland (Eds.), Usability Evaluation in Industry (pp. 189-194). Taylor & Francis. Free to use with citation.",
+  "adaptation": "Standard 10 SUS items with 'system' replaced by 'website' (a common, accepted adaptation). All five points carry a verbal label (the original labels only the two ends), for readability for older adults; scoring is unchanged.",
+  "title": "What you thought of this website",
+  "instructions": "Please think about the shop you have just used. For each statement, choose how much you agree or disagree. Please answer every statement. If you are not sure, choose the middle answer.",
+  "scale": {
+    "min": 1,
+    "points": 5,
+    "leftAnchor": "Strongly disagree",
+    "rightAnchor": "Strongly agree",
+    "labels": [
+      "Strongly disagree",
+      "Disagree",
+      "Neither agree nor disagree",
+      "Agree",
+      "Strongly agree"
+    ]
+  },
+  "scoring": "sus",
+  "items": [
+    {
+      "id": "sus_01",
+      "text": "I think that I would like to use this website frequently.",
+      "reverse": false
+    },
+    {
+      "id": "sus_02",
+      "text": "I found the website unnecessarily complex.",
+      "reverse": true
+    },
+    {
+      "id": "sus_03",
+      "text": "I thought the website was easy to use.",
+      "reverse": false
+    },
+    {
+      "id": "sus_04",
+      "text": "I think that I would need the support of a technical person to be able to use this website.",
+      "reverse": true
+    },
+    {
+      "id": "sus_05",
+      "text": "I found the various functions in this website were well integrated.",
+      "reverse": false
+    },
+    {
+      "id": "sus_06",
+      "text": "I thought there was too much inconsistency in this website.",
+      "reverse": true
+    },
+    {
+      "id": "sus_07",
+      "text": "I would imagine that most people would learn to use this website very quickly.",
+      "reverse": false
+    },
+    {
+      "id": "sus_08",
+      "text": "I found the website very cumbersome to use.",
+      "reverse": true
+    },
+    {
+      "id": "sus_09",
+      "text": "I felt very confident using the website.",
+      "reverse": false
+    },
+    {
+      "id": "sus_10",
+      "text": "I needed to learn a lot of things before I could get going with this website.",
+      "reverse": true
+    }
+  ]
+}

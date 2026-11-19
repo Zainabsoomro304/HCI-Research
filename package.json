@@ -25,6 +25,7 @@
     "clips:record": "tsx scripts/clips-record.ts",
     "screenshots": "tsx scripts/screenshots.ts",
     "participants:create": "tsx --env-file=.env scripts/participants-create.ts",
+    "preserve": "tsx scripts/preservation.ts",
     "postinstall": "prisma generate",
     "db:migrate:create": "prisma migrate dev --create-only",
     "translations:status": "tsx scripts/translations-status.ts"

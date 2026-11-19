@@ -22,7 +22,7 @@ const info = {
   languages: LANGUAGES,
   minAge: MIN_AGE,
   maxFailedAttentionChecks: MAX_FAILED_ATTENTION_CHECKS,
-  design: COMPARISON_DESIGN[3],
+  design: COMPARISON_DESIGN,
   planEngine: PLAN_ENGINE,
   clips: clips.clips.map((c) => c.id),
   practiceClips: clips.practiceClips.map((c) => c.id),

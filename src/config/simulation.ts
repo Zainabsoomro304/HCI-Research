@@ -26,19 +26,25 @@ export const SIMULATION = {
   questionnaireNoPreference: 0.15,
   rtMedianMs: 1800,
   rtLogSd: 0.6,
-  sessionB: {
-    quisMean: 5.5,
-    quisPerUtility: 0.05,
-    participantSd: 0.7,
-    residualSd: 0.6,
-    positionEffect: -0.05,
-    itemNoiseSd: 0.5,
-    naRate: 0.02,
+  /**
+   * The shopping session. Each task has a latent SUS score (0-100): susMean + susPerUtility x (utility of the shown
+   * configuration) + a person effect + a position effect + noise. Person SD 8 and residual SD 7 give a total SD near
+   * 11 (Anam et al. 2020 report about 12) and a within-person correlation near 0.57. Item answers, SEQ, task time,
+   * success and the final ranking all follow the latent score.
+   */
+  shopping: {
+    susMean: 68,
+    susPerUtility: 1.0,
+    participantSd: 8,
+    residualSd: 7,
+    positionEffect: -0.5,
+    itemNoiseSd: 0.6,
+    seqNoiseSd: 0.8,
     timeMedianS: 180,
     timeLogSd: 0.3,
-    timePerQuis: -0.03,
+    timePerSus: -0.005,
     successLogit: 1.5,
-    successPerQuis: 0.3,
-    rankNoiseSd: 0.8,
+    successPerSus: 0.04,
+    rankNoiseSd: 8,
   },
 } as const;

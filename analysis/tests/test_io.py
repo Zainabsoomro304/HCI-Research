@@ -93,7 +93,7 @@ def test_not_a_zip(tmp_path: Path):
 
 
 def test_marker_decides_synthetic_even_if_the_file_is_renamed(synthetic_zip: Path, tmp_path: Path):
-    renamed = rewrite_zip(synthetic_zip, tmp_path / "study-export-phase3.zip", lambda name, text: text)
+    renamed = rewrite_zip(synthetic_zip, tmp_path / "study-export-renamed.zip", lambda name, text: text)
     assert load_export(renamed).synthetic is True
 
 

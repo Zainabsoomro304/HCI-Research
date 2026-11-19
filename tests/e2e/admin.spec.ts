@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { prisma } from "@/lib/db";
 import { TABLES } from "@/lib/export/tables";
 
-test("admin: login, create participants, upload a plan, start Session B, export ZIP", async ({ page }) => {
+test("admin: login, create participants, upload a plan, start Session 2, export ZIP", async ({ page }) => {
   // Protected pages redirect to the login form.
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login/);
@@ -18,20 +18,21 @@ test("admin: login, create participants, upload a plan, start Session B, export 
   await expect(page.getByRole("heading", { name: "Create participants" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Create participants" })).toBeEnabled();
 
-  // Bulk-create two Phase 3 participants.
-  await page.getByLabel("Phase").selectOption("3");
+  // Bulk-create two participants. Everyone gets a comparison and a shopping session.
+  await expect(page.getByText(/Phase/)).toHaveCount(0);
   await page.getByLabel("How many").fill("2");
   await page.getByRole("button", { name: "Create participants" }).click();
-  await expect(page.getByText(/Created 2: P3-\d{3}/)).toBeVisible();
-  const created = await prisma.participant.findMany({ where: { studyPhase: 3 }, orderBy: { number: "desc" }, take: 2 });
+  await expect(page.getByText(/Created 2: P-\d{3}/)).toBeVisible();
+  const created = await prisma.participant.findMany({ where: { isSimulated: false }, orderBy: { number: "desc" }, take: 2, include: { sessions: true } });
+  expect(created[0]!.sessions.map((s) => s.type).sort()).toEqual(["comparison", "shopping"]);
   const p = created[1]!;
   await expect(page.getByRole("link", { name: p.code })).toBeVisible();
 
-  // Participant page: Session B is blocked until plans are uploaded.
+  // Participant page: Session 2 is blocked until plans are uploaded.
   await page.getByRole("link", { name: p.code }).click();
   await expect(page.getByRole("heading", { name: p.code })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Start Session B" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Start Session 2" })).toBeDisabled();
 
   const upload = page.locator('input[type="file"]');
   await upload.setInputFiles({ name: "bad.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ participantCode: p.code, conditions: { static: { steps: [] } } })) });
@@ -57,17 +58,17 @@ test("admin: login, create participants, upload a plan, start Session B, export 
   await expect(page.getByText("Saved.")).toBeVisible();
   expect((await prisma.participant.findUnique({ where: { id: p.id } }))!.seed).toBe(424242);
 
-  // Session B also needs a completed Session A.
-  await expect(page.getByRole("button", { name: "Start Session B" })).toBeDisabled();
-  await prisma.session.updateMany({ where: { participantId: p.id, type: "p3_sessionA" }, data: { status: "completed" } });
+  // Session 2 also needs a completed Session 1.
+  await expect(page.getByRole("button", { name: "Start Session 2" })).toBeDisabled();
+  await prisma.session.updateMany({ where: { participantId: p.id, type: "comparison" }, data: { status: "completed" } });
   await page.reload();
-  await expect(page.getByRole("button", { name: "Start Session B" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Start Session 2" })).toBeEnabled();
 
   const popup = page.waitForEvent("popup");
-  await page.getByRole("button", { name: "Start Session B" }).click();
+  await page.getByRole("button", { name: "Start Session 2" }).click();
   await (await popup).close();
-  await expect(page.getByRole("link", { name: "Open Session B ↗" })).toBeVisible();
-  const sb = await prisma.session.findFirst({ where: { participantId: p.id, type: "p3_sessionB" } });
+  await expect(page.getByRole("link", { name: "Open Session 2 ↗" })).toBeVisible();
+  const sb = await prisma.session.findFirst({ where: { participantId: p.id, type: "shopping" } });
   expect(sb!.unlockedAt).not.toBeNull();
   expect(await prisma.taskBlock.count({ where: { sessionId: sb!.id } })).toBe(5);
 
@@ -76,7 +77,7 @@ test("admin: login, create participants, upload a plan, start Session B, export 
   await expect(page.getByRole("heading", { name: "Live monitor" })).toBeVisible();
 
   // Export: ZIP with every CSV + codebook; headers match the codebook definitions.
-  const res = await page.request.get("/api/admin/export?phase=3");
+  const res = await page.request.get("/api/admin/export");
   expect(res.status()).toBe(200);
   expect(res.headers()["content-type"]).toContain("application/zip");
   const zip = await JSZip.loadAsync(await res.body());

@@ -3,13 +3,11 @@
 import { useState } from "react";
 
 export default function ExportPage() {
-  const [phase, setPhase] = useState("");
   const [completed, setCompleted] = useState(false);
   const [excludeFailed, setExcludeFailed] = useState(false);
   const [practice, setPractice] = useState(false);
   const [simulated, setSimulated] = useState(false);
   const q = new URLSearchParams();
-  if (phase) q.set("phase", phase);
   if (completed) q.set("completed", "1");
   if (excludeFailed) q.set("excludeFailed", "1");
   if (practice) q.set("practice", "1");
@@ -24,14 +22,6 @@ export default function ExportPage() {
       </p>
       <div className="mt-5 flex flex-col gap-3 text-sm">
         <label className="flex items-center gap-3">
-          <span className="w-40 font-medium">Study phase</span>
-          <select value={phase} onChange={(e) => setPhase(e.target.value)} className="rounded-md border border-[#d5dbe3] px-2 py-1.5">
-            <option value="">All</option>
-            <option value="1">Phase 1</option>
-            <option value="3">Phase 3</option>
-          </select>
-        </label>
-        <label className="flex items-center gap-3">
           <input type="checkbox" checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
           Completed sessions only
         </label>
@@ -41,7 +31,7 @@ export default function ExportPage() {
         </label>
         <label className="flex items-center gap-3">
           <input type="checkbox" checked={practice} onChange={(e) => setPractice(e.target.checked)} />
-          Include the Session B practice task and its events
+          Include the shopping practice task and its events
         </label>
         <label className="flex items-center gap-3">
           <input type="checkbox" checked={simulated} onChange={(e) => setSimulated(e.target.checked)} />

@@ -1,5 +1,5 @@
 /**
- * Server-side state machine for comparison sessions (Phase 1 and Phase 3 Session A).
+ * Server-side state machine for the comparison session (Session 1).
  * All progress lives in the database, so reloading the link resumes exactly where the participant stopped.
  */
 import { createHash } from "node:crypto";
@@ -8,13 +8,13 @@ import path from "node:path";
 import type { Participant, Prisma, Session } from "@prisma/client";
 import rawClips from "@data/clips.json";
 import { CLIP_SCENES, isLang, type Lang } from "@/config/shop";
-import { COMPARISON_DESIGN, MIN_AGE, totalAnalysisTrials, type StudyPhase } from "@/config/study";
+import { COMPARISON_DESIGN, MIN_AGE, totalAnalysisTrials } from "@/config/study";
 import { fromConfigId, numChangedSettings } from "@/config/uiSpace";
 import { parseClipsFile } from "../clipsFile";
 import { prisma } from "../db";
 import { clipUrl } from "../media";
-import { generateCompletionCode } from "../participants";
 import { generateSchedule } from "../schedule";
+import { consentValues, fillTemplate, missingStudyInfo } from "../studyInfo";
 import type { ComparisonAction, ComparisonState, ComparisonStep, TrialView } from "./types";
 
 export class ActionError extends Error {
@@ -30,20 +30,29 @@ type SessionWithParticipant = Session & { participant: Participant };
 
 const clipsFile = parseClipsFile(rawClips);
 
-export function designFor(p: Participant) {
-  return COMPARISON_DESIGN[p.studyPhase as StudyPhase] ?? COMPARISON_DESIGN[1];
-}
-
 /** The session's language: fixed on the session once chosen, otherwise the participant's (possibly preset) language. */
 export function sessionLang(s: SessionWithParticipant): Lang {
   const l = s.language ?? s.participant.language;
   return isLang(l) ? l : "en";
 }
 
+/**
+ * The information sheet and consent form in the given language, with the researchers' contact details from
+ * content/study-info.json filled in. The hash is of exactly the text shown, so each consent record names its version.
+ * Throws StudyNotReadyError while study-info.json is incomplete: no participant may see a consent form without them.
+ */
+export class StudyNotReadyError extends Error {}
+
+export function studyReady(): boolean {
+  return missingStudyInfo().length === 0;
+}
+
 export function loadConsent(lang: string): { markdown: string; hash: string } {
+  const missing = missingStudyInfo();
+  if (missing.length) throw new StudyNotReadyError(`content/study-info.json is incomplete: ${missing.join(", ")}`);
   const dir = path.resolve(process.cwd(), "content");
   const file = fs.existsSync(path.join(dir, `consent.${lang}.md`)) ? `consent.${lang}.md` : "consent.en.md";
-  const markdown = fs.readFileSync(path.join(dir, file), "utf8");
+  const markdown = fillTemplate(fs.readFileSync(path.join(dir, file), "utf8"), consentValues(lang));
   return { markdown, hash: createHash("sha256").update(markdown).digest("hex") };
 }
 
@@ -53,7 +62,7 @@ export async function ensureSchedule(tx: Prisma.TransactionClient, s: SessionWit
   const schedule = generateSchedule({
     clips: clipsFile.clips.map((c) => c.id),
     practiceClips: clipsFile.practiceClips.map((c) => c.id),
-    design: designFor(s.participant),
+    design: COMPARISON_DESIGN,
     seed: s.participant.seed,
     scenes: CLIP_SCENES,
   });
@@ -90,7 +99,7 @@ async function trialView(s: SessionWithParticipant, seq: number): Promise<TrialV
     prisma.comparisonTrial.findUnique({ where: { sessionId_seq: { sessionId: s.id, seq: seq + 1 } } }),
   ]);
   if (!trial) return undefined;
-  const d = designFor(s.participant);
+  const d = COMPARISON_DESIGN;
   return {
     id: trial.id,
     trialIndex: trial.trialIndex,
@@ -105,21 +114,20 @@ async function trialView(s: SessionWithParticipant, seq: number): Promise<TrialV
 
 export async function buildComparisonState(s: SessionWithParticipant): Promise<ComparisonState> {
   const step = s.currentStep as ComparisonStep;
-  const d = designFor(s.participant);
+  const d = COMPARISON_DESIGN;
   const state: ComparisonState = {
     kind: "comparison",
-    sessionType: s.type === "phase1" ? "phase1" : "p3_sessionA",
     step,
     lang: sessionLang(s),
   };
   const N = totalAnalysisTrials(d);
-  if (step === "consent") state.consent = loadConsent(sessionLang(s));
+  if ((step === "language" || step === "consent") && !studyReady()) state.notReady = true;
+  else if (step === "consent") state.consent = loadConsent(sessionLang(s));
+  if (step === "end") state.participantCode = s.participant.code;
   if (step === "practice" || step === "trials") state.trial = await trialView(s, s.currentIndex);
   if (step === "trials" || step === "break" || step === "main_intro")
     state.progress = { done: Math.max(0, s.currentIndex - d.practiceTrials), total: N };
   if (step === "break") state.breakInfo = { afterTrialIndex: s.currentIndex - d.practiceTrials, total: N };
-  if (step === "end")
-    state.end = { completionCode: s.type === "phase1" ? s.participant.completionCode : null, variant: s.type === "phase1" ? "phase1" : "sessionA" };
   return state;
 }
 
@@ -128,7 +136,7 @@ function expectStep(s: Session, ...steps: ComparisonStep[]) {
 }
 
 export async function applyComparisonAction(s: SessionWithParticipant, action: ComparisonAction): Promise<void> {
-  const d = designFor(s.participant);
+  const d = COMPARISON_DESIGN;
   const N = totalAnalysisTrials(d);
   const now = new Date();
   switch (action.type) {
@@ -250,8 +258,6 @@ export async function applyComparisonAction(s: SessionWithParticipant, action: C
             create: { sessionId: s.id, participantId: s.participantId, afterTrialIndex: trial.trialIndex, startedAt: now },
             update: {},
           });
-        if (nextStep === "end" && s.type === "phase1" && !s.participant.completionCode)
-          await tx.participant.update({ where: { id: s.participantId }, data: { completionCode: generateCompletionCode() } });
         await tx.session.update({
           where: { id: s.id },
           data: {

@@ -1,0 +1,21 @@
+{
+  "instrument": "seq",
+  "version": "seq-en-1",
+  "language": "en",
+  "source": "Sauro, J., & Dumas, J. S. (2009). Comparison of three one-question, post-task usability questionnaires. Proceedings of CHI 2009, 1599-1608. https://doi.org/10.1145/1518701.1518946. Free to use.",
+  "title": "How easy was this task?",
+  "instructions": "Choose one number, from 1 (very difficult) to 7 (very easy).",
+  "scale": {
+    "min": 1,
+    "points": 7,
+    "leftAnchor": "Very difficult",
+    "rightAnchor": "Very easy"
+  },
+  "scoring": "single",
+  "items": [
+    {
+      "id": "seq_01",
+      "text": "Overall, how easy or difficult was this task?"
+    }
+  ]
+}

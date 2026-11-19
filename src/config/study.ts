@@ -1,9 +1,8 @@
 /**
  * Study-design constants. Change trial counts, break positions and thresholds here.
- * Values are set per study phase so Phase 1 and Phase 3 Session A can diverge later if needed.
+ * One group of participants, two sessions: Session 1 (comparisons) and Session 2 (shopping, in person).
+ * The number of participants is not fixed anywhere: everything uses the participants who exist.
  */
-
-export type StudyPhase = 1 | 3;
 
 export interface ComparisonDesign {
   /** Number of main (unique-pair) analysis trials. */
@@ -32,8 +31,8 @@ export interface ComparisonDesign {
   practiceTrials: number;
 }
 
-/** 70 main + 10 repeats + 2 attention checks = 82 analysis trials, breaks after 27 and 54. */
-const STANDARD_DESIGN: ComparisonDesign = {
+/** Session 1: 70 main + 10 repeats + 2 attention checks = 82 analysis trials, breaks after 27 and 54. */
+export const COMPARISON_DESIGN: ComparisonDesign = {
   mainTrials: 70,
   repeatTrials: 10,
   repeatSourceMaxPosition: 50,
@@ -47,11 +46,6 @@ const STANDARD_DESIGN: ComparisonDesign = {
   practiceTrials: 2,
 };
 
-export const COMPARISON_DESIGN: Record<StudyPhase, ComparisonDesign> = {
-  1: STANDARD_DESIGN,
-  3: STANDARD_DESIGN,
-};
-
 export function totalAnalysisTrials(d: ComparisonDesign): number {
   return d.mainTrials + d.repeatTrials + d.attentionChecks;
 }
@@ -59,7 +53,7 @@ export function totalAnalysisTrials(d: ComparisonDesign): number {
 /** A participant fails the attention criterion if more than this many attention checks are answered wrongly. */
 export const MAX_FAILED_ATTENTION_CHECKS = 0;
 
-/** Phase 3 conditions. Opaque labels: never shown to participants. */
+/** Shopping-session conditions. Opaque labels: never shown to participants. */
 export const CONDITIONS = ["static", "global", "cluster5", "personalFull"] as const;
 export type Condition = (typeof CONDITIONS)[number];
 
@@ -87,8 +81,14 @@ export const SIDE_BY_SIDE_MIN_WIDTH = 1000;
 /** Target group: adults aged MIN_AGE or over. Younger people see a polite "not eligible" screen. */
 export const MIN_AGE = 40;
 
-/** Expected session lengths in minutes, shown to participants (Session A instructions, Session B welcome). */
-export const EXPECTED_MINUTES = { comparison: 45, sessionB: 60 } as const;
+/** Expected session lengths in minutes, shown to participants (information sheet, instructions, shopping welcome). */
+export const EXPECTED_MINUTES = { comparison: 45, shopping: 60 } as const;
+
+/**
+ * The two Latin squares (conditions and tasks) are fully balanced in groups of this many participants. Other counts are
+ * fine; the admin panel only shows an informational note.
+ */
+export const LATIN_BALANCE_GROUP = 16;
 
 /** Client event batching. */
 export const EVENT_FLUSH_INTERVAL_MS = 2000;

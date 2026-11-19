@@ -39,7 +39,6 @@ export function LogoutButton() {
 
 export function CreateParticipantsForm() {
   const router = useRouter();
-  const [phase, setPhase] = useState<1 | 3>(1);
   const [count, setCount] = useState(1);
   const [group, setGroup] = useState("unknown");
   const [msg, setMsg] = useState<string | null>(null);
@@ -55,7 +54,7 @@ export function CreateParticipantsForm() {
         const res = await fetch("/api/admin/participants", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ studyPhase: phase, count, group }),
+          body: JSON.stringify({ count, group }),
         });
         const body = await res.json();
         setBusy(false);
@@ -63,13 +62,6 @@ export function CreateParticipantsForm() {
         router.refresh();
       }}
     >
-      <label className="flex flex-col text-xs font-medium text-[#566070]">
-        Phase
-        <select value={phase} onChange={(e) => setPhase(Number(e.target.value) as 1 | 3)} className="mt-1 rounded-md border border-[#d5dbe3] px-2 py-1.5 text-sm text-[#1c2430]">
-          <option value={1}>Phase 1</option>
-          <option value={3}>Phase 3</option>
-        </select>
-      </label>
       <label className="flex flex-col text-xs font-medium text-[#566070]">
         How many
         <input type="number" min={1} max={200} value={count} onChange={(e) => setCount(Number(e.target.value))} className="mt-1 w-20 rounded-md border border-[#d5dbe3] px-2 py-1.5 text-sm text-[#1c2430]" />

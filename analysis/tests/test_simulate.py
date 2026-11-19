@@ -78,7 +78,7 @@ def test_setting_columns_and_busyness_match_the_clip_ids(synthetic_zip: Path):
         assert num_changed(row["left_clip_id"]) == row["left_numChangedSettings"]
 
 
-def test_session_b_follows_the_latin_square_and_plan_format(synthetic_zip: Path, config, truth: dict):
+def test_shopping_session_follows_the_latin_square_and_plan_format(synthetic_zip: Path, config, truth: dict):
     export = load_export(synthetic_zip)
     tasks = export.task_trials
     assert tasks.groupby("participant_code")["condition"].nunique().eq(4).all()
@@ -114,19 +114,29 @@ def test_questionnaire_items_come_from_the_platform_files_with_reverse_flags(syn
         )
         items = {i["id"]: i for i in file["items"]}
         assert set(group["item_id"]) == set(items)
-        for row in group.dropna(subset=["value"]).head(200).to_dict("records"):
+        assert group["value"].notna().all()
+        for row in group.head(200).to_dict("records"):
             item = items[row["item_id"]]
-            assert item["scale"]["min"] <= row["value"] < item["scale"]["min"] + item["scale"]["points"]
-            assert bool(row["reverse_coded"]) == item.get("reverse", False)
+            scale = item.get("scale") or file["scale"]
+            assert scale["min"] <= row["value"] < scale["min"] + scale["points"]
+            if instrument == "sus":
+                assert bool(row["reverse_coded"]) == item.get("reverse", False)
+                expected = 5 - row["value"] if item["reverse"] else row["value"] - 1
+                assert row["item_contribution"] == expected
+            else:
+                assert row["item_contribution"] == row["value"] == row["instrument_score"]
+    sus = answers[answers["instrument"] == "sus"]
+    totals = sus.groupby(["participant_code", "block_index"]).agg(total=("item_contribution", "sum"), score=("instrument_score", "first"))
+    assert (totals["total"] * 2.5 == totals["score"]).all()
 
 
 def test_reverse_coded_items_run_against_the_others(tmp_path: Path, config):
     out = tmp_path / "synthetic_reverse.zip"
     simulate_export(config, n=12, seed=2, out=out)
     answers = load_export(out).questionnaire_task
-    ues = answers[answers["instrument"] == "ues_sf"].copy()
-    ues["value"] = ues["value"].astype(float)
-    wide = ues.pivot_table(
+    sus = answers[answers["instrument"] == "sus"].copy()
+    sus["value"] = sus["value"].astype(float)
+    wide = sus.pivot_table(
         index=["participant_code", "block_index"], columns="reverse_coded", values="value", aggfunc="mean"
     )
     assert np.corrcoef(wide[True].astype(float), wide[False].astype(float))[0, 1] < 0
@@ -153,7 +163,7 @@ def test_truth_is_complete_and_consistent_with_the_export(synthetic_zip: Path, t
         mine = tasks[tasks["participant_code"] == person["participant_code"]].set_index("condition")
         for condition, target in person["plan_targets"].items():
             assert mine.loc[condition, "final_config_id"] == target
-        for block in person["session_b"]:
+        for block in person["shopping"]:
             assert block["utility"] == pytest.approx(float(encode(block["target"]) @ np.array(person["w"])))
 
 
@@ -161,15 +171,15 @@ def test_cluster5_worse_scenario_lowers_only_cluster5(tmp_path: Path, config):
     def means(scenario: str) -> dict[str, float]:
         out = tmp_path / f"synthetic_{scenario}.zip"
         truth = simulate_export(config, n=8, seed=4, out=out, scenario=scenario)
-        rows = [b for p in truth["participants"] for b in p["session_b"]]
+        rows = [b for p in truth["participants"] for b in p["shopping"]]
         return {
-            c: float(np.mean([b["quis_latent"] for b in rows if b["condition"] == c]))
+            c: float(np.mean([b["sus_latent"] for b in rows if b["condition"] == c]))
             for c in {b["condition"] for b in rows}
         }
 
     same, worse = means("equivalence"), means("cluster5_worse")
     assert worse["cluster5"] == pytest.approx(
-        same["cluster5"] - config.simulate.session_b.scenarios["cluster5_worse"]["cluster5_shift"] * -1, abs=1e-9
+        same["cluster5"] - config.simulate.shopping.scenarios["cluster5_worse"]["cluster5_shift"] * -1, abs=1e-9
     )
     for condition in ("static", "global", "personalFull"):
         assert worse[condition] == pytest.approx(same[condition])

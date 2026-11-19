@@ -71,7 +71,7 @@ export const UIConfigSchema = z.object({
 });
 export type UIConfig = z.infer<typeof UIConfigSchema>;
 
-/** Base configuration: every clip starts here and every Session B task starts here. */
+/** Base configuration: every clip starts here and every shopping task starts here. */
 export const DEFAULT_CONFIG: UIConfig = Object.fromEntries(SETTING_KEYS.map((k) => [k, SETTING_LEVELS[k][0]])) as UIConfig;
 
 export function toConfigId(config: UIConfig): string {

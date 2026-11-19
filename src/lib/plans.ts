@@ -17,7 +17,7 @@ const ConditionPlanSchema = z.object({ steps: z.array(PlanStepSchema).max(50) })
 
 export const PlanFileSchema = z
   .object({
-    participantCode: z.string().regex(/^P3-S?\d{3,}$/, "participantCode must look like P3-004"),
+    participantCode: z.string().regex(/^P-S?\d{3,}$/, "participantCode must look like P-004"),
     conditions: z.object(Object.fromEntries(CONDITIONS.map((c) => [c, ConditionPlanSchema])) as Record<(typeof CONDITIONS)[number], typeof ConditionPlanSchema>).strict(),
   })
   .strict();

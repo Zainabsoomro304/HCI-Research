@@ -3,7 +3,7 @@ import { translationStatus } from "@/lib/translations";
 
 export const dynamic = "force-dynamic";
 
-const GROUPS = { interface: "Interface text", products: "Products", tasks: "Tasks" } as const;
+const GROUPS = { consent: "Information sheet and consent", questionnaires: "Questionnaires (SUS, SEQ)", interface: "Interface text", products: "Products", tasks: "Tasks" } as const;
 
 /** Urdu strings still needing native-speaker review, with English and Urdu side by side. */
 export default async function TranslationsPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
@@ -23,8 +23,8 @@ export default async function TranslationsPage({ searchParams }: { searchParams:
         </a>
       </div>
       <p className="max-w-3xl text-sm text-[#566070]">
-        Every Urdu string was drafted without native review. Mark a string as reviewed once a native speaker has checked it, or correct it in
-        <code> content/strings.ur.json</code>, <code>data/catalog.json</code> or <code>data/tasks.json</code> first. Consent text (a placeholder) and the questionnaires are not listed here: review the Urdu questionnaire files in content/questionnaires/ directly.
+        Every Urdu string was drafted without native review. Mark a string as reviewed once a native speaker has checked it, or correct it first in
+        <code> content/consent.ur.md</code>, <code>content/questionnaires/*.ur.json</code>, <code>content/strings.ur.json</code>, <code>data/catalog.json</code> or <code>data/tasks.json</code>. The Urdu SUS items are to be replaced with the published wording of Anam, Sadiq &amp; Jamil (2020); see the note on each.
       </p>
       {(Object.keys(GROUPS) as (keyof typeof GROUPS)[]).map((group) => {
         const rows = list.filter((i) => i.group === group);
@@ -47,7 +47,10 @@ export default async function TranslationsPage({ searchParams }: { searchParams:
                 {rows.map((r) => (
                   <tr key={r.key} className="border-t border-[#eef1f4] align-top">
                     <td className="py-2 pr-3 font-mono text-xs text-[#566070]">{r.key}</td>
-                    <td className="py-2 pr-3">{r.en}</td>
+                    <td className="py-2 pr-3">
+                      {r.en}
+                      {r.note && <p className="mt-1 rounded bg-[#fdf3dc] px-2 py-1 text-xs text-[#7a5a10]">{r.note}</p>}
+                    </td>
                     <td dir="rtl" lang="ur" className="py-2 pr-3 text-right text-base leading-loose">
                       {r.ur}
                     </td>

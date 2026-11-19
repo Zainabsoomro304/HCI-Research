@@ -8,7 +8,7 @@ import { generateSchedule, type ScheduledTrial } from "@/lib/schedule";
 const clipsFile = parseClipsFile(rawClips);
 const clips = clipsFile.clips.map((c) => c.id);
 const practiceClips = clipsFile.practiceClips.map((c) => c.id);
-const design = COMPARISON_DESIGN[1];
+const design = COMPARISON_DESIGN;
 const make = (seed: number) => generateSchedule({ clips, practiceClips, design, seed, scenes: CLIP_SCENES });
 
 const SEEDS = [1, 2, 3, 42, 1234, 99991, 2026, 777777];
@@ -130,7 +130,6 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
 describe("break positions", () => {
   it("are after analysis trials 27 and 54", () => {
     expect(design.breakAfter).toEqual([27, 54]);
-    expect(COMPARISON_DESIGN[3]).toEqual(COMPARISON_DESIGN[1]);
   });
 });
 

@@ -1,7 +1,7 @@
 """SYNTHETIC export generator: a ZIP with the platform's exact files and columns, produced from known ground truth.
 
-Trial schedules and Session B block orders come from the platform's own generators (scripts/analysis-schedule.ts).
-Questionnaire items come from the platform's instrument files. Everything is labelled SYNTHETIC, including a marker file
+Trial schedules and shopping-session block orders come from the platform's own generators (scripts/analysis-schedule.ts).
+SUS and SEQ items come from the platform's instrument files and follow a latent SUS score per task. Everything is labelled SYNTHETIC, including a marker file
 inside the ZIP that the loader detects, so synthetic data cannot pass as real even if the file is renamed.
 """
 
@@ -21,7 +21,7 @@ import pandas as pd
 from scipy.special import expit
 
 from hci.conditions import condition_models, condition_targets
-from hci.config import REPO_ROOT, Config
+from hci.config import Config
 from hci.encoding import BASE_CONFIG_ID, FEATURES, SETTING_KEYS, SETTINGS, encode, num_changed
 from hci.io import SYNTHETIC_MARKER
 from hci.model import comparisons_from_trials, use_curvature
@@ -116,9 +116,8 @@ def _simulate_comparisons(
         clock = done + timedelta(milliseconds=800)
         row = {
             "participant_code": person.code,
-            "study_phase": "3",
             "group": person.group,
-            "session_type": "p3_sessionA",
+            "session_type": "comparison",
             "trial_id": trial_id,
             "seq": str(t["seq"]),
             "trial_index": str(t["trialIndex"]),
@@ -154,8 +153,7 @@ def _simulate_background(person: Person, sim: Any) -> dict[str, str]:
     rng = person.rng
     row = {
         "participant_code": person.code,
-        "study_phase": "3",
-        "session_type": "p3_sessionA",
+        "session_type": "comparison",
         "submitted_at": _iso(_EPOCH + timedelta(days=person.number, minutes=-5)),
         "age": str(person.age),
         "gender": str(rng.choice(["woman", "man", "preferNot"])),
@@ -187,7 +185,7 @@ def _simulate_background(person: Person, sim: Any) -> dict[str, str]:
 
 
 def _read_instrument(name: str, lang: str = "en") -> dict[str, Any]:
-    from hci.phase3 import read_instrument  # same lookup as the platform (private licensed copy first)
+    from hci.evaluation import read_instrument  # the platform's own instrument files
 
     return read_instrument(name, lang)[0]
 
@@ -196,7 +194,20 @@ def _instrument_label(file: dict[str, Any]) -> str:
     return f"{file['version']}#SYNTHETIC"
 
 
-def _simulate_session_b(
+def _item_answers(file: dict[str, Any], latent: float, noise_sd: float, rng: np.random.Generator) -> list[tuple[dict[str, Any], int]]:
+    """Answers that follow a latent score on 0-100: agreement for positively worded items, disagreement for reversed."""
+    fraction = float(np.clip(latent / 100.0, 0, 1))
+    answers = []
+    for item in file["items"]:
+        scale = item.get("scale") or file["scale"]
+        low, points = scale["min"], scale["points"]
+        position = 1 - fraction if item.get("reverse", False) else fraction
+        value = int(np.clip(np.rint(low + position * (points - 1) + rng.normal(0, noise_sd)), low, low + points - 1))
+        answers.append((item, value))
+    return answers
+
+
+def _simulate_shopping(
     person: Person, sb: Any, blocks: list[dict[str, Any]], instruments: dict[str, dict[str, Any]], task_effects: dict[str, float],
     scenario_shift: float, participant_effect: float, condition_row: int, task_row: int,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]], list[dict[str, str]], list[dict[str, Any]]]:  # fmt: skip
@@ -208,9 +219,9 @@ def _simulate_session_b(
         condition, task_id, index = block["condition"], block["taskId"], block["blockIndex"]
         target = person.plan["targets"][condition]
         utility = _true_preference(person.w, target)
-        quis = (
-            sb.quis_mean
-            + sb.quis_per_utility * utility
+        sus = (
+            sb.sus_mean
+            + sb.sus_per_utility * utility
             + (scenario_shift if condition == "cluster5" else 0.0)
             + participant_effect
             + task_effects[task_id]
@@ -218,14 +229,14 @@ def _simulate_session_b(
             + rng.normal(0, sb.residual_sd)
         )
         latents.append({"block_index": index, "condition": condition, "task_id": task_id, "target": target,
-                        "utility": utility, "quis_latent": float(quis)})  # fmt: skip
-        success = rng.random() < expit(sb.success_logit + sb.success_per_quis * (quis - sb.quis_mean))
+                        "utility": utility, "sus_latent": float(sus)})  # fmt: skip
+        success = rng.random() < expit(sb.success_logit + sb.success_per_sus * (sus - sb.sus_mean))
         found = 6 if success else int(rng.integers(3, 6))
         within = bool(success or rng.random() < sb.within_budget_rate)
         budget = tasks[task_id]["budget"]
         spent = int(budget * rng.uniform(0.75, 0.99)) if within else int(budget * rng.uniform(1.01, 1.2))
         duration = int(
-            1000 * sb.time_median_s * np.exp(sb.time_per_quis * (quis - sb.quis_mean) + rng.normal(0, sb.time_log_sd))
+            1000 * sb.time_median_s * np.exp(sb.time_per_sus * (sus - sb.sus_mean) + rng.normal(0, sb.time_log_sd))
         )
         steps = (
             []
@@ -256,25 +267,25 @@ def _simulate_session_b(
         block_id = f"syn{person.number:03d}b{index}"
         for event, at in (("task_start", started), ("task_finish", finished)):
             event_rows.append(_event_row(person, block_id, target, event, at))
-        for name, file in instruments.items():
-            fraction = np.clip(quis / 9.0, 0, 1)  # the latent score is on the 0-9 scale; items map onto their own range
-            for item in file["items"]:
-                low, points = item["scale"]["min"], item["scale"]["points"]
-                value = low + fraction * (points - 1) + rng.normal(0, sb.item_noise_sd)
-                value = int(np.clip(np.rint(value), low, low + points - 1))
-                if item.get("reverse", False):
-                    value = 2 * low + points - 1 - value
-                is_na = bool(item.get("allowNA", False)) and rng.random() < sb.na_rate
+        for name in ("seq", "sus"):
+            file = instruments[name]
+            answers = _item_answers(file, sus, sb.seq_noise_sd if name == "seq" else sb.item_noise_sd, rng)
+            contributions = [
+                (5 - v if item.get("reverse", False) else v - 1) if name == "sus" else v for item, v in answers
+            ]
+            score = sum(contributions) * 2.5 if name == "sus" else contributions[0]
+            for (item, value), contribution in zip(answers, contributions, strict=True):
                 question_rows.append(
                     {
                         "participant_code": person.code, "group": person.group, "block_index": str(index),
                         "interface_number": str(index + 1), "condition": condition, "task_id": task_id, "instrument": name,
-                        "instrument_version": _instrument_label(file), "item_id": item["id"],
-                        "value": "" if is_na else str(value), "is_na": _bit(is_na),
-                        "reverse_coded": _bit(bool(item.get("reverse", False))), "submitted_at": _iso(finished),
+                        "instrument_version": _instrument_label(file), "item_id": item["id"], "value": str(value),
+                        "reverse_coded": _bit(bool(item.get("reverse", False))) if name == "sus" else "",
+                        "item_contribution": f"{contribution:g}", "instrument_score": f"{score:g}",
+                        "submitted_at": _iso(finished),
                     }
                 )  # fmt: skip
-    noisy = [(row["quis_latent"] + rng.normal(0, sb.rank_noise_sd), row) for row in latents]
+    noisy = [(row["sus_latent"] + rng.normal(0, sb.rank_noise_sd), row) for row in latents]
     for rank, (_, row) in enumerate(sorted(noisy, key=lambda pair: -pair[0]), start=1):
         rank_rows.append(
             {
@@ -289,7 +300,7 @@ def _simulate_session_b(
 def _event_row(person: Person, trial_id: str, config_id: str, event: str, at: datetime) -> dict[str, str]:
     ms = int(at.timestamp() * 1000)
     return {
-        "participant_code": person.code, "session_type": "p3_sessionB", "event_id": "",
+        "participant_code": person.code, "session_type": "shopping", "event_id": "",
         "client_event_id": f"syn-{trial_id}-{event}", "trial_id": trial_id, "config_id": config_id, "type": event,
         "client_ts_ms": str(ms), "client_ts": _iso(at), "server_ts": _iso(at), "is_practice": "0", "payload": "{}",
     }  # fmt: skip
@@ -318,7 +329,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
     if n < 4:
         raise ValueError("Need at least 4 participants")
     sim = config.simulate
-    sb = sim.session_b
+    sb = sim.shopping
     scenario = scenario or sb.scenario
     if scenario not in sb.scenarios:
         raise ValueError(f"Unknown scenario {scenario!r}; choose from {sorted(sb.scenarios)}")
@@ -345,7 +356,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
         age = int(rng.integers(sim.age_min, sim.age_max + 1))
         people.append(
             Person(
-                code=f"P3-{i + 1:03d}", number=i + 1, seed=seeds[i], group=group, language=languages[i], age=age,
+                code=f"P-S{i + 1:03d}", number=i + 1, seed=seeds[i], group=group, language=languages[i], age=age,
                 cluster=cluster,
                 w=decisiveness * (sim.weight_scale * means[cluster] + rng.normal(0, sim.individual_sd, len(FEATURES))),
                 lapse=float(rng.uniform(sim.lapse_min, sim.lapse_max)), plan={}, rng=rng,
@@ -366,7 +377,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
             start = _EPOCH + timedelta(days=person.number, minutes=after)
             duration = int(person.rng.integers(10_000, 90_000))
             break_rows.append({
-                "participant_code": person.code, "session_type": "p3_sessionA", "after_trial_index": str(after),
+                "participant_code": person.code, "session_type": "comparison", "after_trial_index": str(after),
                 "started_at": _iso(start), "ended_at": _iso(start + timedelta(milliseconds=duration)),
                 "duration_ms": str(duration),
             })  # fmt: skip
@@ -397,7 +408,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
             "cluster_k": models.cluster_k,
         }
 
-    instruments = {lang: {name: _read_instrument(name, lang) for name in ("quis", "ues_sf")} for lang in ("en", "ur")}
+    instruments = {lang: {name: _read_instrument(name, lang) for name in ("seq", "sus")} for lang in ("en", "ur")}
     task_effects = {t["id"]: float(shared.normal(0, sb.task_sd)) for t in platform_info()["tasks"]}
     shift = sb.scenarios[scenario]["cluster5_shift"]
     task_rows, question_rows, rank_rows, event_rows, participant_rows = [], [], [], [], []
@@ -409,7 +420,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
         latents: list[dict[str, Any]] = []
         if done:
             effect = float(person.rng.normal(0, sb.participant_sd))
-            t, q, r, e, latents = _simulate_session_b(
+            t, q, r, e, latents = _simulate_shopping(
                 person,
                 sb,
                 item["blocks"],
@@ -428,7 +439,7 @@ def simulate_export(config: Config, *, n: int, seed: int, out: Path, scenario: s
             "participant_code": person.code, "group": person.group, "language": person.language, "age": person.age,
             "cluster": person.cluster,
             "w": person.w.tolist(), "lapse": person.lapse, "expected_consistency": consistency_expected[person.code],
-            "plan_targets": person.plan["targets"], "session_b": latents,
+            "plan_targets": person.plan["targets"], "shopping": latents,
         })  # fmt: skip
     for index, row in enumerate(event_rows, start=1):
         row["event_id"] = str(index)
@@ -503,16 +514,15 @@ def _participant_row(person: Person, rows: list[dict[str, str]], item: dict[str,
     start = _EPOCH + timedelta(days=person.number)
     pct = "" if not repeats else f"{round(100 * same / len(repeats), 1):g}"
     return {
-        "participant_code": person.code, "study_phase": "3", "number": str(person.number), "group": person.group,
+        "participant_code": person.code, "legacy_code": person.code, "protocol": "current", "number": str(person.number), "group": person.group,
         "group_source": "self", "language": person.language, "seed": str(person.seed), "condition_row": str(item["conditionRow"]),
         "task_row": str(item["taskRow"]), "completion_code": "", "is_simulated": "1", "withdrawn_at": "", "withdrawn_reason": "", "notes": "SYNTHETIC participant",
-        "created_at": _iso(_EPOCH), "phase1_status": "", "phase1_started_at": "", "phase1_completed_at": "",
-        "phase1_app_version": "", "sessionA_status": "completed" if done else "in_progress",
-        "sessionA_started_at": _iso(start), "sessionA_completed_at": _iso(start + timedelta(hours=1)) if done else "",
-        "sessionA_app_version": "SYNTHETIC", "sessionB_status": "completed" if done else "not_started",
-        "sessionB_started_at": _iso(start + timedelta(days=100)) if done else "",
-        "sessionB_completed_at": _iso(start + timedelta(days=100, hours=1)) if done else "",
-        "sessionB_app_version": "SYNTHETIC" if done else "", "attention_total": str(len(checks)),
+        "created_at": _iso(_EPOCH), "comparison_status": "completed" if done else "in_progress",
+        "comparison_started_at": _iso(start), "comparison_completed_at": _iso(start + timedelta(hours=1)) if done else "",
+        "comparison_app_version": "SYNTHETIC", "shopping_status": "completed" if done else "not_started",
+        "shopping_started_at": _iso(start + timedelta(days=100)) if done else "",
+        "shopping_completed_at": _iso(start + timedelta(days=100, hours=1)) if done else "",
+        "shopping_app_version": "SYNTHETIC" if done else "", "attention_total": str(len(checks)),
         "attention_correct": str(correct), "attention_failed": _bit(len(answered) - correct > platform_info()["maxFailedAttentionChecks"]),
         "repeats_answered": str(len(repeats)), "repeats_consistent": str(same), "consistency_pct": pct,
     }  # fmt: skip

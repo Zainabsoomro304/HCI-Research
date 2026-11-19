@@ -7,13 +7,12 @@ import { buildExportZip, buildTables, toCsv } from "@/lib/export/build";
 import { TABLES } from "@/lib/export/tables";
 import { createParticipants } from "@/lib/participants";
 import { savePlanFile } from "@/lib/planStore";
-import { loadInstrument } from "@/lib/questionnaire/instruments";
 import { applyAction, buildState, getSessionByToken } from "@/lib/session";
 import { loadConsent } from "@/lib/session/comparison";
-import { unlockSessionB } from "@/lib/session/sessionB";
+import { unlockShopping } from "@/lib/session/shopping";
 import type { ComparisonState } from "@/lib/session/types";
 
-import { background as bg } from "./fixtures";
+import { background as bg, CONFIRMED } from "./fixtures";
 let p1Code = "";
 let p1FailCode = "";
 let p3Code = "";
@@ -26,7 +25,7 @@ async function act(token: string, body: unknown) {
 /** Runs a full comparison session; `wrongAttention` answers attention checks with A. */
 async function runComparison(token: string, wrongAttention = false) {
   await act(token, { type: "language", lang: "en" });
-  await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, clientTs: Date.now() });
+  await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, confirmations: CONFIRMED, clientTs: Date.now() });
   await act(token, { type: "background", answers: { ...bg, occupation: "other", occupationOther: "Sales, \"retail\"" }, clientTs: Date.now() });
   let st = (await act(token, { type: "instructions_done" })) as ComparisonState;
   while (st.step !== "end") {
@@ -41,13 +40,13 @@ async function runComparison(token: string, wrongAttention = false) {
 }
 
 beforeAll(async () => {
-  const [a, b] = await createParticipants({ studyPhase: 1, count: 2, notes: "export test" });
+  const [a, b] = await createParticipants({ count: 2, notes: "export test" });
   p1Code = a!.code;
   p1FailCode = b!.code;
-  await runComparison(a!.sessions[0]!.token);
-  await runComparison(b!.sessions[0]!.token, true);
+  await runComparison(a!.sessions.find((s) => s.type === "comparison")!.token);
+  await runComparison(b!.sessions.find((s) => s.type === "comparison")!.token, true);
 
-  const [p3] = await createParticipants({ studyPhase: 3, count: 1 });
+  const [p3] = await createParticipants({ count: 1 });
   p3Code = p3!.code;
   await savePlanFile(p3!.id, {
     participantCode: p3!.code,
@@ -58,21 +57,23 @@ beforeAll(async () => {
       personalFull: { steps: [{ trigger: { type: "afterMs", value: 8000 }, config: "standard-standard-flat-iconOnly-high-grid3-hints" }] },
     },
   });
-  const sb = p3!.sessions.find((s) => s.type === "p3_sessionB")!;
-  await prisma.session.updateMany({ where: { participantId: p3!.id, type: "p3_sessionA" }, data: { status: "completed" } });
-  await unlockSessionB(sb.id);
+  const sb = p3!.sessions.find((s) => s.type === "shopping")!;
+  await prisma.session.updateMany({ where: { participantId: p3!.id, type: "comparison" }, data: { status: "completed" } });
+  await unlockShopping(sb.id);
+  await act(sb.token, { type: "consent", agreed: true, hash: loadConsent("en").hash, confirmations: CONFIRMED, clientTs: Date.now() });
   await act(sb.token, { type: "welcome_done" });
   await prisma.event.create({
     data: { clientEventId: `practice-ev-${sb.id}`, participantId: p3!.id, sessionId: sb.id, type: "add_to_cart", clientTs: new Date(), clientTsMs: BigInt(Date.now()), isPractice: true, payload: { productId: "fv-01" } },
   });
   await act(sb.token, { type: "task_finish", blockIndex: -1, cart: [], firstInteractionAt: null, finalConfigId: "standard-standard-flat-iconOnly-standard-grid3-none", appliedConfigs: [], clientTs: Date.now() });
   const blocks = await prisma.taskBlock.findMany({ where: { sessionId: sb.id, isPractice: false }, orderBy: { blockIndex: "asc" } });
-  const ans = (i: "quis" | "ues_sf") => Object.fromEntries(loadInstrument(i).items.map((it) => [it.id, it.allowNA ? "NA" : it.scale.min]));
+  // SUS: all 5s -> odd items contribute 4, even items 0 -> 50.
+  const sus = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`sus_${String(i + 1).padStart(2, "0")}`, 5]));
   for (const b of blocks) {
     await act(sb.token, { type: "block_intro_done", blockIndex: b.blockIndex });
     await act(sb.token, { type: "task_finish", blockIndex: b.blockIndex, cart: [{ productId: "gr-03", quantity: 2 }], firstInteractionAt: Date.now() - 30_000, finalConfigId: "standard-standard-flat-iconOnly-standard-grid3-none", appliedConfigs: [], clientTs: Date.now() });
-    await act(sb.token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "quis", responses: ans("quis") });
-    await act(sb.token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "ues_sf", responses: ans("ues_sf") });
+    await act(sb.token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "seq", responses: { seq_01: 2 + b.blockIndex } });
+    await act(sb.token, { type: "questionnaire", blockIndex: b.blockIndex, instrument: "sus", responses: sus });
   }
   await act(sb.token, { type: "ranking", ranks: [0, 1, 2, 3].map((b) => ({ blockIndex: b, rank: b + 1, reason: b === 0 ? "liked it, mostly" : "" })) });
 }, 180_000);
@@ -115,7 +116,7 @@ describe("export", () => {
   });
 
   it("includes the seven setting values, busyness, scene and language for both clips in comparison_trials", async () => {
-    const tables = await buildTables({ studyPhase: 1 });
+    const tables = await buildTables();
     const row = tables["comparison_trials.csv"]!.find((r) => r.participant_code === p1Code && r.is_practice === false)!;
     for (const side of ["left", "right"]) {
       const id = String(row[`${side}_clip_id`]).split("-");
@@ -128,7 +129,7 @@ describe("export", () => {
   });
 
   it("gives repeat trials the gap to their original (and leaves it empty for other trials)", async () => {
-    const rows = (await buildTables({ studyPhase: 1 }))["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code);
+    const rows = (await buildTables())["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code);
     const byId = new Map(rows.map((r) => [r.trial_id, r]));
     const repeats = rows.filter((r) => r.is_repeat === true);
     expect(repeats).toHaveLength(10);
@@ -145,7 +146,7 @@ describe("export", () => {
   });
 
   it("escapes commas and quotes in CSV", async () => {
-    const tables = await buildTables({ studyPhase: 1 });
+    const tables = await buildTables();
     const csv = toCsv("questionnaire_background.csv", tables["questionnaire_background.csv"]!);
     expect(csv).toContain('"Sales, ""retail"""');
     const parsed = parseCsv(csv);
@@ -154,11 +155,12 @@ describe("export", () => {
     expect(row[parsed[0]!.indexOf("occupationOther")]).toBe('Sales, "retail"');
   });
 
-  it("filters by phase, completion and attention, and excludes Session B practice by default", async () => {
+  it("filters by completion and attention, and excludes the shopping practice task by default", async () => {
     const all = await buildTables();
-    const p1 = await buildTables({ studyPhase: 1 });
-    expect(p1["participants.csv"]!.every((r) => r.study_phase === 1)).toBe(true);
     expect(all["participants.csv"]!.some((r) => r.participant_code === p3Code)).toBe(true);
+    const row = all["participants.csv"]!.find((r) => r.participant_code === p1Code)!;
+    expect(row).toMatchObject({ legacy_code: p1Code, protocol: "current", comparison_status: "completed", shopping_status: "not_started" });
+    expect(Object.keys(row).some((k) => /phase/i.test(k))).toBe(false);
 
     const noFail = await buildTables({ excludeFailedAttention: true });
     const codes = noFail["participants.csv"]!.map((r) => r.participant_code);
@@ -167,9 +169,9 @@ describe("export", () => {
     expect(all["participants.csv"]!.find((r) => r.participant_code === p1FailCode)!.attention_failed).toBe(true);
 
     // Completed-only: every included participant has a completed session, and rows only come from completed sessions.
-    const unfinished = await createParticipants({ studyPhase: 1, count: 1 });
+    const unfinished = await createParticipants({ count: 1 });
     const completed = await buildTables({ completedOnly: true });
-    const statusCols = ["phase1_status", "sessionA_status", "sessionB_status"];
+    const statusCols = ["comparison_status", "shopping_status"];
     expect(completed["participants.csv"]!.every((r) => statusCols.some((c) => r[c] === "completed"))).toBe(true);
     expect(completed["participants.csv"]!.some((r) => r.participant_code === unfinished[0]!.code)).toBe(false);
     expect((await buildTables())["participants.csv"]!.some((r) => r.participant_code === unfinished[0]!.code)).toBe(true);
@@ -184,9 +186,15 @@ describe("export", () => {
     expect(all["events.csv"]!.some((r) => String(r.client_event_id).startsWith("practice-ev-"))).toBe(false);
 
     const q = all["questionnaire_task.csv"]!.filter((r) => r.participant_code === p3Code);
-    expect(q.length).toBe(4 * (loadInstrument("quis").items.length + loadInstrument("ues_sf").items.length));
-    expect(q.some((r) => r.is_na === true && r.value === null)).toBe(true);
-    expect(q.some((r) => r.reverse_coded === true)).toBe(true);
+    expect(q.length).toBe(4 * (1 + 10));
+    const seqRows = q.filter((r) => r.instrument === "seq");
+    expect(seqRows.map((r) => [r.block_index, r.value, r.instrument_score])).toEqual([[0, 2, 2], [1, 3, 3], [2, 4, 4], [3, 5, 5]]);
+    const susRows = q.filter((r) => r.instrument === "sus" && r.block_index === 0);
+    expect(susRows.map((r) => r.item_id)).toEqual(Array.from({ length: 10 }, (_, i) => `sus_${String(i + 1).padStart(2, "0")}`));
+    expect(susRows.map((r) => r.value)).toEqual(new Array(10).fill(5));
+    expect(susRows.map((r) => r.reverse_coded)).toEqual([false, true, false, true, false, true, false, true, false, true]);
+    expect(susRows.map((r) => r.item_contribution)).toEqual([4, 0, 4, 0, 4, 0, 4, 0, 4, 0]);
+    expect(new Set(susRows.map((r) => r.instrument_score))).toEqual(new Set([50]));
     const ranks = all["rankings.csv"]!.filter((r) => r.participant_code === p3Code);
     expect(ranks.map((r) => r.rank)).toEqual([1, 2, 3, 4]);
     expect(ranks[0]!.reason).toBe("liked it, mostly");

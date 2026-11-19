@@ -5,18 +5,17 @@ import { DEFAULT_CONFIG_ID, SETTING_KEYS } from "@/config/uiSpace";
 import { prisma } from "../db";
 import { computeQuality } from "../admin/quality";
 import { latinRows } from "../latinSquare";
-import { loadInstrument } from "../questionnaire/instruments";
-import type { FrozenResult } from "../phase3/freeze";
+import { INSTRUMENTS, loadInstrument, scoreResponses, type Instrument } from "../questionnaire/instruments";
+import type { FrozenResult } from "../prepare/freeze";
 import { getTask } from "../tasks";
 import { TABLES, configSettings, tableDef } from "./tables";
 
 export interface ExportFilters {
-  studyPhase?: 1 | 3;
   /** Only rows from completed sessions (and participants with at least one completed session). */
   completedOnly?: boolean;
   /** Drop participants who failed the attention criterion. */
   excludeFailedAttention?: boolean;
-  /** Include the Session B practice task and its events. */
+  /** Include the shopping-session practice task and its events. */
   includePractice?: boolean;
   /** Include simulated participants from the test tools. They are left out by default. */
   includeSimulated?: boolean;
@@ -43,12 +42,11 @@ export function toCsv(file: string, rows: Row[]): string {
   return lines.join("\n") + "\n";
 }
 
-const SESSION_PREFIX = { phase1: "phase1", p3_sessionA: "sessionA", p3_sessionB: "sessionB" } as const;
 
 export async function buildTables(filters: ExportFilters = {}): Promise<Record<string, Row[]>> {
   const participants = await prisma.participant.findMany({
-    where: { ...(filters.studyPhase ? { studyPhase: filters.studyPhase } : {}), ...(filters.includeSimulated ? {} : { isSimulated: false }) },
-    orderBy: [{ studyPhase: "asc" }, { number: "asc" }],
+    where: filters.includeSimulated ? {} : { isSimulated: false },
+    orderBy: [{ isSimulated: "asc" }, { number: "asc" }],
     include: { sessions: true },
   });
   const allTrials = await prisma.comparisonTrial.findMany({
@@ -70,8 +68,8 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
   const code = (id: string) => pById.get(id)!.code;
   const rowsFor = (p: Participant) => {
     const rows = latinRows(p.number, { conditionRow: p.conditionRowOverride, taskRow: p.taskRowOverride });
-    const sb = p.studyPhase === 3 ? (pById.get(p.id) as Participant & { sessions: Session[] }).sessions.find((s) => s.type === "p3_sessionB") : undefined;
-    return p.studyPhase === 3 ? { condition_row: sb?.conditionRow ?? rows.conditionRow, task_row: sb?.taskRow ?? rows.taskRow } : { condition_row: null, task_row: null };
+    const shopping = (pById.get(p.id) as Participant & { sessions: Session[] }).sessions.find((s) => s.type === "shopping");
+    return { condition_row: shopping?.conditionRow ?? rows.conditionRow, task_row: shopping?.taskRow ?? rows.taskRow };
   };
 
   // participants.csv
@@ -79,7 +77,8 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
     const q = computeQuality(trialsBy.get(p.id) ?? []);
     const row: Row = {
       participant_code: p.code,
-      study_phase: p.studyPhase,
+      legacy_code: p.legacyCode ?? p.code,
+      protocol: p.protocol,
       number: p.number,
       group: p.group,
       group_source: p.groupSource,
@@ -100,7 +99,7 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
       consistency_pct: q.consistencyPct,
     };
     for (const s of p.sessions) {
-      const pre = SESSION_PREFIX[s.type];
+      const pre = s.type;
       Object.assign(row, { [`${pre}_status`]: s.status, [`${pre}_started_at`]: s.startedAt, [`${pre}_completed_at`]: s.completedAt, [`${pre}_app_version`]: s.appVersion });
     }
     return row;
@@ -110,7 +109,6 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
   const bg = await prisma.questionnaireResponse.findMany({ where: { sessionId: { in: sessionIds }, instrument: "background" }, orderBy: { submittedAt: "asc" } });
   const backgroundRows = bg.map((r) => ({
     participant_code: code(r.participantId),
-    study_phase: pById.get(r.participantId)!.studyPhase,
     session_type: sById.get(r.sessionId)!.type,
     submitted_at: r.submittedAt,
     ...(r.responses as Row),
@@ -125,7 +123,6 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
       const p = pById.get(t.participantId)!;
       return {
         participant_code: p.code,
-        study_phase: p.studyPhase,
         group: p.group,
         session_type: s.type,
         trial_id: t.id,
@@ -206,16 +203,19 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
   });
 
   // questionnaire_task.csv (long format)
-  const instruments = { quis: loadInstrument("quis"), ues_sf: loadInstrument("ues_sf") };
+  const instruments = Object.fromEntries(INSTRUMENTS.map((i) => [i, loadInstrument(i)])) as Record<Instrument, ReturnType<typeof loadInstrument>>;
   const qResponses = await prisma.questionnaireResponse.findMany({
-    where: { sessionId: { in: sessionIds }, instrument: { in: ["quis", "ues_sf"] } },
+    where: { sessionId: { in: sessionIds }, instrument: { in: [...INSTRUMENTS] } },
     orderBy: [{ participantId: "asc" }, { submittedAt: "asc" }],
   });
   const questionnaireRows = qResponses.flatMap((r) => {
     const b = r.taskBlockId ? blockById.get(r.taskBlockId) : undefined;
     const p = pById.get(r.participantId)!;
-    const inst = instruments[r.instrument as "quis" | "ues_sf"];
-    return Object.entries(r.responses as Record<string, number | "NA">).map(([itemId, value]) => ({
+    const name = r.instrument as Instrument;
+    const inst = instruments[name];
+    const values = r.responses as Record<string, number>;
+    const score = r.score ?? scoreResponses(inst, values);
+    return inst.items.filter((item) => item.id in values).map((item) => ({ itemId: item.id, value: values[item.id]!, reverse: !!item.reverse })).map(({ itemId, value, reverse }) => ({
       participant_code: p.code,
       group: p.group,
       block_index: b?.blockIndex,
@@ -225,9 +225,10 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
       instrument: r.instrument,
       instrument_version: r.instrumentVersion,
       item_id: itemId,
-      value: value === "NA" ? null : value,
-      is_na: value === "NA",
-      reverse_coded: inst.items.find((i) => i.id === itemId)?.reverse ?? null,
+      value,
+      reverse_coded: name === "sus" ? reverse : null,
+      item_contribution: name === "sus" ? (reverse ? 5 - value : value - 1) : value,
+      instrument_score: score,
       submitted_at: r.submittedAt,
     }));
   });
@@ -249,7 +250,7 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
 
   // events.csv
   const events = await prisma.event.findMany({
-    where: { sessionId: { in: sessionIds }, ...(filters.includePractice ? {} : { NOT: { isPractice: true, session: { type: "p3_sessionB" } } }) },
+    where: { sessionId: { in: sessionIds }, ...(filters.includePractice ? {} : { NOT: { isPractice: true, session: { type: "shopping" } } }) },
     orderBy: [{ sessionId: "asc" }, { clientTsMs: "asc" }, { id: "asc" }],
   });
   const eventRows = events.map((e) => ({
@@ -316,21 +317,25 @@ export function codebook(filters: ExportFilters, counts: Record<string, number>)
     "",
     `Exported: ${new Date().toISOString()}  `,
     `App version: ${process.env.APP_VERSION ?? "unknown"}  `,
-    `Filters: study phase = ${filters.studyPhase ?? "all"}; completed sessions only = ${filters.completedOnly ? "yes" : "no"}; ` +
-      `exclude failed attention = ${filters.excludeFailedAttention ? "yes" : "no"}; include Session B practice = ${filters.includePractice ? "yes" : "no"}; include simulated = ${filters.includeSimulated ? "yes" : "no"}`,
+    `Filters: completed sessions only = ${filters.completedOnly ? "yes" : "no"}; ` +
+      `exclude failed attention = ${filters.excludeFailedAttention ? "yes" : "no"}; include shopping practice task = ${filters.includePractice ? "yes" : "no"}; include simulated = ${filters.includeSimulated ? "yes" : "no"}`,
     "",
     "All files are UTF-8 CSV with a header row and comma separators. Booleans are 1/0; empty cells are missing values;",
     "timestamps are ISO 8601 (UTC) unless the column name ends in `_ms` (epoch milliseconds). JSON columns hold JSON text.",
     "",
     "## Design notes",
     "",
+    "- One group of participants, two sessions: Session 1 (`comparison`: paired video comparisons, online or in person) and Session 2 (`shopping`: four shopping tasks with adaptive interfaces, in person). Plans for Session 2 are computed once everyone has finished Session 1 (Freeze & generate).",
+    "- Participant codes are P-001, P-002, ... Participants recorded before the codes were renumbered keep their earlier code in `legacy_code`; their answers, choices, timings and timestamps are unchanged.",
+    "- SUS (Brooke 1996): the standard 10 items on a 5-point scale (Strongly disagree to Strongly agree). Adaptation: the English items say \"website\" where Brooke says \"system\". The Urdu items are the researchers' own translation, to be replaced by the published Urdu SUS (Anam, Sadiq & Jamil 2020, IJCSIS 18(6), 73-78); `instrument_version` says which wording was answered.",
+    "- SEQ (Sauro & Dumas 2009): \"Overall, how easy or difficult was this task?\", 1 (very difficult) to 7 (very easy).",
     `- Config IDs have the form \`${SETTING_KEYS.join("-")}\`; the base configuration is \`${DEFAULT_CONFIG_ID}\`.`,
     "- Each comparison trial shows one scene (product category) in one language in both clips. In Urdu the page is right to left: left_* is Option A, shown on the right.",
     "- Attention checks show the same clip on both sides and ask the participant to choose Option B (choice = right).",
     `- A participant fails the attention criterion if more than ${MAX_FAILED_ATTENTION_CHECKS} attention check(s) are answered wrongly.`,
     "- Repeat trials copy an earlier main trial with sides swapped; consistency compares the chosen clip, not the side.",
-    "- `numChangedSettings` is the number of settings (0-5) a clip's target differs from the base config (transition busyness).",
-    "- `frozen_model.json` is the active frozen model: settings and seeds, the input-data hash, the pooled models, per-participant leave-one-out summaries (sigma, nuisance terms, weights, targets, flags), who was eligible and excluded, and `compromised`, which is true if the freeze was ever broken. `{\"frozen\": false}` if nothing has been frozen.",
+    "- `numChangedSettings` is the number of settings in which a clip's target differs from the base config (transition busyness).",
+    "- `frozen_model.json` is the active frozen model: settings and seeds, the input-data hash, the pooled models, per-participant leave-one-out summaries (sigma, nuisance terms, weights, targets, flags), the cluster choice and its stability (`clusters`), who was eligible and excluded, and `compromised`, which is true if the freeze was ever broken. `{\"frozen\": false}` if nothing has been frozen.",
     "- Simulated participants have `is_simulated` = 1, and are left out unless the export asks for them.",
     "",
   ];

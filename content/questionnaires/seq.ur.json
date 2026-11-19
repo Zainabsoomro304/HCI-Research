@@ -1,0 +1,21 @@
+{
+  "instrument": "seq",
+  "version": "seq-ur-1",
+  "language": "ur",
+  "source": "Sauro, J., & Dumas, J. S. (2009). Comparison of three one-question, post-task usability questionnaires. Proceedings of CHI 2009, 1599-1608. https://doi.org/10.1145/1518701.1518946. Free to use. Urdu: translation by the research team.",
+  "title": "یہ کام کتنا آسان تھا؟",
+  "instructions": "1 (بہت مشکل) سے 7 (بہت آسان) تک ایک نمبر چُنیں۔",
+  "scale": {
+    "min": 1,
+    "points": 7,
+    "leftAnchor": "بہت مشکل",
+    "rightAnchor": "بہت آسان"
+  },
+  "scoring": "single",
+  "items": [
+    {
+      "id": "seq_01",
+      "text": "مجموعی طور پر، یہ کام کتنا آسان یا مشکل تھا؟"
+    }
+  ]
+}

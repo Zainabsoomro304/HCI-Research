@@ -13,7 +13,7 @@ def build_index(export: Export | None = None):
     root.mkdir(parents=True, exist_ok=True)
     tag = export.sha256[:8] if export else None
     rows = []
-    for kind in ("phase2", "phase3", "power"):
+    for kind in ("preferences", "evaluation", "power"):
         runs = [
             p
             for p in root.iterdir()

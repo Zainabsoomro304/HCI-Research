@@ -1,4 +1,7 @@
-/** Shared answers for the Session A background questionnaire (every item of the 40+ redesign). */
+/** The three consent confirmations, all ticked. */
+export const CONFIRMED = { readInformation: true, agree: true, ageEligible: true };
+
+/** Shared answers for the Session 1 background questionnaire (every item of the 40+ redesign). */
 export const background = {
   age: 52,
   gender: "woman",

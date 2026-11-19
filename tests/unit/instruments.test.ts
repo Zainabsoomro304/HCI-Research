@@ -1,41 +1,85 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { loadInstrument } from "@/lib/questionnaire/instruments";
+import { describe, expect, it } from "vitest";
+import { INSTRUMENTS, InstrumentFileSchema, itemScale, loadInstrument, scoreResponses, validateResponses } from "@/lib/questionnaire/instruments";
 
-const licensed = {
-  instrument: "quis",
-  version: "licensed-test",
-  placeholder: false,
-  title: "Licensed title",
-  instructions: "Rate the shop.",
-  items: [{ id: "q_overall_1", text: "terrible / wonderful", scale: { min: 0, points: 10, leftAnchor: "terrible", rightAnchor: "wonderful" }, allowNA: true }],
-};
+const sus = loadInstrument("sus", "en");
+const answers = (values: number[]) => Object.fromEntries(values.map((v, i) => [`sus_${String(i + 1).padStart(2, "0")}`, v]));
 
-describe("questionnaire lookup", () => {
-  afterEach(() => {
-    delete process.env.INSTRUMENT_QUIS_EN;
-    delete process.env.INSTRUMENT_QUIS_UR;
+describe("SUS (Brooke 1996)", () => {
+  it("has the 10 standard items in order, 5 points, Strongly disagree to Strongly agree, 'website' for 'system'", () => {
+    expect(sus.items.map((i) => i.id)).toEqual(Array.from({ length: 10 }, (_, i) => `sus_${String(i + 1).padStart(2, "0")}`));
+    expect(sus.scale).toMatchObject({ min: 1, points: 5, leftAnchor: "Strongly disagree", rightAnchor: "Strongly agree" });
+    expect(sus.scale.labels).toEqual(["Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"]);
+    expect(sus.items[0]!.text).toBe("I think that I would like to use this website frequently.");
+    expect(sus.items.every((i) => !/\bsystem\b/i.test(i.text))).toBe(true);
+    expect(sus.items.map((i) => !!i.reverse)).toEqual([false, true, false, true, false, true, false, true, false, true]);
+    expect(sus.source).toMatch(/Brooke/);
+    expect(sus.adaptation).toMatch(/website/);
   });
 
-  it("uses the committed file when no private copy exists", () => {
-    const ues = loadInstrument("ues_sf", "ur");
-    expect(ues.origin).toBe("repo");
-    expect(ues.placeholder).toBe(false);
+  it("scores odd items (score - 1), even items (5 - score), sum x 2.5", () => {
+    expect(scoreResponses(sus, answers([5, 1, 5, 1, 5, 1, 5, 1, 5, 1]))).toBe(100);
+    expect(scoreResponses(sus, answers([1, 5, 1, 5, 1, 5, 1, 5, 1, 5]))).toBe(0);
+    expect(scoreResponses(sus, answers([3, 3, 3, 3, 3, 3, 3, 3, 3, 3]))).toBe(50);
+    // Worked example: (4-1)+(5-2)+(5-1)+(5-1)+(4-1)+(5-2)+(5-1)+(5-1)+(4-1)+(5-2) = 34 -> 85
+    expect(scoreResponses(sus, answers([4, 2, 5, 1, 4, 2, 5, 1, 4, 2]))).toBe(85);
   });
 
-  it("prefers a licensed copy from the environment, and falls back to English for a missing language", () => {
-    process.env.INSTRUMENT_QUIS_EN = JSON.stringify(licensed);
-    const en = loadInstrument("quis", "en");
-    expect(en.origin).toBe("env");
-    expect(en.version).toBe("licensed-test");
-    expect(en.items.map((i) => i.id)).toEqual(["q_overall_1"]);
-    // No Urdu licensed copy: the English licensed copy is used rather than the Urdu placeholder.
-    expect(loadInstrument("quis", "ur").version).toBe("licensed-test");
-    process.env.INSTRUMENT_QUIS_UR = JSON.stringify({ ...licensed, version: "licensed-ur", title: "عنوان" });
-    expect(loadInstrument("quis", "ur").version).toBe("licensed-ur");
+  it("does not score an incomplete response", () => {
+    const partial = answers([4, 2, 5, 1, 4, 2, 5, 1, 4]);
+    expect(scoreResponses(sus, partial)).toBeNull();
+    expect(validateResponses(sus, partial).ok).toBe(false);
   });
 
-  it("rejects an invalid licensed copy loudly", () => {
-    process.env.INSTRUMENT_QUIS_EN = JSON.stringify({ ...licensed, items: [] });
-    expect(() => loadInstrument("quis", "en")).toThrow(/Invalid INSTRUMENT_QUIS_EN/);
+  it("the Urdu file has the same items, scale and scoring, and is written right to left", () => {
+    const ur = loadInstrument("sus", "ur");
+    expect(ur.items.map((i) => [i.id, !!i.reverse])).toEqual(sus.items.map((i) => [i.id, !!i.reverse]));
+    expect(ur.scoring).toBe("sus");
+    expect(ur.scale.points).toBe(5);
+    expect(ur.scale.labels).toHaveLength(5);
+    for (const item of ur.items) expect(item.text).toMatch(/[؀-ۿ]/);
+    expect(ur.version).not.toBe(sus.version);
+  });
+});
+
+describe("SEQ (Sauro & Dumas 2009)", () => {
+  it.each(["en", "ur"] as const)("one 7-point item, scored as its value (%s)", (lang) => {
+    const seq = loadInstrument("seq", lang);
+    expect(seq.items).toHaveLength(1);
+    expect(seq.scale).toMatchObject({ min: 1, points: 7 });
+    expect(scoreResponses(seq, { seq_01: 6 })).toBe(6);
+    expect(validateResponses(seq, { seq_01: 8 }).ok).toBe(false);
+  });
+
+  it("asks the standard question", () => {
+    const seq = loadInstrument("seq", "en");
+    expect(seq.items[0]!.text).toBe("Overall, how easy or difficult was this task?");
+    expect(seq.scale.leftAnchor).toBe("Very difficult");
+    expect(seq.scale.rightAnchor).toBe("Very easy");
+  });
+});
+
+describe("any Likert instrument file", () => {
+  it("validates a new instrument without code changes (mean scoring, reverse items, per-item scales)", () => {
+    const file = InstrumentFileSchema.parse({
+      instrument: "sus",
+      version: "custom-1",
+      language: "ur",
+      source: "test",
+      title: "عنوان",
+      instructions: "ہدایات",
+      scale: { min: 1, points: 5, leftAnchor: "کم", rightAnchor: "زیادہ" },
+      scoring: "mean",
+      items: [
+        { id: "a", text: "پہلا" },
+        { id: "b", text: "دوسرا", reverse: true },
+        { id: "c", text: "تیسرا", scale: { min: 0, points: 3, leftAnchor: "نہیں", rightAnchor: "ہاں" } },
+      ],
+    });
+    expect(itemScale(file, file.items[2]!).points).toBe(3);
+    expect(scoreResponses(file, { a: 5, b: 1, c: 2 })).toBe((5 + 5 + 2) / 3);
+  });
+
+  it("every committed instrument loads in both languages", () => {
+    for (const name of INSTRUMENTS) for (const lang of ["en", "ur"] as const) expect(loadInstrument(name, lang).language).toBe(lang);
   });
 });

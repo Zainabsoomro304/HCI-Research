@@ -22,10 +22,10 @@ _BANNER = "*** SYNTHETIC DATA: not real participants ***"
 
 @app.command()
 def simulate(
-    n: int = typer.Option(None, help="Participants. Defaults to study.n_participants in config."),
+    n: int = typer.Option(..., help="Number of simulated participants (the study has no fixed N)."),
     seed: int = typer.Option(None, help="Defaults to seeds.simulate in config."),
     out: Path = typer.Option(Path("data/synthetic_export.zip"), help="Must have SYNTHETIC in the file name."),
-    scenario: str = typer.Option(None, help="Session B scenario: equivalence or cluster5_worse."),
+    scenario: str = typer.Option(None, help="Shopping-session scenario: equivalence or cluster5_worse."),
     config: Path = typer.Option(None, help="Config file. Defaults to analysis/config.yaml."),
 ) -> None:
     """Generate a SYNTHETIC export and its ground truth."""
@@ -34,7 +34,7 @@ def simulate(
     cfg = load_config(config)
     truth = simulate_export(
         cfg,
-        n=n or cfg.study.n_participants,
+        n=n,
         seed=cfg.seeds.simulate if seed is None else seed,
         out=out,
         scenario=scenario,
@@ -89,15 +89,16 @@ def validate(
         typer.echo(
             f"Self-consistency: min {consistency.min():.2f}, median {consistency.median():.2f}, max {consistency.max():.2f}"
         )
-        if len(cleaned.participants) < cfg.study.n_min:
-            typer.echo(f"  WARNING  fewer eligible participants than study.n_min ({cfg.study.n_min})")
+        threshold = cfg.study.small_n_threshold
+        if len(cleaned.participants) < threshold:
+            typer.echo(
+                f"  NOTE  N = {len(cleaned.participants)} < {threshold}: RQ2 and RQ3 are reported as exploratory, and RQ4 (H4b) as estimation first, TOST second."
+            )
+        flagged = data.participants[data.participants["protocol"].astype(str) != "current"]["participant_code"].tolist()
+        if flagged:
+            typer.echo(f"  NOTE  earlier-protocol participants (sensitivity analyses run with and without them): {', '.join(flagged)}")
     if len(data.task_trials):
-        typer.echo(f"\nSession B blocks: {pd.Series(data.task_trials['condition']).value_counts().to_dict()}")
-    placeholder = [
-        v for v in data.questionnaire_task["instrument_version"].dropna().unique() if "placeholder" in str(v)
-    ]
-    if placeholder:
-        typer.echo(f"  WARNING  placeholder questionnaire items in this export: {placeholder}")
+        typer.echo(f"\nShopping-session blocks: {pd.Series(data.task_trials['condition']).value_counts().to_dict()}")
 
 
 @app.command()
@@ -115,28 +116,28 @@ def recovery(
 
 
 @app.command()
-def phase2(
+def preferences(
     export: Path = typer.Option(..., help="Export ZIP from the admin panel."),
     config: Path = typer.Option(None),
 ) -> None:
-    """Full Phase 2 analysis: consistency, learning curves, starting points, clusters and CS / non-CS descriptives."""
-    from hci.phase2 import run_phase2
+    """RQ1-RQ3 from Session 1 (comparisons): consistency, learning curves, starting points and clusters."""
+    from hci.preferences import run_preferences
 
-    path = run_phase2(export, load_config(config))
+    path = run_preferences(export, load_config(config))
     if "SYNTHETIC" in path.name:
         typer.echo(_BANNER)
     typer.echo(f"Report: {path}")
 
 
 @app.command()
-def phase3(
+def evaluation(
     export: Path = typer.Option(..., help="Export ZIP from the admin panel."),
     config: Path = typer.Option(None),
 ) -> None:
-    """Phase 3 statistics: questionnaire scores, mixed models, H4b equivalence test and rankings."""
-    from hci.phase3 import run_phase3
+    """RQ4 from Session 2 (shopping): SUS and SEQ, task time and success, H4a contrasts, H4b equivalence, rankings."""
+    from hci.evaluation import run_evaluation
 
-    path = run_phase3(export, load_config(config))
+    path = run_evaluation(export, load_config(config))
     if "SYNTHETIC" in path.name:
         typer.echo(_BANNER)
     typer.echo(f"Report: {path}")
@@ -144,7 +145,7 @@ def phase3(
 
 @app.command()
 def power(config: Path = typer.Option(None)) -> None:
-    """Power simulation for the H4b equivalence test, including N = 16 and 32."""
+    """Power simulation for the H4b equivalence test (SUS), at N = 16, 32, 48 and 64."""
     from hci.power import run_power
 
     typer.echo(f"Report: {run_power(load_config(config))}")
@@ -182,7 +183,7 @@ def parity(
 
 @app.command()
 def report(export: Path = typer.Option(None, help="Limits the index to runs of this export.")) -> None:
-    """Build an index page linking the latest Phase 2, Phase 3 and power reports."""
+    """Build an index page linking the latest preferences, evaluation and power reports."""
     from hci.summary import build_index
 
     typer.echo(f"Report index: {build_index(load_export(export) if export else None)}")
@@ -194,9 +195,9 @@ def run_all(
     config: Path = typer.Option(None),
 ) -> None:
     """Run everything the data allows, in order."""
-    from hci.phase2 import run_phase2
-    from hci.phase3 import run_phase3
+    from hci.evaluation import run_evaluation
     from hci.power import run_power
+    from hci.preferences import run_preferences
     from hci.prereg import write_prereg
     from hci.summary import build_index
 
@@ -204,11 +205,11 @@ def run_all(
     data = load_export(export)
     if data.synthetic:
         typer.echo(_BANNER)
-    typer.echo(f"Phase 2: {run_phase2(export, cfg)}")
+    typer.echo(f"Preferences (RQ1-RQ3): {run_preferences(export, cfg)}")
     try:
-        typer.echo(f"Phase 3: {run_phase3(export, cfg)}")
+        typer.echo(f"Evaluation (RQ4): {run_evaluation(export, cfg)}")
     except ValueError as e:
-        typer.echo(f"Phase 3 skipped: {e}")
+        typer.echo(f"Evaluation skipped: {e}")
     typer.echo(f"Power: {run_power(cfg)}")
     typer.echo(f"Prereg draft: {write_prereg(cfg)}")
     typer.echo(f"Report index: {build_index(data)}")

@@ -3,10 +3,12 @@ import type { Lang } from "@/config/shop";
 import { createParticipants } from "@/lib/participants";
 import { makeT } from "@/lib/strings";
 
-export async function newParticipant(phase: 1 | 3) {
-  const [p] = await createParticipants({ studyPhase: phase, count: 1 });
+export async function newParticipant() {
+  const [p] = await createParticipants({ count: 1 });
   return p!;
 }
+
+export const comparisonToken = (p: Awaited<ReturnType<typeof newParticipant>>) => p.sessions.find((s) => s.type === "comparison")!.token;
 
 /** UI text in either language, straight from the string tables, so every spec can run in English or Urdu. */
 export const tr = (lang: Lang) => makeT(lang);
@@ -31,15 +33,25 @@ export async function chooseLanguage(page: Page, lang: Lang = "en") {
   const t = tr(lang);
   await expect(page.getByRole("heading", { name: t("lang.title") })).toBeVisible();
   await page.getByRole("button", { name: LANGUAGE_BUTTON[lang], exact: true }).click();
-  await expect(page.getByLabel(t("consent.agree"))).toBeVisible();
+  await expect(page.getByLabel(t("consent.check.read"))).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("dir", lang === "ur" ? "rtl" : "ltr");
+}
+
+/** Ticks the three consent boxes and continues. Checks first that continuing without them is refused. */
+export async function tickConsent(page: Page, lang: Lang = "en") {
+  const t = tr(lang);
+  await expect(page.getByRole("button", { name: t("common.continue") })).toBeEnabled(); // hydrated
+  await page.getByLabel(t("consent.check.read")).check();
+  await page.getByLabel(t("consent.check.agree")).check();
+  await page.getByRole("button", { name: t("common.continue") }).click();
+  await expect(page.getByText(t("consent.mustAgree"))).toBeVisible();
+  await page.getByLabel(t("consent.check.age")).check();
+  await page.getByRole("button", { name: t("common.continue") }).click();
 }
 
 export async function doConsent(page: Page, lang: Lang = "en") {
   const t = tr(lang);
-  await expect(page.getByRole("button", { name: t("common.continue") })).toBeEnabled(); // hydrated
-  await page.getByLabel(t("consent.agree")).check();
-  await page.getByRole("button", { name: t("common.continue") }).click();
+  await tickConsent(page, lang);
   await expect(page.getByRole("heading", { name: t("bg.title") })).toBeVisible();
   await expect(page.getByRole("button", { name: t("bg.submit") })).toBeEnabled();
 }

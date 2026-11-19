@@ -5,12 +5,12 @@ import { CONDITIONS } from "@/config/study";
 import { prisma } from "@/lib/db";
 import { buildExportZip } from "@/lib/export/build";
 import { createParticipants } from "@/lib/participants";
-import { freezeAndGenerate, freezeReadiness, generateLatePlan, phase3Status, reinstateParticipant, startFreeze, stepFreeze, unfreeze, withdrawParticipant, type FrozenResult } from "@/lib/phase3/freeze";
-import { createSimulatedParticipants, simulateSessionA, simulateSessionB } from "@/lib/phase3/simulate";
+import { freezeAndGenerate, freezeReadiness, generateLatePlan, participantStatus, reinstateParticipant, startFreeze, stepFreeze, unfreeze, withdrawParticipant, type FrozenResult } from "@/lib/prepare/freeze";
+import { createSimulatedParticipants, simulateComparison, simulateShopping } from "@/lib/prepare/simulate";
 import { savePlanFile } from "@/lib/planStore";
 import { numChanged } from "@/lib/planEngine/model";
 import { validatePlanFile, type PlanStep } from "@/lib/plans";
-import { unlockSessionB } from "@/lib/session/sessionB";
+import { unlockShopping } from "@/lib/session/shopping";
 
 const SLOW = 600_000;
 
@@ -24,7 +24,7 @@ async function reset() {
 async function simulatedCohort(count: number, attentionErrorRate = 0) {
   await createSimulatedParticipants({ count, urduShare: 0.5, seed: 7, attentionErrorRate });
   const people = await prisma.participant.findMany({ where: { isSimulated: true }, orderBy: { number: "asc" } });
-  for (const p of people) await simulateSessionA(p.id);
+  for (const p of people) await simulateComparison(p.id);
   return people;
 }
 
@@ -44,7 +44,7 @@ describe("test-mode safety", () => {
     const person = await prisma.participant.findFirstOrThrow({ where: { isSimulated: true } });
     delete process.env.ALLOW_TEST_TOOLS;
     await expect(createSimulatedParticipants({ count: 1, urduShare: 1, seed: 1 })).rejects.toThrow(/Test tools are off/);
-    await expect(simulateSessionA(person.id)).rejects.toThrow(/Test tools are off/);
+    await expect(simulateComparison(person.id)).rejects.toThrow(/Test tools are off/);
     process.env.ALLOW_TEST_TOOLS = "false";
     await expect(createSimulatedParticipants({ count: 1, urduShare: 1, seed: 1 })).rejects.toThrow(/Test tools are off/);
   });
@@ -59,24 +59,24 @@ describe("test-mode safety", () => {
   });
 
   it("never touches real participants", async () => {
-    const [real] = await createParticipants({ studyPhase: 3, count: 1 });
-    await expect(simulateSessionA(real!.id)).rejects.toThrow(/not a simulated participant/);
-    await expect(simulateSessionB(real!.id)).rejects.toThrow(/not a simulated participant/);
+    const [real] = await createParticipants({ count: 1 });
+    await expect(simulateComparison(real!.id)).rejects.toThrow(/not a simulated participant/);
+    await expect(simulateShopping(real!.id)).rejects.toThrow(/not a simulated participant/);
   });
 
   it("marks simulated participants, with codes the plan schema accepts", async () => {
     const [code] = await createSimulatedParticipants({ count: 1, urduShare: 1, seed: 1 });
-    expect(code).toMatch(/^P3-S\d{3}$/);
+    expect(code).toMatch(/^P-S\d{3}$/);
     expect((await prisma.participant.findUniqueOrThrow({ where: { code: code! } })).isSimulated).toBe(true);
   });
 
   it("leaves simulated participants out of exports by default", async () => {
     await simulatedCohort(2);
-    const load = async (includeSimulated: boolean) => JSZip.loadAsync(await buildExportZip({ studyPhase: 3, includeSimulated }));
+    const load = async (includeSimulated: boolean) => JSZip.loadAsync(await buildExportZip({ includeSimulated }));
     const without = await (await load(false)).file("participants.csv")!.async("string");
     const withThem = await (await load(true)).file("participants.csv")!.async("string");
-    expect(without).not.toContain("P3-S");
-    expect(withThem).toContain("P3-S");
+    expect(without).not.toContain("P-S");
+    expect(withThem).toContain("P-S");
     expect(withThem.split("\n")[0]).toContain("is_simulated");
   });
 });
@@ -119,6 +119,12 @@ describe("freeze and generate", () => {
         }
       }
       expect(await prisma.adminAction.count({ where: { action: "freeze" } })).toBe(1);
+      // Clusters: 2 or 3 chosen from the data, each with at least 6 people; choice and stability are stored.
+      const report = frozen.clusters as unknown as { poolK: number; poolSizes: number[]; looK: Record<string, number>; meanAgreement: number | null };
+      expect(Object.values(report.looK).reduce((a, b) => a + b, 0)).toBe(32);
+      if (report.poolK > 1) expect(Math.min(...report.poolSizes)).toBeGreaterThanOrEqual(PLAN_ENGINE.minClusterSize);
+      // 32 is a multiple of 16: no Latin-square note.
+      expect((frozen.warnings as string[]).join()).not.toMatch(/multiple of 16/);
     },
     SLOW,
   );
@@ -145,36 +151,37 @@ describe("freeze and generate", () => {
   );
 
   it(
-    "works with very small groups, and warns that clusters mean nothing",
+    "works with very small groups, using 1 cluster, and notes an unbalanced Latin square without blocking",
     async () => {
       await simulatedCohort(2);
       await freezeAndGenerate();
       const frozen = await prisma.frozenModel.findFirstOrThrow({ where: { status: "active" } });
       expect((frozen.warnings as string[]).join()).toMatch(/1 cluster/);
       expect((frozen.results as unknown as FrozenResult[]).every((r) => r.clusterCount === 1)).toBe(true);
+      expect((frozen.warnings as string[]).join()).toMatch(/not a multiple of 16/);
     },
     SLOW,
   );
 
   it(
-    "is not ready until every active participant has finished Session A",
+    "is not ready until every active participant has finished Session 1",
     async () => {
       await simulatedCohort(3);
-      const [real] = await createParticipants({ studyPhase: 3, count: 1 });
+      const [real] = await createParticipants({ count: 1 });
       let readiness = await freezeReadiness();
       expect(readiness.ready).toBe(false);
       expect(readiness.unfinished.map((r) => r.code)).toEqual([real!.code]);
-      await expect(startFreeze()).rejects.toThrow(/have not finished Session A/);
+      await expect(startFreeze()).rejects.toThrow(/have not finished Session 1/);
 
       await withdrawParticipant(real!.id, "changed their mind");
       readiness = await freezeReadiness();
       expect(readiness.ready).toBe(true);
-      expect((await phase3Status()).find((r) => r.id === real!.id)!.status).toBe("withdrawn");
+      expect((await participantStatus()).find((r) => r.id === real!.id)!.status).toBe("withdrawn");
       await freezeAndGenerate();
       const frozen = await prisma.frozenModel.findFirstOrThrow({ where: { status: "active" } });
       expect((frozen.excluded as { code: string; reason: string }[])[0]).toMatchObject({ code: real!.code, reason: expect.stringContaining("changed their mind") });
       expect(await prisma.adaptationPlan.count({ where: { participantId: real!.id } })).toBe(0);
-      const csv = await (await JSZip.loadAsync(await buildExportZip({ studyPhase: 3, includeSimulated: true }))).file("participants.csv")!.async("string");
+      const csv = await (await JSZip.loadAsync(await buildExportZip({ includeSimulated: true }))).file("participants.csv")!.async("string");
       expect(csv).toContain("changed their mind");
 
       await reinstateParticipant(real!.id);
@@ -205,7 +212,7 @@ describe("freeze and generate", () => {
 
 describe("freezing rules", () => {
   it(
-    "can re-run before Session B, is blocked after, and unfreezing takes the phrase, a reason and a permanent flag",
+    "can re-run before any shopping session, is blocked after, and unfreezing takes the phrase, a reason and a permanent flag",
     async () => {
       const people = await simulatedCohort(3);
       expect((await freezeAndGenerate()).version).toBe(1);
@@ -215,8 +222,8 @@ describe("freezing rules", () => {
       expect(await prisma.adaptationPlan.count()).toBe(3 * 4);
       expect(await prisma.adminAction.count({ where: { action: "freeze" } })).toBe(2);
 
-      const sessionB = await prisma.session.findFirstOrThrow({ where: { participantId: people[0]!.id, type: "p3_sessionB" } });
-      await unlockSessionB(sessionB.id);
+      const sessionB = await prisma.session.findFirstOrThrow({ where: { participantId: people[0]!.id, type: "shopping" } });
+      await unlockShopping(sessionB.id);
       const snapshot = await prisma.taskBlock.findMany({ where: { sessionId: sessionB.id }, orderBy: { blockIndex: "asc" } });
       await expect(startFreeze()).rejects.toThrow(/models are frozen/);
 
@@ -231,7 +238,7 @@ describe("freezing rules", () => {
       await expect(startFreeze()).rejects.toThrow(/models are frozen/);
       expect(await prisma.taskBlock.findMany({ where: { sessionId: sessionB.id }, orderBy: { blockIndex: "asc" } })).toEqual(snapshot);
 
-      const zip = await JSZip.loadAsync(await buildExportZip({ studyPhase: 3, includeSimulated: true }));
+      const zip = await JSZip.loadAsync(await buildExportZip({ includeSimulated: true }));
       expect(JSON.parse(await zip.file("frozen_model.json")!.async("string")).compromised).toBe(true);
       expect(await zip.file("admin_actions.csv")!.async("string")).toContain("a plan was wrong");
     },
@@ -245,8 +252,8 @@ describe("freezing rules", () => {
       const { version } = await freezeAndGenerate();
       const [lateCode] = await createSimulatedParticipants({ count: 1, urduShare: 1, seed: 9, attentionErrorRate: 0 });
       const late = await prisma.participant.findUniqueOrThrow({ where: { code: lateCode! } });
-      await expect(generateLatePlan(late.id)).rejects.toThrow(/has not completed Session A/);
-      await simulateSessionA(late.id);
+      await expect(generateLatePlan(late.id)).rejects.toThrow(/has not completed Session 1/);
+      await simulateComparison(late.id);
       expect(await prisma.adaptationPlan.count({ where: { participantId: late.id } })).toBe(0);
 
       const before = await prisma.frozenModel.findFirstOrThrow({ where: { status: "active" } });
@@ -282,28 +289,28 @@ describe("freezing rules", () => {
   );
 });
 
-describe("Session B requirements", () => {
+describe("shopping session requirements", () => {
   it(
-    "needs a completed Session A and a plan, and refuses withdrawn participants",
+    "needs a completed Session 1 and a plan, and refuses withdrawn participants",
     async () => {
-      const [p] = await createParticipants({ studyPhase: 3, count: 1 });
-      const sb = p!.sessions.find((s) => s.type === "p3_sessionB")!;
-      await expect(unlockSessionB(sb.id)).rejects.toThrow(/Session A is not completed/);
-      await prisma.session.updateMany({ where: { participantId: p!.id, type: "p3_sessionA" }, data: { status: "completed" } });
-      await expect(unlockSessionB(sb.id)).rejects.toThrow(/Missing adaptation plans/);
+      const [p] = await createParticipants({ count: 1 });
+      const sb = p!.sessions.find((s) => s.type === "shopping")!;
+      await expect(unlockShopping(sb.id)).rejects.toThrow(/Session 1 \(comparisons\) is not completed/);
+      await prisma.session.updateMany({ where: { participantId: p!.id, type: "comparison" }, data: { status: "completed" } });
+      await expect(unlockShopping(sb.id)).rejects.toThrow(/Missing adaptation plans/);
       await withdrawParticipant(p!.id, "left the study");
-      await expect(unlockSessionB(sb.id)).rejects.toThrow(/has withdrawn/);
+      await expect(unlockShopping(sb.id)).rejects.toThrow(/has withdrawn/);
     },
     SLOW,
   );
 
   it(
-    "simulates a full Session B that follows the computed plan, and exports the new files",
+    "simulates a full shopping session that follows the computed plan, with SUS and SEQ scores, and exports the new files",
     async () => {
       const people = await simulatedCohort(3);
       await freezeAndGenerate();
-      await simulateSessionB(people[0]!.id);
-      const session = await prisma.session.findFirstOrThrow({ where: { participantId: people[0]!.id, type: "p3_sessionB" } });
+      await simulateShopping(people[0]!.id);
+      const session = await prisma.session.findFirstOrThrow({ where: { participantId: people[0]!.id, type: "shopping" } });
       expect(session.status).toBe("completed");
       const blocks = await prisma.taskBlock.findMany({ where: { sessionId: session.id, isPractice: false } });
       const plans = await prisma.adaptationPlan.findMany({ where: { participantId: people[0]!.id } });
@@ -313,8 +320,16 @@ describe("Session B requirements", () => {
         expect(b.durationMs).toBeGreaterThan(1000);
       }
       expect(await prisma.ranking.count({ where: { sessionId: session.id } })).toBe(4);
+      const responses = await prisma.questionnaireResponse.findMany({ where: { sessionId: session.id } });
+      expect(responses.map((r) => r.instrument).sort()).toEqual(["seq", "seq", "seq", "seq", "sus", "sus", "sus", "sus"]);
+      for (const r of responses) {
+        expect(r.score).not.toBeNull();
+        if (r.instrument === "sus") expect(r.score! % 2.5).toBe(0);
+        if (r.instrument === "seq") expect(r.score!).toBeGreaterThanOrEqual(1);
+      }
+      expect(await prisma.consentRecord.count({ where: { sessionId: session.id } })).toBe(1);
 
-      const zip = await JSZip.loadAsync(await buildExportZip({ studyPhase: 3, includeSimulated: true }));
+      const zip = await JSZip.loadAsync(await buildExportZip({ includeSimulated: true }));
       const plansCsv = await zip.file("plans.csv")!.async("string");
       expect(plansCsv.trim().split("\n")).toHaveLength(1 + 3);
       expect(JSON.parse(await zip.file("frozen_model.json")!.async("string")).version).toBe(1);

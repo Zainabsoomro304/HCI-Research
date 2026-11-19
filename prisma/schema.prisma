@@ -16,10 +16,10 @@ enum ParticipantGroup {
   unknown
 }
 
+/// comparison = Session 1 (clip comparisons), shopping = Session 2 (shopping tasks, in person).
 enum SessionType {
-  phase1
-  p3_sessionA
-  p3_sessionB
+  comparison
+  shopping
 }
 
 enum SessionStatus {
@@ -30,10 +30,13 @@ enum SessionStatus {
 
 model Participant {
   id           String           @id @default(cuid())
-  /// Generated code, e.g. P1-017 / P3-004. Never a personal name.
+  /// Generated code: P-017 for participants, P-S017 for simulated ones. Never a personal name.
   code         String           @unique
-  studyPhase   Int
-  /// Sequence number within the phase (017 -> 17). Used for Latin-square rows.
+  /// Code before the one-group design (e.g. P1-001), kept for participants who existed before it. Null otherwise.
+  legacyCode   String?
+  /// "current", or "earlier-version" if their Session 1 differs from the current protocol (set by pnpm preserve protocol).
+  protocol     String           @default("current")
+  /// Sequence number (017 -> 17), counted separately for real and simulated participants. Used for Latin-square rows.
   number       Int
   group        ParticipantGroup @default(unknown)
   /// "self" when derived from the questionnaire, "admin" when set by a researcher.
@@ -43,7 +46,7 @@ model Participant {
   /// Seed for every random draw for this participant (trial schedule, side assignment, ...).
   seed         Int
   notes        String?
-  /// Admin overrides for Phase 3 Latin-square rows (0-3). Null = derived from `number`.
+  /// Admin overrides for the shopping session's Latin-square rows (0-3). Null = derived from `number`.
   conditionRowOverride Int?
   taskRowOverride      Int?
   completionCode String?
@@ -51,7 +54,7 @@ model Participant {
   isSimulated  Boolean          @default(false)
   /// Test tools only: the true preferences behind a simulated participant's answers.
   simulatedTruth Json?
-  /// Withdrawn participants are left out of the models and cannot start Session B.
+  /// Withdrawn participants are left out of the models and cannot start the shopping session.
   withdrawnAt  DateTime?
   withdrawnReason String?
   createdAt    DateTime         @default(now())
@@ -67,7 +70,7 @@ model Participant {
   rankings        Ranking[]
   events          Event[]
 
-  @@unique([studyPhase, number])
+  @@unique([isSimulated, number])
 }
 
 model Session {
@@ -78,9 +81,10 @@ model Session {
   /// Secret token in the participant link /s/<token>. Reusable until the session is completed (for resume).
   token         String        @unique
   status        SessionStatus @default(not_started)
-  /// Current step pointer: language | consent | background | instructions | practice | trials | break | end | ineligible | sb_* ...
+  /// Current step pointer. Comparison: language | consent | background | instructions | practice | main_intro | trials | break | end | ineligible.
+  /// Shopping: consent | practice_task | block_intro | task | seq | sus | ranking | end.
   currentStep   String        @default("language")
-  /// en | ur: the language the session was done in (fixed once consent is given; Session B copies the participant's).
+  /// en | ur: the language the session was done in (fixed once consent is given; the shopping session copies the participant's).
   language      String?
   /// Position (seq) of the next comparison trial / index of the current task block.
   currentIndex  Int           @default(0)
@@ -89,10 +93,10 @@ model Session {
   userAgent     String?
   viewportW     Int?
   viewportH     Int?
-  /// Phase 3 Session B Latin-square rows actually used.
+  /// Shopping session: Latin-square rows actually used.
   conditionRow  Int?
   taskRow       Int?
-  /// Set when the researcher unlocks Session B from the admin panel.
+  /// Shopping session: set when the researcher starts it from the admin panel.
   unlockedAt    DateTime?
   startedAt     DateTime?
   completedAt   DateTime?
@@ -133,7 +137,7 @@ model QuestionnaireResponse {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
   sessionId     String
   session       Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  /// background | quis | ues_sf
+  /// background | screening | seq | sus (older test data may hold quis | ues_sf)
   instrument    String
   /// Version / hash of the item file the responses refer to.
   instrumentVersion String?
@@ -141,6 +145,8 @@ model QuestionnaireResponse {
   taskBlock     TaskBlock?  @relation(fields: [taskBlockId], references: [id], onDelete: Cascade)
   /// Structured answers: { itemId: value }.
   responses     Json
+  /// Scale score computed from the answers when they were submitted: SUS 0-100, SEQ 1-7. Null for the background questionnaire.
+  score         Float?
   clientTs      DateTime?
   submittedAt   DateTime    @default(now())
 
@@ -326,6 +332,8 @@ model FrozenModel {
   /// Everyone left out of model building, with the reason.
   excluded      Json
   warnings      Json
+  /// The cluster choice (2-3 clusters, each with at least minClusterSize people) and its leave-one-out stability.
+  clusters      Json?
   simulatedCount Int     @default(0)
   /// True if any "unfreeze" was ever logged: the study's freezing rule was broken.
   compromised   Boolean  @default(false)

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { PLAN_ENGINE } from "@/config/planEngine";
 import { ALL_CONFIG_IDS as PLATFORM_IDS, DEFAULT_CONFIG_ID, SETTING_LEVELS, SETTING_KEYS } from "@/config/uiSpace";
 import { N_ACTIONS, restrictedArgmax, solveMdp, topGap, unrestrictedArgmax } from "@/lib/planEngine/agent";
-import { assignByLikelihood, buildShared, computePlans, hashSeed, makeSplit, planFile, planFromPool, selectSigma, type EngineParticipant } from "@/lib/planEngine/engine";
+import { adjustedRand, assignByLikelihood, buildShared, clusterReport, computePlans, hashSeed, makeSplit, planFile, planFromPool, selectSigma, type EngineParticipant } from "@/lib/planEngine/engine";
 import { kmeans, silhouette } from "@/lib/planEngine/kmeans";
 import { ALL_CONFIG_IDS, BASE_CONFIG_ID, FEATURES, NO_NUISANCE, comparisons, encode, estimateNuisance, first, fitMap, logLikelihood, numChanged, score } from "@/lib/planEngine/model";
 import { validatePlanFile } from "@/lib/plans";
@@ -34,7 +34,7 @@ function cohort(n: number): EngineParticipant[] {
   const r = createRng(99);
   return Array.from({ length: n }, (_, i) => {
     const w = PROFILES[i % 3]!.map((v) => v + (r.next() - 0.5));
-    return simulate(`P3-${String(i + 1).padStart(3, "0")}`, 1000 + i, w);
+    return simulate(`P-${String(i + 1).padStart(3, "0")}`, 1000 + i, w);
   });
 }
 
@@ -218,13 +218,13 @@ describe("leave-one-out engine", { timeout: 120_000 }, () => {
         expect(file.conditions[c].steps).toEqual([{ trigger: { type: "afterMs", value: 8000 }, config: p.targets[c] }]);
       }
     }
-    expect(validatePlanFile(planFile({ code: "P3-S012", targets: plans().participants[0]!.targets })).ok).toBe(true);
+    expect(validatePlanFile(planFile({ code: "P-S012", targets: plans().participants[0]!.targets })).ok).toBe(true);
   });
 
   it("builds plans for people outside the training data from the pool, which never saw them", () => {
-    const outside = simulate("P3-050", 7, PROFILES[1]!);
+    const outside = simulate("P-050", 7, PROFILES[1]!);
     const result = computePlans(people, [outside]);
-    const models = result.participants.find((p) => p.code === "P3-050")!;
+    const models = result.participants.find((p) => p.code === "P-050")!;
     expect(models.basis).toBe("pool");
     expect(models.globalW).toEqual(plans().pool.globalW);
     expect(planFromPool(outside, result.pool).targets).toEqual(models.targets);
@@ -233,7 +233,7 @@ describe("leave-one-out engine", { timeout: 120_000 }, () => {
 
 describe("small numbers", { timeout: 60_000 }, () => {
   beforeEach(() => new Promise((r) => setTimeout(r, 0)));
-  it.each([1, 2, 3, 5, 7])("uses one cluster and never crashes with %i participants", (n) => {
+  it.each([1, 2, 3, 5, 8, 12])("uses one cluster and never crashes with %i participants (clusters need 6 people each under leave-one-out)", (n) => {
     const result = computePlans(cohort(n));
     expect(result.participants).toHaveLength(n);
     expect(result.warnings.join()).toMatch(/1 cluster/);
@@ -244,10 +244,25 @@ describe("small numbers", { timeout: 60_000 }, () => {
     }
   });
 
-  it("uses more than one cluster from 8 participants, with no warning", () => {
-    const result = computePlans(cohort(8));
+  it("with enough people, chooses 2 or 3 clusters from the data, never one smaller than 6, and reports stability", () => {
+    const result = computePlans(cohort(20));
     expect(result.warnings).toEqual([]);
     expect(PLAN_ENGINE.clusterCandidates).toContain(result.pool.clusterWeights.length);
+    const sizes = (labels: number[], k: number) => Array.from({ length: k }, (_, c) => labels.filter((l) => l === c).length);
+    expect(Math.min(...sizes(result.pool.clusterLabels, result.pool.clusterWeights.length))).toBeGreaterThanOrEqual(PLAN_ENGINE.minClusterSize);
+    for (const p of result.participants) {
+      expect(p.clustering.codes).not.toContain(p.code);
+      if (p.clusterCount > 1) expect(Math.min(...sizes(p.clustering.labels, p.clusterCount))).toBeGreaterThanOrEqual(PLAN_ENGINE.minClusterSize);
+    }
+    const report = clusterReport(result.pool, result.participants);
+    expect(Object.values(report.looK).reduce((a, b) => a + b, 0)).toBe(20);
+    expect(report.meanAgreement).not.toBeNull();
+    expect(report.meanAgreement!).toBeLessThanOrEqual(1);
+  });
+
+  it("adjusted Rand index: 1 for the same partition under relabelling, about 0 for unrelated ones", () => {
+    expect(adjustedRand([0, 0, 1, 1, 2, 2], [1, 1, 0, 0, 2, 2])).toBe(1);
+    expect(adjustedRand([0, 0, 0, 1, 1, 1], [0, 1, 0, 1, 0, 1])).toBeLessThan(0.1);
   });
 
   it("falls back to the default sigma with too few people to tune it", () => {

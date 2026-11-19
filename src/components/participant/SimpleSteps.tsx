@@ -108,21 +108,21 @@ export function BreakStep({ done, total, onContinue }: { done: number; total: nu
   );
 }
 
-export function EndStep({ variant, completionCode }: { variant: "phase1" | "sessionA" | "sessionB"; completionCode: string | null }) {
+/** End of a session. Shows the participant code, which is all they need to ask for their data to be withdrawn. */
+export function EndStep({ session, participantCode }: { session: "comparison" | "shopping"; participantCode?: string }) {
   const t = useT();
   return (
     <StudyPage>
       <Card className="text-center">
         <h1 className="text-[1.65em] font-bold">{t("end.title")}</h1>
-        {variant === "phase1" ? (
+        <p className="mt-[0.8em]">{t(session === "comparison" ? "end.comparison" : "end.shopping")}</p>
+        {participantCode && (
           <>
-            <p className="mt-[0.8em]">{t("end.phase1")}</p>
-            <p dir="ltr" className="mt-[0.8em] inline-block select-all rounded-[0.6em] border-2 border-dashed border-[#1E6B4B] px-[1.2em] py-[0.5em] font-mono text-[1.6em] font-bold tracking-widest">
-              {completionCode}
+            <p className="mt-[1.2em] text-[var(--c-muted)]">{t("end.code")}</p>
+            <p dir="ltr" data-testid="participant-code" className="mt-[0.5em] inline-block select-all rounded-[0.6em] border-2 border-dashed border-[#1E6B4B] px-[1.2em] py-[0.4em] font-mono text-[1.5em] font-bold tracking-widest">
+              {participantCode}
             </p>
           </>
-        ) : (
-          <p className="mt-[0.8em]">{t(variant === "sessionA" ? "end.sessionA" : "end.sessionB")}</p>
         )}
         <p className="mt-[1.2em] text-[var(--c-muted)]">{t("end.close")}</p>
       </Card>

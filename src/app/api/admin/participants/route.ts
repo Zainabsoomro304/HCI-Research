@@ -5,7 +5,6 @@ import { createParticipants } from "@/lib/participants";
 export const dynamic = "force-dynamic";
 
 const Body = z.object({
-  studyPhase: z.union([z.literal(1), z.literal(3)]),
   count: z.number().int().min(1).max(200),
   group: z.enum(["cs", "nonCs", "unknown"]).optional(),
   language: z.string().max(10).optional(),

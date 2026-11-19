@@ -1,11 +1,14 @@
 # Every analysis constant and seed lives here. Changing this file changes the config hash in every manifest.
 
 study:
-  # One-group design: the same N participants do Session A (comparisons), then Session B.
-  # On the platform they are all Phase 3 participants (codes P3-xxx).
-  n_participants: 32
-  n_min: 16
-  comparison_session_types: [p3_sessionA]
+  # One group of participants: Session 1 (comparisons), then Session 2 (shopping). Codes P-001, P-002, ...
+  # The number of participants is not fixed. With fewer than small_n_threshold eligible participants, RQ2 and RQ3 are
+  # reported as exploratory and RQ4 (H4b) as estimation first, with the TOST secondary.
+  small_n_threshold: 32
+  comparison_session_types: [comparison]
+  # Participants flagged protocol = earlier-version: analysed in the primary analysis, with a sensitivity analysis
+  # without them (set to false to leave them out of the primary analysis instead).
+  include_earlier_protocol: true
 
 seeds:
   simulate: 1
@@ -46,9 +49,9 @@ targets:
 clusters:
   candidates: [2, 3]
   kmeans_n_init: 20
-  min_eligible: 8                     # below this, one cluster (cluster = global)
+  min_cluster_size: 6                 # a cluster count is allowed only if every cluster has this many people (else 1 cluster)
 
-phase2:
+preferences:
   k_values: [5, 10, 20, 30, 50]
   n_test: 20
   n_splits: 10
@@ -65,17 +68,21 @@ phase2:
     alpha: 1.0
     max_iter: 500
 
-phase3:
-  equivalence_margin: 0.5             # H4b, in QUIS scale points. Must be fixed and preregistered before Phase 3 data exists.
-  full_tost_n: 32                     # with fewer participants, H4b is reported as estimation, with the TOST as secondary
+evaluation:
+  primary_outcome: sus                # H4a and H4b: SUS (Brooke 1996), 0-100
+  secondary_outcomes: [seq]           # SEQ (Sauro & Dumas 2009), 1-7; plus log task time and task success
+  # H4b margin in SUS points: about 0.4 SD, with SD about 12 (Anam, Sadiq & Jamil 2020, Urdu SUS). Fixed before any
+  # shopping-session data exist.
+  equivalence_margin: 5.0
+  sus_sd: 12.0
 
 power:
   simulations: 5000
-  sds: [0.8, 1.0, 1.1]                # QUIS SD, from the study brief (Gaspar-Figueiredo et al., 2025)
-  correlations: [0.3, 0.5, 0.7]       # between conditions: unknown, so a range
-  true_differences: [0.0, 0.1]
-  sample_sizes: [16, 32, 48, 64, 80, 96, 128]
-  highlight_n: [16, 32, 48]
+  sds: [12.0]                         # SUS SD (Anam, Sadiq & Jamil 2020)
+  correlations: [0.5, 0.6, 0.7]       # between a person's SUS in two conditions: unknown, so a range
+  true_differences: [0.0]
+  sample_sizes: [16, 32, 48, 64]
+  highlight_n: [16, 32, 48, 64]
 
 plans:
   trigger_after_ms: 8000
@@ -109,24 +116,24 @@ simulate:
   rt_median_ms: 1800
   rt_log_sd: 0.6
   incomplete_participants: 0
-  session_b:
+  shopping:                           # mirrors SIMULATION.shopping in src/config/simulation.ts
     scenario: equivalence             # equivalence | cluster5_worse
     scenarios:
       equivalence: {cluster5_shift: 0.0}
-      cluster5_worse: {cluster5_shift: -1.0}
+      cluster5_worse: {cluster5_shift: -8.0}   # SUS points
     plan_sigma: 2.0
-    quis_mean: 5.5                    # on the 0-9 placeholder scale
-    quis_per_utility: 0.05
-    participant_sd: 0.7
-    residual_sd: 0.6
-    position_effect: -0.05
-    task_sd: 0.1
-    item_noise_sd: 0.5
-    na_rate: 0.02
+    sus_mean: 68.0                    # latent SUS per task, 0-100
+    sus_per_utility: 1.0
+    participant_sd: 8.0
+    residual_sd: 7.0
+    position_effect: -0.5
+    task_sd: 1.0
+    item_noise_sd: 0.6
+    seq_noise_sd: 0.8
     time_median_s: 180
     time_log_sd: 0.3
-    time_per_quis: -0.03
+    time_per_sus: -0.005
     success_logit: 1.5
-    success_per_quis: 0.3
+    success_per_sus: 0.04
     within_budget_rate: 0.9
-    rank_noise_sd: 0.8
+    rank_noise_sd: 8.0

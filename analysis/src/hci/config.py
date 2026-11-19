@@ -19,9 +19,9 @@ class _Strict(BaseModel):
 
 
 class StudyConfig(_Strict):
-    n_participants: int = Field(ge=4)
-    n_min: int = Field(ge=4)
+    small_n_threshold: int = Field(ge=4)
     comparison_session_types: list[str]
+    include_earlier_protocol: bool
 
 
 class SeedsConfig(_Strict):
@@ -64,7 +64,7 @@ class TargetsConfig(_Strict):
 class ClustersConfig(_Strict):
     candidates: list[int]
     kmeans_n_init: int
-    min_eligible: int
+    min_cluster_size: int
 
 
 class MlpConfig(_Strict):
@@ -73,7 +73,7 @@ class MlpConfig(_Strict):
     max_iter: int
 
 
-class Phase2Config(_Strict):
+class PreferencesConfig(_Strict):
     k_values: list[int]
     n_test: int
     n_splits: int
@@ -88,9 +88,11 @@ class Phase2Config(_Strict):
     mlp: MlpConfig
 
 
-class Phase3Config(_Strict):
+class EvaluationConfig(_Strict):
+    primary_outcome: str
+    secondary_outcomes: list[str]
     equivalence_margin: float
-    full_tost_n: int
+    sus_sd: float
 
 
 class PowerConfig(_Strict):
@@ -106,23 +108,23 @@ class PlansConfig(_Strict):
     trigger_after_ms: int
 
 
-class SessionBSimConfig(_Strict):
+class ShoppingSimConfig(_Strict):
     scenario: str
     scenarios: dict[str, dict[str, float]]
     plan_sigma: float
-    quis_mean: float
-    quis_per_utility: float
+    sus_mean: float
+    sus_per_utility: float
     participant_sd: float
     residual_sd: float
     position_effect: float
     task_sd: float
     item_noise_sd: float
-    na_rate: float
+    seq_noise_sd: float
     time_median_s: float
     time_log_sd: float
-    time_per_quis: float
+    time_per_sus: float
     success_logit: float
-    success_per_quis: float
+    success_per_sus: float
     within_budget_rate: float
     rank_noise_sd: float
 
@@ -148,7 +150,7 @@ class SimulateConfig(_Strict):
     rt_median_ms: float
     rt_log_sd: float
     incomplete_participants: int
-    session_b: SessionBSimConfig
+    shopping: ShoppingSimConfig
 
 
 class Config(_Strict):
@@ -158,8 +160,8 @@ class Config(_Strict):
     model: ModelConfig
     targets: TargetsConfig
     clusters: ClustersConfig
-    phase2: Phase2Config
-    phase3: Phase3Config
+    preferences: PreferencesConfig
+    evaluation: EvaluationConfig
     power: PowerConfig
     plans: PlansConfig
     simulate: SimulateConfig

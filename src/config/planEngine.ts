@@ -20,8 +20,12 @@ export const PLAN_ENGINE = {
   nTest: 20,
   clusterCandidates: [2, 3],
   kmeansInits: 20,
-  /** With fewer eligible participants, one cluster is used (cluster = global). */
-  minEligibleForClusters: 8,
+  /**
+   * A cluster count is allowed only if every cluster has at least this many people. The rule is applied to every fit,
+   * so under leave-one-out each held-out person's clusters come from groups of at least this size. If neither 2 nor 3
+   * clusters qualifies, one cluster is used (cluster = global). The choice between 2 and 3 is made from the data.
+   */
+  minClusterSize: 6,
   seedFolds: 11,
   seedClustering: 21,
   minChanged: 2,

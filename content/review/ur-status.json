@@ -1,5 +1,5 @@
 {
- "description": "Urdu review status. needsReview: true until a native speaker has checked the string. Reviews done in the admin panel are stored in the database.",
+ "description": "Urdu review status. needsReview: true until a native speaker has checked the string. note: what the reviewer should do. Reviews done in the admin panel are stored in the database.",
  "items": {
   "strings:lang.title": {
    "needsReview": true
@@ -46,10 +46,34 @@
   "strings:study.reload": {
    "needsReview": true
   },
-  "strings:consent.agree": {
+  "strings:study.notReady.title": {
+   "needsReview": true
+  },
+  "strings:study.notReady.body": {
+   "needsReview": true
+  },
+  "strings:consent.heading": {
+   "needsReview": true
+  },
+  "strings:consent.instruction": {
+   "needsReview": true
+  },
+  "strings:consent.check.read": {
+   "needsReview": true
+  },
+  "strings:consent.check.agree": {
+   "needsReview": true
+  },
+  "strings:consent.check.age": {
    "needsReview": true
   },
   "strings:consent.mustAgree": {
+   "needsReview": true
+  },
+  "strings:consent.reconfirm.title": {
+   "needsReview": true
+  },
+  "strings:consent.reconfirm.body": {
    "needsReview": true
   },
   "strings:bg.title": {
@@ -358,13 +382,13 @@
   "strings:end.title": {
    "needsReview": true
   },
-  "strings:end.phase1": {
+  "strings:end.comparison": {
    "needsReview": true
   },
-  "strings:end.sessionA": {
+  "strings:end.shopping": {
    "needsReview": true
   },
-  "strings:end.sessionB": {
+  "strings:end.code": {
    "needsReview": true
   },
   "strings:end.close": {
@@ -1803,6 +1827,261 @@
   },
   "tasks:practice:kinnow": {
    "needsReview": true
+  },
+  "seq:title": {
+   "needsReview": true
+  },
+  "seq:instructions": {
+   "needsReview": true
+  },
+  "seq:scale:leftAnchor": {
+   "needsReview": true
+  },
+  "seq:scale:rightAnchor": {
+   "needsReview": true
+  },
+  "seq:seq_01": {
+   "needsReview": true
+  },
+  "sus:title": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:instructions": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:scale:leftAnchor": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:scale:rightAnchor": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:scale:label1": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:scale:label2": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:scale:label3": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:scale:label4": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:scale:label5": {
+   "needsReview": true,
+   "note": "Check against Anam et al. (2020) and use their wording if it differs. Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78."
+  },
+  "sus:sus_01": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_02": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_03": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_04": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_05": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_06": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_07": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_08": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_09": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "sus:sus_10": {
+   "needsReview": true,
+   "note": "Replace with the published wording of Anam, Sadiq & Jamil (2020), Development of System Usability Scale (SUS) for the Urdu Language, IJCSIS 18(6), 73-78, when available (edit content/questionnaires/sus.ur.json; no code change)."
+  },
+  "consent:01": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:02": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:03": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:04": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:05": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:06": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:07": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:08": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:09": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:10": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:11": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:12": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:13": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:14": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:15": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:16": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:17": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:18": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:19": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:20": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:21": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:22": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:23": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:24": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:25": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:26": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:27": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:28": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:29": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:30": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:31": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:32": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:33": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:34": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:35": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:36": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:37": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:38": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:39": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:40": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
+  },
+  "consent:41": {
+   "needsReview": true,
+   "note": "Information sheet and consent form: native-speaker review before the study."
   }
  }
 }

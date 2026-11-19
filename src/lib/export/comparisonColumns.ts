@@ -19,10 +19,9 @@ const clipColumns = (side: "left" | "right"): ColumnDef[] => [
 ];
 
 export const COMPARISON_COLUMNS: ColumnDef[] = [
-  { name: "participant_code", description: "Participant code (e.g. P1-017)." },
-  { name: "study_phase", description: "1 = Phase 1 dataset, 3 = Phase 3 validation (Session A)." },
+  { name: "participant_code", description: "Participant code (e.g. P-017)." },
   { name: "group", description: "cs / nonCs / unknown." },
-  { name: "session_type", description: "phase1 or p3_sessionA." },
+  { name: "session_type", description: "Always comparison (Session 1)." },
   { name: "trial_id", description: "Unique trial ID." },
   { name: "seq", description: "Presentation order within the session (0-based, practice first)." },
   { name: "trial_index", description: "Trial number shown to the participant (practice trials numbered separately)." },

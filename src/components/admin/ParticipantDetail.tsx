@@ -7,7 +7,6 @@ import { useHydrated } from "@/lib/useHydrated";
 interface Props {
   id: string;
   code: string;
-  studyPhase: number;
   group: string;
   language: string;
   languages: string[];
@@ -40,7 +39,7 @@ export function ParticipantEditForm(p: Props) {
         setMsg(null);
         const body: Record<string, unknown> = { group, language, notes: notes || null };
         if (!p.seedLocked) body.seed = Number(seed);
-        if (p.studyPhase === 3 && !p.latinLocked) {
+        if (!p.latinLocked) {
           body.conditionRowOverride = cRow === "" ? null : Number(cRow);
           body.taskRowOverride = tRow === "" ? null : Number(tRow);
         }
@@ -70,7 +69,7 @@ export function ParticipantEditForm(p: Props) {
         Seed {p.seedLocked && <span className="font-normal">(locked: schedule generated)</span>}
         <input value={seed} onChange={(e) => setSeed(e.target.value.replace(/\D/g, ""))} disabled={p.seedLocked} className={`${input} font-mono disabled:bg-[#f0f2f5]`} />
       </label>
-      {p.studyPhase === 3 && (
+      {(
         <>
           <label className="flex flex-col text-xs font-medium text-[#566070]">
             Condition square row (default {p.derivedRows.conditionRow})
@@ -157,14 +156,14 @@ export function UnlockButton({
   link,
   unlocked,
   ready,
-  sessionACompleted,
+  comparisonCompleted,
   withdrawn,
 }: {
   sessionId: string;
   link: string;
   unlocked: boolean;
   ready: boolean;
-  sessionACompleted: boolean;
+  comparisonCompleted: boolean;
   withdrawn: boolean;
 }) {
   const router = useRouter();
@@ -172,14 +171,14 @@ export function UnlockButton({
   if (unlocked)
     return (
       <a href={link} target="_blank" rel="noreferrer" className="inline-block rounded-md bg-[#2b6a5a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#235a4c]">
-        Open Session B ↗
+        Open Session 2 ↗
       </a>
     );
   return (
     <div className="flex items-center gap-3">
       <button
         type="button"
-        disabled={!ready || !sessionACompleted || withdrawn}
+        disabled={!ready || !comparisonCompleted || withdrawn}
         onClick={async () => {
           setError(null);
           const res = await fetch(`/api/admin/sessions/${sessionId}/unlock`, { method: "POST" });
@@ -189,11 +188,11 @@ export function UnlockButton({
         }}
         className="rounded-md bg-[#2b6a5a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#235a4c] disabled:cursor-not-allowed disabled:bg-[#c8ced6]"
       >
-        Start Session B
+        Start Session 2
       </button>
       {withdrawn && <span className="text-sm text-[#b03a27]">This participant has withdrawn.</span>}
-      {!withdrawn && !sessionACompleted && <span className="text-sm text-[#7a5a10]">Session A must be completed first.</span>}
-      {!withdrawn && sessionACompleted && !ready && <span className="text-sm text-[#566070]">Generate plans in Phase 3 preparation first.</span>}
+      {!withdrawn && !comparisonCompleted && <span className="text-sm text-[#7a5a10]">Session 1 must be completed first.</span>}
+      {!withdrawn && comparisonCompleted && !ready && <span className="text-sm text-[#566070]">Generate plans in “Prepare shopping sessions” first.</span>}
       {error && <span className="text-sm text-[#b03a27]">{error}</span>}
     </div>
   );

@@ -53,6 +53,7 @@ def build_shared(
         candidates=config.clusters.candidates,
         seed=seed,
         n_init=config.clusters.kmeans_n_init,
+        min_size=config.clusters.min_cluster_size,
         sigma_pool=sigma_pool,
         nuisance=nuisance,
         use_clusters=use_clusters,
@@ -132,7 +133,7 @@ def select_sigma_nested(
     Runs entirely inside the participants it is given. They are split into folds; each fold is treated as new users,
     with shared models built from the remaining folds, and tested on a random 20 trials of each person.
     """
-    settings = config.phase2
+    settings = config.preferences
     codes = sorted(others)
     if len(codes) < config.model.min_people_for_sigma_cv:
         return config.model.fallback_sigma, {}

@@ -20,30 +20,67 @@ import { useHydrated } from "@/lib/useHydrated";
 import { PrefIllustration } from "./PrefIllustration";
 import { Button, Card, Markdown, StudyPage, useT } from "./ui";
 
-export function ConsentStep({ markdown, hash, onAgree }: { markdown: string; hash: string; onAgree: (hash: string) => void }) {
+const CONSENT_BOXES = [
+  ["readInformation", "consent.check.read"],
+  ["agree", "consent.check.agree"],
+  ["ageEligible", "consent.check.age"],
+] as const satisfies readonly (readonly [string, StringKey])[];
+
+/**
+ * Information sheet and consent form. All three statements must be ticked. `reconfirm` is the shopping session's
+ * re-confirmation: the same sheet under a heading that asks the participant to confirm again.
+ */
+export function ConsentStep({
+  markdown,
+  hash,
+  onAgree,
+  reconfirm = false,
+}: {
+  markdown: string;
+  hash: string;
+  onAgree: (hash: string, confirmations: Record<(typeof CONSENT_BOXES)[number][0], true>) => void;
+  reconfirm?: boolean;
+}) {
   const t = useT();
-  const [agreed, setAgreed] = useState(false);
+  const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [error, setError] = useState(false);
   const hydrated = useHydrated();
+  const all = CONSENT_BOXES.every(([id]) => ticked[id]);
   return (
     <StudyPage>
       <Card>
+        {reconfirm && (
+          <div className="mb-[1.2em] rounded-[0.6em] bg-[#E3F1EA] p-[0.9em]">
+            <h1 className="text-[1.3em] font-bold">{t("consent.reconfirm.title")}</h1>
+            <p className="mt-[0.4em]">{t("consent.reconfirm.body")}</p>
+          </div>
+        )}
         <Markdown text={markdown} />
-        <label className="mt-[1.6em] flex cursor-pointer items-center gap-[0.7em] rounded-[0.6em] border-2 border-[var(--c-border)] p-[0.9em] font-bold">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => {
-              setAgreed(e.target.checked);
-              setError(false);
-            }}
-            className="size-[1.4em] shrink-0 accent-[#1E6B4B]"
-          />
-          {t("consent.agree")}
-        </label>
+        <h2 className="mt-[1.6em] text-[1.2em] font-bold">{t("consent.heading")}</h2>
+        <p className="mt-[0.3em] text-[var(--c-muted)]">{t("consent.instruction")}</p>
+        <div className="mt-[0.8em] flex flex-col gap-[0.6em]">
+          {CONSENT_BOXES.map(([id, key]) => (
+            <label key={id} className="flex cursor-pointer items-center gap-[0.7em] rounded-[0.6em] border-2 border-[var(--c-border)] p-[0.9em] font-bold">
+              <input
+                type="checkbox"
+                name={id}
+                checked={!!ticked[id]}
+                onChange={(e) => {
+                  setTicked((x) => ({ ...x, [id]: e.target.checked }));
+                  setError(false);
+                }}
+                className="size-[1.4em] shrink-0 accent-[#1E6B4B]"
+              />
+              {t(key)}
+            </label>
+          ))}
+        </div>
         {error && <p className="mt-[0.5em] font-bold text-[var(--c-warning)]">{t("consent.mustAgree")}</p>}
         <div className="mt-[1.4em] flex justify-end">
-          <Button disabled={!hydrated} onClick={() => (agreed ? onAgree(hash) : setError(true))}>
+          <Button
+            disabled={!hydrated}
+            onClick={() => (all ? onAgree(hash, { readInformation: true, agree: true, ageEligible: true }) : setError(true))}
+          >
             {t("common.continue")}
           </Button>
         </div>

@@ -58,7 +58,7 @@ def not_meaningful(ceiling: float, fraction: float = 0.9) -> bool:
 def _mlp_accuracy(train: Comparisons, test: Comparisons, config: Config, seed: int) -> float:
     if len(set(train.y)) < 2:  # with very few comparisons one person can pick all-left: predict that side
         return float((test.y == train.y[0]).mean())
-    settings = config.phase2.mlp
+    settings = config.preferences.mlp
     model = MLPClassifier(
         hidden_layer_sizes=tuple(settings.hidden),
         alpha=settings.alpha,
@@ -81,7 +81,7 @@ def _analyse_person(
     curvature: bool,
     config: Config,
 ) -> PersonResult:
-    settings = config.phase2
+    settings = config.preferences
     others = {c: d for c, d in people.items() if c != code}
     others_answers = {c: a for c, a in answers.items() if c != code}
     seed = zlib.crc32(code.encode()) % 2**31
@@ -91,7 +91,7 @@ def _analyse_person(
         rounds=config.model.nuisance_rounds,
         use_curvature=curvature,
     )
-    use_clusters = len(people) >= config.clusters.min_eligible
+    use_clusters = True  # the minimum cluster size decides
     sigma, _ = select_sigma_nested(
         others, others_answers, nuisance=nuisance, config=config, seed=config.seeds.cv_folds, use_clusters=use_clusters
     )
@@ -163,7 +163,7 @@ class LearningResults:
 def run_learning_curves(main: pd.DataFrame, answers: dict[str, np.ndarray], config: Config) -> LearningResults:
     """main: answered main trials in chronological order. Runs one leave-one-out analysis per participant."""
     people = by_participant(main)
-    needed = config.phase2.n_test + max(config.phase2.k_values)
+    needed = config.preferences.n_test + max(config.preferences.k_values)
     short = {c: len(d) for c, d in people.items() if len(d) < needed}
     if short:
         raise ValueError(f"Learning curves need at least {needed} main trials per participant. Too few: {short}")
@@ -174,7 +174,7 @@ def run_learning_curves(main: pd.DataFrame, answers: dict[str, np.ndarray], conf
         pairs[str(code)] = ["|".join(sorted(p)) for p in zip(left, right, strict=True)]
         trial_index[str(code)] = group["trial_index"].to_numpy(int)
     curvature = use_curvature(config.model.curvature, config.model.curvature_max_vif)
-    results = Parallel(n_jobs=config.phase2.n_jobs)(
+    results = Parallel(n_jobs=config.preferences.n_jobs)(
         delayed(_analyse_person)(code, people, answers, pairs[code], trial_index[code], curvature, config)
         for code in sorted(people)
     )

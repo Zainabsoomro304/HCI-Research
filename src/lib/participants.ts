@@ -11,19 +11,19 @@ export function generateToken(length = 24): string {
   return Array.from(bytes, (b) => TOKEN_ALPHABET[b % TOKEN_ALPHABET.length]).join("");
 }
 
-/** Random completion code for Phase 1 (no ambiguous characters). */
+/** Random completion code (no ambiguous characters). No longer shown; kept for participants who received one. */
 export function generateCompletionCode(): string {
   const raw = generateToken(8).toUpperCase().replace(/[^A-Z2-9]/g, "X");
   return `${raw.slice(0, 4)}-${raw.slice(4, 8)}`;
 }
 
-export function participantCode(phase: number, n: number): string {
-  return `P${phase}-${String(n).padStart(3, "0")}`;
+/** P-017 for participants, P-S017 for simulated ones (the test tools). */
+export function participantCode(n: number, simulated = false): string {
+  return `P-${simulated ? "S" : ""}${String(n).padStart(3, "0")}`;
 }
 
-export function sessionTypesFor(phase: number): SessionType[] {
-  return phase === 1 ? ["phase1"] : ["p3_sessionA", "p3_sessionB"];
-}
+/** Everyone has the same two sessions: comparison (Session 1) and shopping (Session 2). */
+export const SESSION_TYPES: readonly SessionType[] = ["comparison", "shopping"];
 
 export function sessionLink(token: string): string {
   const base = (process.env.PUBLIC_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -31,7 +31,6 @@ export function sessionLink(token: string): string {
 }
 
 export interface CreateParticipantsInput {
-  studyPhase: 1 | 3;
   count: number;
   group?: ParticipantGroup;
   language?: string;
@@ -44,7 +43,7 @@ export async function createParticipants(input: CreateParticipantsInput) {
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       return await prisma.$transaction(async (tx) => {
-        const last = await tx.participant.findFirst({ where: { studyPhase: input.studyPhase }, orderBy: { number: "desc" } });
+        const last = await tx.participant.findFirst({ where: { isSimulated: false }, orderBy: { number: "desc" } });
         const start = (last?.number ?? 0) + 1;
         const created = [];
         for (let i = 0; i < input.count; i++) {
@@ -52,15 +51,14 @@ export async function createParticipants(input: CreateParticipantsInput) {
           created.push(
             await tx.participant.create({
               data: {
-                code: participantCode(input.studyPhase, number),
-                studyPhase: input.studyPhase,
+                code: participantCode(number),
                 number,
                 seed: newSeed(),
                 group: input.group ?? "unknown",
                 groupSource: input.group && input.group !== "unknown" ? "admin" : null,
                 language: input.language ?? "en",
                 notes: input.notes,
-                sessions: { create: sessionTypesFor(input.studyPhase).map((type) => ({ type, token: generateToken() })) },
+                sessions: { create: SESSION_TYPES.map((type) => ({ type, token: generateToken() })) },
               },
               include: { sessions: true },
             }),
@@ -69,7 +67,7 @@ export async function createParticipants(input: CreateParticipantsInput) {
         return created;
       });
     } catch (e) {
-      // Concurrent creation can collide on (studyPhase, number); retry with fresh numbers.
+      // Concurrent creation can collide on (isSimulated, number); retry with fresh numbers.
       if (attempt === 4) throw e;
     }
   }

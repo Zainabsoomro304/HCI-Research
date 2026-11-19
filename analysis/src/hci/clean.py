@@ -9,7 +9,7 @@ import pandas as pd
 from hci.config import Config
 from hci.io import Export
 
-_STATUS_COLUMN = {"phase1": "phase1_status", "p3_sessionA": "sessionA_status"}
+_STATUS_COLUMN = {"comparison": "comparison_status"}
 
 
 @dataclass
@@ -53,10 +53,19 @@ def _repeat_pairs(trials: pd.DataFrame, half_boundary: int) -> pd.DataFrame:
     return repeats[columns].reset_index(drop=True)
 
 
-def clean(export: Export, config: Config, *, exclude_attention: bool | None = None) -> CleanData:
-    """`exclude_attention` overrides the config for the sensitivity analysis (attention failures kept in)."""
+def clean(
+    export: Export,
+    config: Config,
+    *,
+    exclude_attention: bool | None = None,
+    exclude_earlier_protocol: bool | None = None,
+) -> CleanData:
+    """The keyword overrides serve the sensitivity analyses: attention failures kept in, and participants whose
+    Session 1 followed an earlier version of the protocol left out (or kept in)."""
     rules = config.cleaning
     exclude_attention = rules.exclude_attention_failures if exclude_attention is None else exclude_attention
+    if exclude_earlier_protocol is None:
+        exclude_earlier_protocol = not config.study.include_earlier_protocol
     log: list[LogEntry] = []
     warnings: list[str] = []
 
@@ -81,6 +90,15 @@ def clean(export: Export, config: Config, *, exclude_attention: bool | None = No
         log.append(LogEntry("withdrawn", "participants", len(ids), "excluded", ids))
         participants = participants[~withdrawn]
         trials = trials[trials["participant_code"].isin(participants["participant_code"])]
+
+    earlier = participants["protocol"].fillna("current").astype(str) != "current"
+    if earlier.any():
+        ids = list(participants.loc[earlier, "participant_code"])
+        action = "excluded" if exclude_earlier_protocol else "flagged"
+        log.append(LogEntry("earlier protocol version", "participants", len(ids), action, ids))
+        if exclude_earlier_protocol:
+            participants = participants[~earlier]
+            trials = trials[trials["participant_code"].isin(participants["participant_code"])]
 
     if rules.require_completed_session:
         done = pd.Series(False, index=participants.index)

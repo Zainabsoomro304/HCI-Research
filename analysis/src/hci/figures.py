@@ -229,8 +229,8 @@ def cluster_profiles(run: Run, weights: np.ndarray, sizes: list[int]) -> None:
 def condition_means(run: Run, means: pd.DataFrame) -> None:
     """means: outcome, condition, estimate, ci_low, ci_high. One panel per outcome, since their scales differ."""
     panels = [
-        ("quis", "QUIS"),
-        ("ues", "UES-SF"),
+        ("sus", "SUS (0-100)"),
+        ("seq", "SEQ (1-7)"),
         ("log_time", "log task time"),
         ("success", "Task success (log odds)"),
     ]
@@ -239,6 +239,11 @@ def condition_means(run: Run, means: pd.DataFrame) -> None:
     for ax, (outcome, title) in zip(axes, panels, strict=True):
         rows = means[means["outcome"] == outcome].set_index("condition").reindex(order)
         x = np.arange(len(order))
+        if rows["estimate"].isna().all():
+            ax.text(0.5, 0.5, "not fitted", ha="center", va="center", transform=ax.transAxes, fontsize=8, color=INK)
+            ax.set_title(title, loc="left", fontsize=9)
+            ax.set_xticks([])
+            continue
         estimate = rows["estimate"].to_numpy(float)
         yerr = [estimate - rows["ci_low"].to_numpy(float), rows["ci_high"].to_numpy(float) - estimate]
         ax.errorbar(x, estimate, yerr=yerr, fmt="o", color=SERIES[0], ms=5.5, mec="white", mew=0.6, lw=1.2, capsize=0)
@@ -266,3 +271,28 @@ def rank_distribution(run: Run, counts: pd.DataFrame) -> None:
     fig.supxlabel("Rank (1 = most preferred)", fontsize=9, color=INK_2)
     fig.tight_layout()
     _save(fig, run, "rank_distribution")
+
+
+def equivalence_estimate(run: Run, tost: pd.DataFrame, margin: float) -> None:
+    """H4b as estimation: the cluster5 - personalFull SUS difference with its 95% CI (and 90% CI for TOST), against the
+    equivalence bounds. One row per estimate (mixed-model contrast; paired means)."""
+    rows = tost.reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(6.4, 0.9 + 0.55 * len(rows)))
+    y = np.arange(len(rows))[::-1]
+    lo = min(-margin * 1.6, float(rows["ci95_low"].min()) - 1)
+    hi = max(margin * 1.6, float(rows["ci95_high"].max()) + 1)
+    ax.axvspan(-margin, margin, color=SERIES[1], alpha=0.12, lw=0)
+    for bound in (-margin, margin):
+        ax.axvline(bound, color=SERIES[1], ls=(0, (4, 3)), lw=1)
+    ax.axvline(0, color=GRID, lw=1)
+    for yi, row in zip(y, rows.itertuples(), strict=True):
+        ax.plot([row.ci95_low, row.ci95_high], [yi, yi], color=SERIES[0], lw=1.2)
+        ax.plot([row.ci90_low, row.ci90_high], [yi, yi], color=SERIES[0], lw=3.2, solid_capstyle="butt")
+        ax.plot(row.estimate, yi, "o", color=SERIES[0], ms=6, mec="white", mew=0.7)
+    ax.set_yticks(y, rows["source"].astype(str))
+    ax.set_xlim(lo, hi)
+    ax.set_xlabel("cluster5 - personalFull, SUS points (thin: 95% CI, thick: 90% CI)")
+    ax.set_title(f"H4b: difference and equivalence bounds (±{margin:g})", loc="left")
+    ax.grid(axis="x", color=GRID, lw=0.7)
+    fig.tight_layout()
+    _save(fig, run, "h4b_estimate")

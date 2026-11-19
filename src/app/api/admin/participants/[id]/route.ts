@@ -15,7 +15,7 @@ const Body = z.object({
   taskRowOverride: z.number().int().min(0).max(3).nullable().optional(),
 });
 
-/** Edits a participant. The seed is locked once a schedule exists; Latin-square overrides once Session B is unlocked. */
+/** Edits a participant. The seed is locked once a schedule exists; Latin-square overrides once the shopping session has started. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = Body.safeParse(await req.json().catch(() => null));
@@ -25,9 +25,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const d = body.data;
   if (d.seed !== undefined && d.seed !== p.seed && p._count.trials > 0)
     return NextResponse.json({ error: "The seed cannot be changed after the trial schedule has been generated." }, { status: 409 });
-  const sbUnlocked = p.sessions.some((s) => s.type === "p3_sessionB" && s.unlockedAt);
+  const sbUnlocked = p.sessions.some((s) => s.type === "shopping" && s.unlockedAt);
   if ((d.conditionRowOverride !== undefined || d.taskRowOverride !== undefined) && sbUnlocked)
-    return NextResponse.json({ error: "Latin-square rows cannot be changed after Session B has started." }, { status: 409 });
+    return NextResponse.json({ error: "Latin-square rows cannot be changed after Session 2 has started." }, { status: 409 });
   const updated = await prisma.participant.update({
     where: { id },
     data: {

@@ -125,15 +125,15 @@ def test_no_preference_is_neutral_and_differs_from_the_reference_level():
 def test_unknown_answers_and_missing_questionnaires_fail(synthetic_zip: Path, config):
     with pytest.raises(ValueError, match="unexpected answer"):
         encode_answers({**NEUTRAL, "prefContrast": "purple"})
-    with pytest.raises(ValueError, match="P3-999"):
-        questionnaire_vectors(load_export(synthetic_zip).background, ["P3-999"], config.study.comparison_session_types)
+    with pytest.raises(ValueError, match="P-S999"):
+        questionnaire_vectors(load_export(synthetic_zip).background, ["P-S999"], config.study.comparison_session_types)
 
 
 # Splits
 
 
 def test_split_is_20_test_and_50_chronological_training_trials():
-    test, pool = make_split(70, 20, split_rng(1, "P3-001", 0))
+    test, pool = make_split(70, 20, split_rng(1, "P-S001", 0))
     assert len(test) == 20
     assert len(pool) == 50
     assert np.array_equal(pool, np.sort(pool))
@@ -141,17 +141,17 @@ def test_split_is_20_test_and_50_chronological_training_trials():
 
 
 def test_splits_depend_only_on_seed_participant_and_split():
-    a = make_split(70, 20, split_rng(1, "P3-001", 0))[0]
-    assert np.array_equal(a, make_split(70, 20, split_rng(1, "P3-001", 0))[0])
-    assert not np.array_equal(a, make_split(70, 20, split_rng(1, "P3-001", 1))[0])
-    assert not np.array_equal(a, make_split(70, 20, split_rng(1, "P3-002", 0))[0])
+    a = make_split(70, 20, split_rng(1, "P-S001", 0))[0]
+    assert np.array_equal(a, make_split(70, 20, split_rng(1, "P-S001", 0))[0])
+    assert not np.array_equal(a, make_split(70, 20, split_rng(1, "P-S001", 1))[0])
+    assert not np.array_equal(a, make_split(70, 20, split_rng(1, "P-S002", 0))[0])
 
 
 # Leave-one-out: no information about the held-out person may reach their starting point
 
 
 def test_shared_models_never_receive_the_held_out_person(people, answers, config):
-    code = "P3-006"
+    code = "P-S006"
     flipped = {**people, code: replace(people[code], y=1 - people[code].y)}
     other_answers = {**answers, code: -answers[code]}
     a = _shared(people, answers, config, code)
@@ -163,15 +163,15 @@ def test_shared_models_never_receive_the_held_out_person(people, answers, config
 
 
 def test_a_participants_data_does_reach_other_peoples_models(people, answers, config):
-    code = "P3-006"
+    code = "P-S006"
     flipped = {**people, code: replace(people[code], y=1 - people[code].y)}
     assert not np.array_equal(
-        _shared(people, answers, config, "P3-007").global_w, _shared(flipped, answers, config, "P3-007").global_w
+        _shared(people, answers, config, "P-S007").global_w, _shared(flipped, answers, config, "P-S007").global_w
     )
 
 
 def test_sigma_selection_only_uses_the_others(people, answers, config):
-    code = "P3-006"
+    code = "P-S006"
     cfg = config.model_copy(deep=True)
     cfg.model.sigma_grid = [0.5, 2.0]
     others = {c: d for c, d in people.items() if c != code}
@@ -187,7 +187,7 @@ def test_sigma_selection_only_uses_the_others(people, answers, config):
 
 
 def test_cluster_assignment_only_sees_the_first_k_training_comparisons(people, answers, config):
-    code = "P3-006"
+    code = "P-S006"
     shared = _shared(people, answers, config, code)
     test, pool = make_split(70, 20, split_rng(1, code, 0))
     train = people[code].take(pool)
@@ -201,7 +201,7 @@ def test_cluster_assignment_only_sees_the_first_k_training_comparisons(people, a
 
 
 def test_test_trials_never_reach_any_starting_point(people, answers, config):
-    code = "P3-006"
+    code = "P-S006"
     data = people[code]
     shared = _shared(people, answers, config, code)
     test, pool = make_split(70, 20, split_rng(1, code, 0))
@@ -215,7 +215,7 @@ def test_test_trials_never_reach_any_starting_point(people, answers, config):
 
 
 def test_only_global_and_questionnaire_exist_without_comparisons(people, answers, config):
-    code = "P3-006"
+    code = "P-S006"
     shared = _shared(people, answers, config, code)
     weights = start_weights(people[code].first(50), answers[code], shared, [5])
     assert {start for start, k in weights if k == 0} == {"global", "cluster_questionnaire"}
@@ -225,13 +225,13 @@ def test_only_global_and_questionnaire_exist_without_comparisons(people, answers
 
 
 def test_questionnaire_clusters_use_the_same_number_of_clusters_as_choice_clusters(people, answers, config):
-    shared = _shared(people, answers, config, "P3-006")
+    shared = _shared(people, answers, config, "P-S006")
     assert len(shared.questionnaire_weights) == shared.choice.k
     assert shared.choice.k in config.clusters.candidates
 
 
 def test_scratch_fit_equals_a_direct_map_fit(people, answers, config):
-    code = "P3-006"
+    code = "P-S006"
     shared = _shared(people, answers, config, code)
     train = people[code].first(50)
     assert np.array_equal(
@@ -243,8 +243,8 @@ def test_scratch_fit_equals_a_direct_map_fit(people, answers, config):
 def small_config(config):
     cfg = config.model_copy(deep=True)
     cfg.model.sigma_grid = [1.0, 2.0]
-    cfg.phase2.n_splits = 2
-    cfg.phase2.n_jobs = 1
+    cfg.preferences.n_splits = 2
+    cfg.preferences.n_jobs = 1
     return cfg
 
 

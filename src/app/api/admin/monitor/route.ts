@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic";
 
 /** Live monitor data (polled every 10 s by /admin/monitor). */
 export async function GET(req: Request) {
-  const phase = Number(new URL(req.url).searchParams.get("phase")) || undefined;
-  const rows = await participantOverview({ studyPhase: phase });
+  const includeSimulated = new URL(req.url).searchParams.get("simulated") === "1";
+  const rows = await participantOverview({ includeSimulated });
   return NextResponse.json({
     now: new Date().toISOString(),
     rows: rows.map((r) => ({
