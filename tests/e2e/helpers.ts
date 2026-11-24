@@ -107,7 +107,7 @@ export async function currentTrial(page: Page): Promise<{ practice: boolean; ind
   return { practice: m[1] === "Practice", index: Number(m[2]) };
 }
 
-/** Runs practice and all 82 comparisons, answering attention checks correctly. Returns the number of breaks. */
+/** Runs practice and all 80 comparisons. Returns the number of breaks. */
 export async function runComparisons(page: Page, lang: Lang = "en"): Promise<number> {
   const t = tr(lang);
   await page.getByRole("button", { name: t("instr.start") }).click();
@@ -118,8 +118,8 @@ export async function runComparisons(page: Page, lang: Lang = "en"): Promise<num
   await expect(page.getByRole("heading", { name: t("mainIntro.title") })).toBeVisible();
   await page.getByRole("button", { name: t("mainIntro.start"), exact: true }).click();
   let breaks = 0;
-  for (let i = 1; i <= 82; i++) {
-    await expect(page.getByText(t("trial.progress", { current: i, total: 82 }))).toBeVisible();
+  for (let i = 1; i <= 80; i++) {
+    await expect(page.getByText(t("trial.progress", { current: i, total: 80 }))).toBeVisible();
     const chooseB = await page.getByText(t("trial.questionChooseB")).isVisible();
     await answerTrial(page, chooseB ? "B" : i % 3 === 0 ? "B" : "A", lang);
     if (i === 27 || i === 54) {

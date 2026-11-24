@@ -9,7 +9,6 @@ import { createHash } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { ACTIVE_FREEZE_PHRASE, PLAN_ENGINE } from "@/config/planEngine";
 import { CONDITIONS, LATIN_BALANCE_GROUP, type Condition } from "@/config/study";
-import { computeQuality } from "../admin/quality";
 import { prisma } from "../db";
 import { sessionLink } from "../participants";
 import { clusterReport, computeLeaveOneOut, computePool, engineWarnings, planFile, planFromPool, type EngineParticipant, type ParticipantModels, type SharedModels } from "../planEngine/engine";
@@ -36,7 +35,6 @@ export interface StatusRow {
   shoppingLink: string | null;
   shoppingUnlocked: boolean;
   shoppingStatus: string | null;
-  attentionFailed: boolean;
   withdrawnReason: string | null;
   plansSource: string | null;
   plansCount: number;
@@ -45,7 +43,6 @@ export interface StatusRow {
 export interface FrozenResult extends ParticipantModels {
   participantId: string;
   isSimulated: boolean;
-  attentionFailed: boolean;
   late: boolean;
   /** "computed", or "uploaded" when a hand-uploaded override was kept instead. */
   planSource: string;
@@ -62,7 +59,6 @@ export async function participantStatus(): Promise<StatusRow[]> {
     include: {
       sessions: true,
       plans: { select: { condition: true, source: true } },
-      trials: { select: { id: true, isAttentionCheck: true, isRepeat: true, repeatOfTrialId: true, choice: true, chosenClipId: true } },
     },
   });
   return participants.map((p) => {
@@ -82,7 +78,6 @@ export async function participantStatus(): Promise<StatusRow[]> {
       shoppingLink: b ? sessionLink(b.token) : null,
       shoppingUnlocked: !!b?.unlockedAt,
       shoppingStatus: b?.status ?? null,
-      attentionFailed: computeQuality(p.trials).attentionFailed,
       withdrawnReason: p.withdrawnReason,
       plansSource: p.plans[0]?.source ?? null,
       plansCount: p.plans.length,
@@ -102,7 +97,6 @@ async function unfreezeInForce(): Promise<boolean> {
 
 export interface FreezeReadiness {
   included: StatusRow[];
-  attentionFailed: StatusRow[];
   withdrawn: StatusRow[];
   unfinished: StatusRow[];
   simulatedIncluded: number;
@@ -114,8 +108,7 @@ export interface FreezeReadiness {
 
 export async function freezeReadiness(): Promise<FreezeReadiness> {
   const rows = await participantStatus();
-  const included = rows.filter((r) => r.status === "completed" && !r.attentionFailed);
-  const attentionFailed = rows.filter((r) => r.status === "completed" && r.attentionFailed);
+  const included = rows.filter((r) => r.status === "completed");
   const withdrawn = rows.filter((r) => r.status === "withdrawn");
   const unfinished = rows.filter((r) => r.status === "in_progress" || r.status === "not_started");
   const shoppingStarted = rows.some((r) => r.shoppingUnlocked);
@@ -125,10 +118,9 @@ export async function freezeReadiness(): Promise<FreezeReadiness> {
   if (anySimulated > 0 && !testToolsEnabled()) blockers.push(`${anySimulated} simulated participant(s) are in this database, and test tools are off. Models cannot be frozen with simulated data on a study deployment.`);
   if (shoppingStarted && !unfreezeActive) blockers.push("A shopping session (Session 2) has started, so the models are frozen.");
   if (unfinished.length) blockers.push(`${unfinished.length} participant(s) have not finished Session 1 (comparisons): ${unfinished.map((r) => r.code).join(", ")}. Finish or withdraw them first.`);
-  if (included.length === 0) blockers.push("No participant has finished Session 1 (comparisons) and passed the attention checks.");
+  if (included.length === 0) blockers.push("No participant has finished Session 1 (comparisons).");
   return {
     included,
-    attentionFailed,
     withdrawn,
     unfinished,
     simulatedIncluded: included.filter((r) => r.isSimulated).length,
@@ -176,7 +168,7 @@ export interface FreezeProgress {
 export async function startFreeze(): Promise<FreezeProgress> {
   const readiness = await freezeReadiness();
   if (!readiness.ready) throw new FreezeError(readiness.blockers.join(" "));
-  const participants = await loadEngineParticipants([...readiness.included, ...readiness.attentionFailed]);
+  const participants = await loadEngineParticipants(readiness.included);
   await prisma.freezeJob.updateMany({ where: { status: "running" }, data: { status: "cancelled" } });
   const job = await prisma.freezeJob.create({
     data: { inputHash: hashInput(participants), remaining: readiness.included.map((r) => r.code).sort(), results: [] },
@@ -195,8 +187,7 @@ export async function stepFreeze(jobId: string, budgetMs: number): Promise<Freez
   const readiness = await freezeReadiness();
   if (!readiness.ready) throw new FreezeError(readiness.blockers.join(" "));
   const includedPeople = await loadEngineParticipants(readiness.included);
-  const failedPeople = await loadEngineParticipants(readiness.attentionFailed);
-  if (hashInput([...includedPeople, ...failedPeople]) !== job.inputHash) {
+  if (hashInput(includedPeople) !== job.inputHash) {
     await prisma.freezeJob.update({ where: { id: jobId }, data: { status: "failed", error: "The data changed during the run." } });
     throw new FreezeError("The Session 1 data changed during the run. Start again.");
   }
@@ -229,14 +220,12 @@ export async function commitFreeze(jobId: string, hooks: { beforeCommit?: () => 
   if (!readiness.ready) throw new FreezeError(readiness.blockers.join(" "));
   const pool = job.pool as unknown as SharedModels;
   const models = job.results as unknown as ParticipantModels[];
-  const failedPeople = await loadEngineParticipants(readiness.attentionFailed);
-  const outside = failedPeople.map((p) => planFromPool(p, pool));
-  const rowOf = new Map([...readiness.included, ...readiness.attentionFailed].map((r) => [r.code, r]));
+  const rowOf = new Map(readiness.included.map((r) => [r.code, r]));
   const uploaded = await prisma.adaptationPlan.findMany({ where: { source: "uploaded", participantId: { in: [...rowOf.values()].map((r) => r.id) } }, select: { participantId: true } });
   const overridden = new Set(uploaded.map((u) => u.participantId));
-  const results: FrozenResult[] = [...models, ...outside].map((m) => {
+  const results: FrozenResult[] = models.map((m) => {
     const row = rowOf.get(m.code)!;
-    return { ...m, participantId: row.id, isSimulated: row.isSimulated, attentionFailed: row.attentionFailed, late: false, planSource: overridden.has(row.id) ? "uploaded" : "computed" };
+    return { ...m, participantId: row.id, isSimulated: row.isSimulated, late: false, planSource: overridden.has(row.id) ? "uploaded" : "computed" };
   });
   for (const r of results) {
     const check = validatePlanFile(planFile(r));
@@ -244,7 +233,6 @@ export async function commitFreeze(jobId: string, hooks: { beforeCommit?: () => 
   }
   const excluded: ExcludedEntry[] = [
     ...readiness.withdrawn.map((r) => ({ code: r.code, reason: `withdrawn: ${r.withdrawnReason ?? "no reason given"}` })),
-    ...readiness.attentionFailed.map((r) => ({ code: r.code, reason: "failed an attention check: left out of model building, plan built from all included participants" })),
   ];
   const compromised = (await prisma.adminAction.count({ where: { action: "unfreeze" } })) > 0;
   const previous = await prisma.frozenModel.findFirst({ orderBy: { version: "desc" } });
@@ -341,7 +329,7 @@ export async function generateLatePlan(participantId: string): Promise<void> {
   if (existing.some((r) => r.code === row.code)) throw new FreezeError(`${row.code} is already in the frozen models.`);
   const [person] = await loadEngineParticipants([row]);
   const models = planFromPool(person!, frozen.pool as unknown as SharedModels);
-  const result: FrozenResult = { ...models, participantId: row.id, isSimulated: row.isSimulated, attentionFailed: row.attentionFailed, late: true, planSource: "computed" };
+  const result: FrozenResult = { ...models, participantId: row.id, isSimulated: row.isSimulated, late: true, planSource: "computed" };
   const check = validatePlanFile(planFile(result));
   if (!check.ok) throw new FreezeError(`The computed plan for ${row.code} is not valid: ${check.errors.join("; ")}`);
   await prisma.$transaction([

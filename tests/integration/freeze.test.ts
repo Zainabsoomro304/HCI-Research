@@ -21,8 +21,8 @@ async function reset() {
   await prisma.adminAction.deleteMany({});
 }
 
-async function simulatedCohort(count: number, attentionErrorRate = 0) {
-  await createSimulatedParticipants({ count, urduShare: 0.5, seed: 7, attentionErrorRate });
+async function simulatedCohort(count: number) {
+  await createSimulatedParticipants({ count, urduShare: 0.5, seed: 7 });
   const people = await prisma.participant.findMany({ where: { isSimulated: true }, orderBy: { number: "asc" } });
   for (const p of people) await simulateComparison(p.id);
   return people;
@@ -191,20 +191,15 @@ describe("freeze and generate", () => {
   );
 
   it(
-    "leaves attention failures out of the models, and still gives them a flagged plan",
+    "includes everyone who finished Session 1: no attention checks, nobody left out for them",
     async () => {
       const people = await simulatedCohort(4);
-      const failing = people[0]!;
-      const check = await prisma.comparisonTrial.findFirstOrThrow({ where: { participantId: failing.id, isAttentionCheck: true } });
-      await prisma.comparisonTrial.update({ where: { id: check.id }, data: { choice: "left", chosenClipId: check.leftClipId } });
-      const before = (await prisma.comparisonTrial.findMany({ where: { participantId: failing.id, isPractice: false, isRepeat: false, isAttentionCheck: false } })).length;
-      expect(before).toBe(70);
+      expect(await prisma.comparisonTrial.count({ where: { isAttentionCheck: true } })).toBe(0);
+      expect((await prisma.comparisonTrial.findMany({ where: { participantId: people[0]!.id, isPractice: false, isRepeat: false } })).length).toBe(70);
       await freezeAndGenerate();
       const frozen = await prisma.frozenModel.findFirstOrThrow({ where: { status: "active" } });
-      expect((frozen.eligible as { code: string }[]).map((e) => e.code)).not.toContain(failing.code);
-      const result = (frozen.results as unknown as FrozenResult[]).find((r) => r.code === failing.code)!;
-      expect(result).toMatchObject({ basis: "pool", attentionFailed: true });
-      expect(await prisma.adaptationPlan.count({ where: { participantId: failing.id } })).toBe(4);
+      expect((frozen.eligible as { code: string }[]).map((e) => e.code).sort()).toEqual(people.map((p) => p.code).sort());
+      expect((frozen.results as unknown as FrozenResult[]).every((r) => r.basis === "loo")).toBe(true);
     },
     SLOW,
   );
@@ -250,7 +245,7 @@ describe("freezing rules", () => {
     async () => {
       await simulatedCohort(3);
       const { version } = await freezeAndGenerate();
-      const [lateCode] = await createSimulatedParticipants({ count: 1, urduShare: 1, seed: 9, attentionErrorRate: 0 });
+      const [lateCode] = await createSimulatedParticipants({ count: 1, urduShare: 1, seed: 9 });
       const late = await prisma.participant.findUniqueOrThrow({ where: { code: lateCode! } });
       await expect(generateLatePlan(late.id)).rejects.toThrow(/has not completed Session 1/);
       await simulateComparison(late.id);

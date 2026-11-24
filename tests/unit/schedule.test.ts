@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import rawClips from "@data/clips.json";
 import { CLIP_SCENES } from "@/config/shop";
-import { COMPARISON_DESIGN, totalAnalysisTrials } from "@/config/study";
+import { COMPARISON_DESIGN, EARLIER_COMPARISON_DESIGNS, totalAnalysisTrials } from "@/config/study";
 import { parseClipsFile } from "@/lib/clipsFile";
 import { generateSchedule, type ScheduledTrial } from "@/lib/schedule";
 
@@ -21,14 +21,14 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
   const repeats = analysis.filter((t) => t.isRepeat);
   const attention = analysis.filter((t) => t.isAttentionCheck);
 
-  it("has the right counts (2 practice + 70 main + 10 repeats + 2 attention = 84)", () => {
-    expect(design).toMatchObject({ mainTrials: 70, repeatTrials: 10, attentionChecks: 2, practiceTrials: 2 });
-    expect(totalAnalysisTrials(design)).toBe(82);
-    expect(s).toHaveLength(84);
+  it("has the right counts (2 practice + 70 main + 10 repeats = 82, no attention checks)", () => {
+    expect(design).toMatchObject({ mainTrials: 70, repeatTrials: 10, attentionChecks: 0, practiceTrials: 2 });
+    expect(totalAnalysisTrials(design)).toBe(80);
+    expect(s).toHaveLength(82);
     expect(s.filter((t) => t.isPractice)).toHaveLength(2);
     expect(main).toHaveLength(70);
     expect(repeats).toHaveLength(10);
-    expect(attention).toHaveLength(2);
+    expect(attention).toHaveLength(0);
     expect(s.map((t) => t.seq)).toEqual(s.map((_, i) => i));
     expect(analysis.map((t) => t.trialIndex)).toEqual(analysis.map((_, i) => i + 1));
   });
@@ -80,23 +80,11 @@ describe.each(SEEDS)("trial schedule (seed %i)", (seed) => {
     expect(originals.size).toBe(10);
   });
 
-  it("spreads repeats across the session: half in the first half (trials 1-41), half in the second", () => {
-    const firstHalf = repeats.filter((r) => r.trialIndex <= 41).length;
+  it("spreads repeats across the session: half in the first half (trials 1-40), half in the second", () => {
+    const firstHalf = repeats.filter((r) => r.trialIndex <= Math.floor(totalAnalysisTrials(design) / 2)).length;
     expect(firstHalf).toBe(design.repeatsInFirstHalf);
     expect(firstHalf).toBe(5);
     expect(repeats.length - firstHalf).toBe(5);
-  });
-
-  it("places attention checks in trials 25-75, >= 20 apart, not next to a break, with identical clips", () => {
-    expect(design).toMatchObject({ attentionCheckMinPosition: 25, attentionCheckMaxPosition: 75, attentionCheckMinSpacing: 20 });
-    for (const a of attention) {
-      expect(a.trialIndex).toBeGreaterThanOrEqual(25);
-      expect(a.trialIndex).toBeLessThanOrEqual(75);
-      // Not the last trial before a break (27, 54) or the first trial after one (28, 55).
-      expect([27, 28, 54, 55]).not.toContain(a.trialIndex);
-      expect(a.left).toBe(a.right);
-    }
-    expect(Math.abs(attention[0]!.trialIndex - attention[1]!.trialIndex)).toBeGreaterThanOrEqual(20);
   });
 
   it("balances scenes across analysis trials (max - min <= 1) and never runs one scene more than 2 in a row", () => {
@@ -137,5 +125,23 @@ describe("schedule reproducibility", () => {
   it("gives identical output for the same seed and different output for another seed", () => {
     expect(make(31337)).toEqual(make(31337));
     expect(make(31337)).not.toEqual(make(31338));
+  });
+});
+
+describe.each(SEEDS)("the earlier 82-trial design, kept for the protocol check (seed %i)", (seed) => {
+  const earlier = EARLIER_COMPARISON_DESIGNS[0]!.design;
+  const s = generateSchedule({ clips, practiceClips, design: earlier, seed, scenes: CLIP_SCENES });
+  const attention = s.filter((t) => t.isAttentionCheck);
+
+  it("still has 2 attention checks in trials 25-75, >= 20 apart, not next to a break, with identical clips", () => {
+    expect(s).toHaveLength(84);
+    expect(attention).toHaveLength(2);
+    for (const a of attention) {
+      expect(a.trialIndex).toBeGreaterThanOrEqual(25);
+      expect(a.trialIndex).toBeLessThanOrEqual(75);
+      expect([27, 28, 54, 55]).not.toContain(a.trialIndex);
+      expect(a.left).toBe(a.right);
+    }
+    expect(Math.abs(attention[0]!.trialIndex - attention[1]!.trialIndex)).toBeGreaterThanOrEqual(20);
   });
 });

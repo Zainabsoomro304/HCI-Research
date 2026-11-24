@@ -101,7 +101,7 @@ def _simulate_comparisons(
         position = t["trialIndex"] / n if analysis else 0.0
         answered = stop_at is None or not analysis or t["trialIndex"] <= stop_at
         if t["isAttentionCheck"]:
-            choice = "left" if rng.random() < sim.attention_error_rate else "right"
+            choice = "right"  # only the earlier 82-trial design had attention checks
         else:
             choice = "left" if rng.random() < _p_left(person, sim, t["left"], t["right"], position) else "right"
         rt = max(150, int(rng.lognormal(np.log(sim.rt_median_ms), sim.rt_log_sd)))
@@ -523,6 +523,6 @@ def _participant_row(person: Person, rows: list[dict[str, str]], item: dict[str,
         "shopping_started_at": _iso(start + timedelta(days=100)) if done else "",
         "shopping_completed_at": _iso(start + timedelta(days=100, hours=1)) if done else "",
         "shopping_app_version": "SYNTHETIC" if done else "", "attention_total": str(len(checks)),
-        "attention_correct": str(correct), "attention_failed": _bit(len(answered) - correct > platform_info()["maxFailedAttentionChecks"]),
+        "attention_correct": str(correct),
         "repeats_answered": str(len(repeats)), "repeats_consistent": str(same), "consistency_pct": pct,
     }  # fmt: skip

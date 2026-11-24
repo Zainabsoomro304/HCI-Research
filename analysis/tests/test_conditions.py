@@ -17,7 +17,7 @@ from hci.model import Comparisons, by_participant
 
 @pytest.fixture(scope="module")
 def people(synthetic_zip: Path, config) -> dict[str, Comparisons]:
-    return by_participant(clean(load_export(synthetic_zip), config, exclude_attention=False).main)
+    return by_participant(clean(load_export(synthetic_zip), config).main)
 
 
 def _models(code: str, people: dict[str, Comparisons], config):

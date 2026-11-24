@@ -21,7 +21,6 @@ export const SIMULATION = {
   busyGamma: -0.1,
   lapseMax: 0.08,
   fatigueLapseSlope: 0.03,
-  attentionErrorRate: 0.01,
   questionnaireInformativeness: 0.6,
   questionnaireNoPreference: 0.15,
   rtMedianMs: 1800,

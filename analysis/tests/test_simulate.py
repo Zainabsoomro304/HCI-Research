@@ -48,7 +48,7 @@ def test_schedules_follow_the_platform_rules(synthetic_zip: Path):
         t = t.sort_values("seq")
         analysis = t[~t["is_practice"].astype(bool)]
         assert len(t[t["is_practice"].astype(bool)]) == design["practiceTrials"]
-        assert len(analysis) == 82
+        assert len(analysis) == 80
         assert analysis["is_repeat"].astype(bool).sum() == design["repeatTrials"]
         assert analysis["is_attention_check"].astype(bool).sum() == design["attentionChecks"]
         main = analysis[~(analysis["is_repeat"].astype(bool) | analysis["is_attention_check"].astype(bool))]
@@ -202,7 +202,9 @@ def test_parameter_recovery_at_realistic_noise(tmp_path: Path, config):
     # 0.796 for this seed. The brief's requirement is per person (above), so the pooled check allows 0.75.
     assert at_50["pooled_r"] > 0.75
     assert report["by_k"][70]["mean_person_r"] >= report["by_k"][5]["mean_person_r"]
-    assert report["expected_consistency"]["p10"] >= 0.65
+    # Plausible self-consistency for the simulated people. With the 80-trial design the 10th percentile is 0.61-0.65
+    # across seeds 1-6 (0.632 for seed 1), so the bound is 0.60.
+    assert report["expected_consistency"]["p10"] >= 0.60
     assert report["expected_consistency"]["p90"] <= 0.97
 
 
@@ -214,6 +216,6 @@ def test_recovery_refuses_a_non_synthetic_truth_file(synthetic_zip: Path, tmp_pa
 
 
 def test_validate_reports_real_trial_counts(synthetic_zip: Path, config):
-    data = clean(load_export(synthetic_zip), config, exclude_attention=False)
+    data = clean(load_export(synthetic_zip), config)
     assert len(data.main) == 16 * 70
     assert len(data.repeats) == 16 * 10

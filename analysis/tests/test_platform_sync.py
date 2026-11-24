@@ -18,7 +18,6 @@ def test_snapshot_matches_the_platform_code():
 
 def test_config_agrees_with_the_platform(config):
     info = platform_info()
-    assert config.cleaning.max_failed_attention_checks == info["maxFailedAttentionChecks"]
     design = info["design"]
     assert (
         config.cleaning.fatigue_half_boundary

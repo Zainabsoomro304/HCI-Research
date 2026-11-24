@@ -28,7 +28,6 @@ export interface SimulatedTruth {
   cluster: number;
   w: number[];
   lapse: number;
-  attentionErrorRate: number;
   bestTarget: string;
 }
 
@@ -44,10 +43,9 @@ function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
-export async function createSimulatedParticipants(opts: { count: number; urduShare?: number; seed: number; attentionErrorRate?: number }) {
+export async function createSimulatedParticipants(opts: { count: number; urduShare?: number; seed: number }) {
   requireTestTools();
   if (opts.count < 1 || opts.count > 200) throw new FreezeError("Choose between 1 and 200 participants.");
-  const attentionErrorRate = opts.attentionErrorRate ?? SIMULATION.attentionErrorRate;
   const shared = createRng(hashSeed(`simulate|${opts.seed}`));
   const nUr = Math.round(opts.count * (opts.urduShare ?? SIMULATION.urduShare));
   const langs = shared.shuffle([...new Array<"ur">(nUr).fill("ur"), ...new Array<"en">(opts.count - nUr).fill("en")]);
@@ -69,7 +67,6 @@ export async function createSimulatedParticipants(opts: { count: number; urduSha
         cluster,
         w,
         lapse: r.next() * SIMULATION.lapseMax,
-        attentionErrorRate,
         bestTarget: restrictedArgmax(w, 2, 4),
       };
       await tx.participant.create({
@@ -162,7 +159,7 @@ export async function simulateComparison(participantId: string): Promise<void> {
     else {
       const trial = byId.get(state.trial!.id)!;
       const position = trial.isPractice ? 0 : trial.trialIndex / total;
-      const choice = trial.isAttentionCheck ? (r.next() < p.truth.attentionErrorRate ? "left" : "right") : chooseLeft(p.truth, trial.leftClipId, trial.rightClipId, position, r) ? "left" : "right";
+      const choice = trial.isAttentionCheck ? "right" : chooseLeft(p.truth, trial.leftClipId, trial.rightClipId, position, r) ? "left" : "right";
       const rt = Math.max(150, Math.round(SIMULATION.rtMedianMs * Math.exp(SIMULATION.rtLogSd * normal(r))));
       const shown = clock;
       const ended = shown + 4200;

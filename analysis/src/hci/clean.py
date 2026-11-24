@@ -28,7 +28,6 @@ class CleanData:
     participants: pd.DataFrame
     main: pd.DataFrame
     repeats: pd.DataFrame
-    attention: pd.DataFrame
     log: list[LogEntry]
     warnings: list[str]
 
@@ -57,13 +56,12 @@ def clean(
     export: Export,
     config: Config,
     *,
-    exclude_attention: bool | None = None,
     exclude_earlier_protocol: bool | None = None,
 ) -> CleanData:
-    """The keyword overrides serve the sensitivity analyses: attention failures kept in, and participants whose
-    Session 1 followed an earlier version of the protocol left out (or kept in)."""
+    """The keyword override serves the sensitivity analysis: participants whose Session 1 followed an earlier version
+    of the protocol left out (or kept in). Attention-check trials (only in sessions started before 2026-11-23) are
+    never used to exclude anyone; they are simply not main trials."""
     rules = config.cleaning
-    exclude_attention = rules.exclude_attention_failures if exclude_attention is None else exclude_attention
     if exclude_earlier_protocol is None:
         exclude_earlier_protocol = not config.study.include_earlier_protocol
     log: list[LogEntry] = []
@@ -119,22 +117,6 @@ def clean(
     if unanswered.any():
         log.append(LogEntry("unanswered trials", "trials", int(unanswered.sum()), "excluded"))
 
-    attention = trials[_flag(trials, "is_attention_check") & trials["choice"].notna()].copy()
-    attention["correct"] = attention["choice"] == "right"
-    wrong = attention.assign(wrong=~attention["correct"]).groupby("participant_code")["wrong"].sum()
-    failed = sorted(wrong[wrong > rules.max_failed_attention_checks].index)
-    exported_failed = set(participants.loc[_flag(participants, "attention_failed"), "participant_code"])
-    if set(failed) != exported_failed:
-        warnings.append(
-            f"Attention failures differ from participants.csv: computed {failed}, exported {sorted(exported_failed)}"
-        )
-    action = "excluded" if exclude_attention else "flagged"
-    log.append(LogEntry("failed an attention check", "participants", len(failed), action, failed))
-    participants = participants.assign(attention_flag=participants["participant_code"].isin(failed))
-    if exclude_attention:
-        participants = participants[~participants["attention_flag"]]
-        trials = trials[trials["participant_code"].isin(participants["participant_code"])]
-
     is_fast = (trials["rt_ms"] < rules.fast_rt_ms).fillna(False).astype(bool)
     trials = trials.assign(fast_rt=is_fast)
     action = "excluded" if rules.exclude_fast_rt else "flagged"
@@ -158,7 +140,6 @@ def clean(
         participants=participants.reset_index(drop=True),
         main=main,
         repeats=repeats,
-        attention=attention.reset_index(drop=True),
         log=log,
         warnings=warnings,
     )

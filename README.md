@@ -2,7 +2,7 @@
 
 Web platform for an HCI study on adaptive user interfaces for adults aged 40 and over, set in a Pakistani online grocery shop (**Ghar Ka Sauda / گھر کا سودا**), in English or Urdu:
 
-- **Session 1 – comparisons** (online or in person, laptop or tablet, about 45 min) – language choice, information sheet and consent (three boxes), eligibility (age 40+), background questionnaire, instructions, 2 practice + 82 pairwise clip comparisons (70 unique pairs, 10 side-swapped repeats, 2 attention checks), end screen ("we will contact you for the second session").
+- **Session 1 – comparisons** (online or in person, laptop or tablet, about 45 min) – language choice, information sheet and consent (three boxes), eligibility (age 40+), background questionnaire, instructions, 2 practice + 80 pairwise clip comparisons (70 unique pairs, 10 side-swapped repeats; no attention checks), end screen ("we will contact you for the second session").
 - **Prepare shopping sessions** (admin) – once every non-withdrawn participant has finished Session 1: Freeze models & generate plans (leave-one-out models, value-iteration agent, 2–4 changed settings).
 - **Session 2 – shopping** (in person on the lab laptop, about 60 min) – consent re-confirmation, practice task, 4 grocery shopping tasks in adapted shops with the SEQ and the SUS after each, final ranking.
 - **Analysis** – Python/R pipeline in [analysis/](analysis/): `hci preferences` (RQ1–RQ3, Session 1) and `hci evaluation` (RQ4, Session 2).
@@ -119,7 +119,7 @@ The scene list and the product set per scene are in `src/config/shop.ts` (`CLIP_
 
 ### Participants and links
 
-Log in at `/admin` with `ADMIN_PASSWORD`. Create participants singly or in bulk (codes `P-001…`). Each gets a random seed and one link per session (`/s/<token>`): Session 1 (comparisons) and Session 2 (shopping). Any number of participants works; the admin page notes, without blocking anything, when the number is not a multiple of 16 (the Latin squares balance exactly in groups of 16). You can preset a participant's language on their admin page; they can still change it on the first screen. The participants table shows each session's status, language, attention checks and live self-consistency.
+Log in at `/admin` with `ADMIN_PASSWORD`. Create participants singly or in bulk (codes `P-001…`). Each gets a random seed and one link per session (`/s/<token>`): Session 1 (comparisons) and Session 2 (shopping). Any number of participants works; the admin page notes, without blocking anything, when the number is not a multiple of 16 (the Latin squares balance exactly in groups of 16). You can preset a participant's language on their admin page; they can still change it on the first screen. The participants table shows each session's status, language and live self-consistency.
 
 ### Language
 
@@ -129,7 +129,7 @@ Texts: `content/strings.en.json` and `content/strings.ur.json` (identical keys, 
 
 ### Session 1 (comparisons)
 
-Flow: language → information sheet and consent (all three boxes: "I have read and understood the information", "I agree to take part", "I am 40 years or older") → background questionnaire (age first: anyone under 40 sees a polite "not eligible" page; only the age and the screening result are kept and the participant is marked withdrawn) → instructions → 2 practice trials → 82 trials with breaks after trials 27 and 54 → end ("we will contact you to arrange the second session", with the participant code). Expected length: about 45 minutes (`EXPECTED_MINUTES` in `src/config/study.ts`, shown on the instructions page). Every choice is saved immediately with retries, events are batched every 2 s, and reopening the link resumes exactly where the participant stopped.
+Flow: language → information sheet and consent (all three boxes: "I have read and understood the information", "I agree to take part", "I am 40 years or older") → background questionnaire (age first: anyone under 40 sees a polite "not eligible" page; only the age and the screening result are kept and the participant is marked withdrawn) → instructions → 2 practice trials → 80 trials with breaks after trials 27 and 54 → end ("we will contact you to arrange the second session", with the participant code). Expected length: about 45 minutes (`EXPECTED_MINUTES` in `src/config/study.ts`, shown on the instructions page). Every choice is saved immediately with retries, events are batched every 2 s, and reopening the link resumes exactly where the participant stopped.
 
 Study screens use large text (≥ 18 px Latin, ≥ 20 px Urdu), large buttons and short sentences; they never vary with the interface settings. Tablets in landscape work: from 1000 px wide the two clips are side by side, from 768 px stacked; phones (< 768 px) get a "please use a bigger screen" message. For participants less used to computers, Session 1 can also be done in person on the lab laptop.
 
@@ -137,14 +137,14 @@ Trial schedule (generated from the participant's seed, stored when consent is gi
 
 - **70 main trials** – unique pairs of the 32 analysis clips; each clip appears equally often (max − min ≤ 1), never in two consecutive trials, and as Option A about half the time.
 - **10 repeats** – copies of main trials from trials 1–50, at least 20 trials later with sides swapped; 5 in each half. A repeat keeps its original's scene.
-- **2 attention checks** – the same clip on both sides with "please choose Option B", in trials 25–75, at least 20 apart, never next to a break.
-- **Scenes** – both clips of a trial show the same scene and language. Across the 82 trials each scene appears equally often (max − min ≤ 1), no scene appears more than 2 trials in a row, and the practice scene is not counted. Scene and language are stored on every trial.
+- **No attention checks** – removed on 2026-11-23. Sessions started before then have 82 trials, including 2 attention checks (the same clip on both sides, "please choose Option B"). Those trials are kept as recorded, marked `is_attention_check`, and not used for anything: nobody is flagged or excluded because of them. The protocol check (`pnpm preserve protocol`) recognises that earlier 82-trial design.
+- **Scenes** – both clips of a trial show the same scene and language. Across the 80 trials each scene appears equally often (max − min ≤ 1), no scene appears more than 2 trials in a row, and the practice scene is not counted. Scene and language are stored on every trial.
 
 All constants are in `src/config/study.ts`.
 
 ### Between sessions: freeze and plans
 
-Open **Prepare shopping sessions** (`/admin/prepare`). It shows who has finished Session 1. When every non-withdrawn participant has finished, click **Freeze models & generate plans**: it builds each participant's global and cluster models from everyone else (leave-one-out), computes their four plans with a value-iteration agent (checked against brute force; targets restricted to 2–4 changed settings), and stores everything in one transaction with thumbnails and flags. Each adaptive condition gets one step after 8000 ms. The number of clusters (2 or 3) is chosen from the data, and a count is allowed only if every cluster has at least 6 people in every leave-one-out fit (otherwise 1 cluster, cluster = global); the page reports the choice and its stability (adjusted Rand index across the leave-one-out fits). Re-running is allowed only until any shopping session starts; after that, unfreezing takes a typed phrase and a reason and is flagged permanently. Attention failures are left out of the models and still get a flagged plan; late finishers get nothing automatically. The computation (`src/lib/planEngine/`) runs in chunks with a progress bar.
+Open **Prepare shopping sessions** (`/admin/prepare`). It shows who has finished Session 1. When every non-withdrawn participant has finished, click **Freeze models & generate plans**: it builds each participant's global and cluster models from everyone else (leave-one-out), computes their four plans with a value-iteration agent (checked against brute force; targets restricted to 2–4 changed settings), and stores everything in one transaction with thumbnails and flags. Each adaptive condition gets one step after 8000 ms. The number of clusters (2 or 3) is chosen from the data, and a count is allowed only if every cluster has at least 6 people in every leave-one-out fit (otherwise 1 cluster, cluster = global); the page reports the choice and its stability (adjusted Rand index across the leave-one-out fits). Re-running is allowed only until any shopping session starts; after that, unfreezing takes a typed phrase and a reason and is flagged permanently. Everyone who finished Session 1 is in the models; late finishers get nothing automatically. The computation (`src/lib/planEngine/`) runs in chunks with a progress bar.
 
 **Override plan (advanced)** on a participant's page accepts a JSON file, flagged as `uploaded`:
 
@@ -198,7 +198,7 @@ Participants recorded before the one-group design keep every answer, choice, tim
 
 | File | Contents |
 |---|---|
-| `participants.csv` | One row per participant: code and `legacy_code`, `protocol`, language, seed, Latin-square rows, `comparison_*` and `shopping_*` status/times/app version, withdrawal (incl. screening), attention and self-consistency |
+| `participants.csv` | One row per participant: code and `legacy_code`, `protocol`, language, seed, Latin-square rows, `comparison_*` and `shopping_*` status/times/app version, withdrawal (incl. screening), self-consistency (and attention-check answers from older 82-trial sessions) |
 | `questionnaire_background.csv` | One row per participant session: age, gender, occupation, CS/IT (recorded only), tech confidence, smartphone/computer use, online shopping, groceries online, reading glasses, reading language, one preference item per setting |
 | `comparison_trials.csv` | One row per trial: `scene`, `language`, both clips' seven setting values (`left_textSize` … `right_guidance`) and `*_numChangedSettings`, choice (`left` = Option A), RT, replays, flags, repeat links |
 | `breaks.csv` | Break durations |

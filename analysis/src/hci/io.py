@@ -25,12 +25,10 @@ _BOOL = {
     "is_practice",
     "is_repeat",
     "is_attention_check",
-    "attention_failed",
     "within_budget",
     "reverse_coded",
     "is_simulated",
     "flag_agent_mismatch",
-    "flag_attention_failed",
     "flag_late",
 }
 _FLOAT = {"consistency_pct", "value", "sigma", "item_contribution", "instrument_score"}

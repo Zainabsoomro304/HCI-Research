@@ -11,12 +11,11 @@ const t = (id: string, o: Partial<{ isAttentionCheck: boolean; isRepeat: boolean
 });
 
 describe("quality metrics", () => {
-  it("counts attention checks (B = right is correct) and flags failures", () => {
-    const ok = computeQuality([t("a1", { isAttentionCheck: true, choice: "right" }), t("a2", { isAttentionCheck: true, choice: "right" })]);
-    expect(ok).toMatchObject({ attentionTotal: 2, attentionCorrect: 2, attentionFailed: false });
-    const bad = computeQuality([t("a1", { isAttentionCheck: true, choice: "right" }), t("a2", { isAttentionCheck: true, choice: "left" })]);
-    expect(bad).toMatchObject({ attentionCorrect: 1, attentionFailed: true });
-    expect(computeQuality([t("a1", { isAttentionCheck: true })])).toMatchObject({ attentionAnswered: 0, attentionFailed: false });
+  it("reports attention checks in older sessions as recorded, without flagging anyone", () => {
+    const old = computeQuality([t("a1", { isAttentionCheck: true, choice: "right" }), t("a2", { isAttentionCheck: true, choice: "left" })]);
+    expect(old).toMatchObject({ attentionTotal: 2, attentionAnswered: 2, attentionCorrect: 1 });
+    expect(old).not.toHaveProperty("attentionFailed");
+    expect(computeQuality([t("m1", { choice: "left", chosenClipId: "X" })])).toMatchObject({ attentionTotal: 0, attentionAnswered: 0 });
   });
 
   it("computes self-consistency as % of repeats choosing the same clip (sides are swapped in repeats)", () => {

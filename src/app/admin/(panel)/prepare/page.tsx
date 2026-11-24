@@ -54,7 +54,6 @@ function flagsOf(r: FrozenResult): string[] {
   if (r.flags.identicalTargets.length) out.push(`identical: ${r.flags.identicalTargets.join(", ")}`);
   if (r.flags.equalsGlobal.length) out.push(`equals global: ${r.flags.equalsGlobal.join(", ")}`);
   if (r.flags.nearTie.length) out.push(`near-tie: ${r.flags.nearTie.join(", ")}`);
-  if (r.attentionFailed) out.push("failed attention check");
   if (r.late) out.push("late");
   if (r.planSource === "uploaded") out.push("uploaded override kept");
   return out;
@@ -69,12 +68,11 @@ export default async function PreparePage() {
   const clusters = (frozen?.clusters ?? null) as unknown as ClusterReport | null;
   const activeReal = rows.filter((r) => !r.isSimulated && r.status !== "withdrawn").length;
   const inFrozen = new Set(results.map((r) => r.code));
-  const late = frozen ? rows.filter((r) => r.status === "completed" && !inFrozen.has(r.code) && !r.attentionFailed) : [];
+  const late = frozen ? rows.filter((r) => r.status === "completed" && !inFrozen.has(r.code)) : [];
   const counts = {
     complete: rows.filter((r) => r.status === "completed").length,
     inProgress: rows.filter((r) => r.status === "in_progress").length,
     notStarted: rows.filter((r) => r.status === "not_started").length,
-    failed: rows.filter((r) => r.attentionFailed && r.status !== "withdrawn").length,
     withdrawn: rows.filter((r) => r.status === "withdrawn").length,
   };
 
@@ -91,11 +89,10 @@ export default async function PreparePage() {
 
       <section className={box}>
         <h2 className="font-bold">Status</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
           <Stat label="Session 1 complete" value={counts.complete} />
           <Stat label="In progress" value={counts.inProgress} />
           <Stat label="Not started" value={counts.notStarted} />
-          <Stat label="Failed attention checks" value={counts.failed} tone="warn" />
           <Stat label="Withdrawn" value={counts.withdrawn} />
         </div>
         {readiness.ready ? (
@@ -168,7 +165,6 @@ export default async function PreparePage() {
           ready={readiness.ready}
           included={readiness.included.length}
           simulated={readiness.simulatedIncluded}
-          attentionFailed={readiness.attentionFailed.map((r) => r.code)}
           withdrawn={readiness.withdrawn.map((r) => `${r.code}: ${r.withdrawnReason ?? ""}`)}
           version={frozen?.version ?? null}
           testMode={tools}

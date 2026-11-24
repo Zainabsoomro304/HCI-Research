@@ -55,7 +55,6 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
                 <th className="px-4 py-2">Group</th>
                 <th className="px-4 py-2">Seed</th>
                 <th className="px-4 py-2">Sessions</th>
-                <th className="px-4 py-2">Attention</th>
                 <th className="px-4 py-2">Consistency</th>
                 <th className="px-4 py-2">Plans</th>
                 <th className="px-4 py-2">Notes</th>
@@ -86,16 +85,6 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
                         </div>
                       ))}
                     </div>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    {q.attentionTotal === 0 ? (
-                      <span className="text-[#8a929e]">–</span>
-                    ) : (
-                      <span className={q.attentionFailed ? "font-semibold text-[#b03a27]" : ""}>
-                        {q.attentionCorrect}/{q.attentionAnswered}
-                        {q.attentionFailed ? " failed" : q.attentionAnswered < q.attentionTotal ? ` (of ${q.attentionTotal})` : " ✓"}
-                      </span>
-                    )}
                   </td>
                   <td className="px-4 py-2.5">{q.consistencyPct === null ? <span className="text-[#8a929e]">–</span> : `${q.consistencyPct}% (${q.repeatsConsistent}/${q.repeatsAnswered})`}</td>
                   <td className="px-4 py-2.5">{plansUploaded}/4</td>

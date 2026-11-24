@@ -5,6 +5,10 @@ import { ActionError, applyAction, buildState, getSessionByToken } from "@/lib/s
 import { loadConsent } from "@/lib/session/comparison";
 import type { ComparisonState } from "@/lib/session/types";
 import { CLIP_SCENES } from "@/config/shop";
+import { EARLIER_COMPARISON_DESIGNS } from "@/config/study";
+import rawClips from "@data/clips.json";
+import { parseClipsFile } from "@/lib/clipsFile";
+import { generateSchedule } from "@/lib/schedule";
 import { CONFIRMED, background } from "./fixtures";
 
 afterAll(async () => {
@@ -25,7 +29,43 @@ async function answerCurrent(token: string, choice: "left" | "right" = "left") {
 }
 
 describe("comparison session (Session 1)", () => {
-  it("runs consent -> background -> practice -> 82 trials with breaks after 27 and 54 -> end", async () => {
+  it("a session stored under the earlier 82-trial design (2 attention checks) still runs to its own end", async () => {
+    const [p] = await createParticipants({ count: 1 });
+    const token = p!.sessions.find((s) => s.type === "comparison")!.token;
+    const session = (await getSessionByToken(token))!;
+    // Store the schedule exactly as the earlier version did, before the participant consents (ensureSchedule then keeps it).
+    const clips = parseClipsFile(rawClips);
+    const old = generateSchedule({ clips: clips.clips.map((c) => c.id), practiceClips: clips.practiceClips.map((c) => c.id), design: EARLIER_COMPARISON_DESIGNS[0]!.design, seed: p!.seed, scenes: CLIP_SCENES });
+    const ids = new Map<number, string>();
+    for (const x of old) {
+      const row = await prisma.comparisonTrial.create({
+        data: { participantId: p!.id, sessionId: session.id, seq: x.seq, trialIndex: x.trialIndex, isPractice: x.isPractice, isRepeat: x.isRepeat, repeatOfTrialId: x.repeatOfSeq === null ? null : ids.get(x.repeatOfSeq)!, isAttentionCheck: x.isAttentionCheck, scene: x.scene, language: "en", leftClipId: x.left, rightClipId: x.right, leftNumChangedSettings: 0, rightNumChangedSettings: 0 },
+      });
+      ids.set(x.seq, row.id);
+    }
+    await act(token, { type: "language", lang: "en" });
+    await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, confirmations: CONFIRMED, clientTs: Date.now() });
+    expect(await prisma.comparisonTrial.count({ where: { sessionId: session.id } })).toBe(84);
+    await act(token, { type: "background", answers: background, clientTs: Date.now() });
+    await act(token, { type: "instructions_done" });
+    await answerCurrent(token);
+    await answerCurrent(token);
+    let st = await act(token, { type: "main_intro_done" });
+    expect(st.trial!.total).toBe(82);
+    let sawCheck = false;
+    for (let i = 1; i <= 82; i++) {
+      expect(st.step).toBe("trials");
+      expect(st.progress!.total).toBe(82);
+      if (st.trial!.question === "chooseB") sawCheck = true;
+      st = await answerCurrent(token);
+      if (st.step === "break") st = await act(token, { type: "break_end", clientTs: Date.now() });
+    }
+    expect(sawCheck).toBe(true);
+    expect(st.step).toBe("end");
+    expect(await prisma.comparisonTrial.count({ where: { sessionId: session.id, choice: null } })).toBe(0);
+  });
+
+  it("runs consent -> background -> practice -> 80 trials with breaks after 27 and 54 -> end", async () => {
     const [p] = await createParticipants({ count: 1 });
     expect(p!.code).toMatch(/^P-\d{3}$/);
     expect(p!.sessions.map((x) => x.type).sort()).toEqual(["comparison", "shopping"]);
@@ -41,7 +81,7 @@ describe("comparison session (Session 1)", () => {
     st = await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, confirmations: CONFIRMED, clientTs: Date.now() });
     expect(st.step).toBe("background");
     // Full schedule stored before trial 1.
-    expect(await prisma.comparisonTrial.count({ where: { session: { token } } })).toBe(84);
+    expect(await prisma.comparisonTrial.count({ where: { session: { token } } })).toBe(82);
 
     st = await act(token, { type: "background", answers: background, clientTs: Date.now() });
     expect(st.step).toBe("instructions");
@@ -59,7 +99,7 @@ describe("comparison session (Session 1)", () => {
     expect(st.trial!.trialIndex).toBe(1);
 
     const breaks: number[] = [];
-    for (let i = 1; i <= 82; i++) {
+    for (let i = 1; i <= 80; i++) {
       st = await answerCurrent(token, i % 2 ? "left" : "right");
       if (st.step === "break") {
         breaks.push(st.breakInfo!.afterTrialIndex);
@@ -118,7 +158,7 @@ describe("comparison session (Session 1)", () => {
     const st = (await buildState((await getSessionByToken(token))!)) as ComparisonState;
     expect(st.step).toBe("trials");
     expect(st.trial!.trialIndex).toBe(6);
-    expect(st.progress).toEqual({ done: 5, total: 82 });
+    expect(st.progress).toEqual({ done: 5, total: 80 });
   });
 
   it("rejects actions in the wrong step and invalid payloads", async () => {
@@ -156,7 +196,7 @@ describe("comparison session (Session 1)", () => {
     const st = await act(token, { type: "consent", agreed: true, hash: loadConsent("ur").hash, confirmations: CONFIRMED, clientTs: Date.now() });
     expect(st.step).toBe("background");
     const trials = await prisma.comparisonTrial.findMany({ where: { session: { token } } });
-    expect(trials).toHaveLength(84);
+    expect(trials).toHaveLength(82);
     for (const t of trials) {
       expect(t.language).toBe("ur");
       expect(CLIP_SCENES).toContain(t.scene);

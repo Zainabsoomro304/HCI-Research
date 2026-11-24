@@ -3,8 +3,8 @@
  * Everything goes through the real session engines, so the data has exactly the shape of real data.
  * Demo participants have notes starting with "DEMO". Refuses to run if non-demo participants exist (use --force).
  *
- *   Phase 1: 6 completed (one fails an attention check), 1 in progress, 1 not started
- *   Phase 3: 2 with Session B completed, 1 in Session B, 1 ready for Session B, 1 in Session A
+ *   Session 1: 6 completed (one without a plan yet), 1 in progress, 1 not started
+ *   Session 2: 2 completed, 1 in progress (task 3), 2 ready
  */
 import { CONDITIONS } from "@/config/study";
 import { DEFAULT_CONFIG_ID, SETTING_KEYS, SETTING_LEVELS, fromConfigId, toConfigId, type UIConfig } from "@/config/uiSpace";
@@ -58,7 +58,7 @@ function makeChooser(r: Rng) {
 }
 
 /** Runs a comparison session; stops after `stopAfter` analysis trials if given. */
-async function runComparison(token: string, r: Rng, opts: { stopAfter?: number; failAttention?: boolean; lang?: "en" | "ur" } = {}) {
+async function runComparison(token: string, r: Rng, opts: { stopAfter?: number; lang?: "en" | "ur" } = {}) {
   const choose = makeChooser(r);
   await act(token, { type: "start", viewport: { w: 1440, h: 900 }, userAgent: "demo-seed" });
   await act(token, { type: "language", lang: opts.lang ?? "en" });
@@ -68,15 +68,13 @@ async function runComparison(token: string, r: Rng, opts: { stopAfter?: number; 
   const s = (await getSessionByToken(token))!;
   let t = Date.now() - 45 * 60_000;
   let answered = 0;
-  let failedOnce = false;
   while (st.step !== "end") {
     if (st.step === "main_intro") st = (await act(token, { type: "main_intro_done" })) as ComparisonState;
     else if (st.step === "break") st = (await act(token, { type: "break_end", clientTs: Date.now() })) as ComparisonState;
     else {
       if (opts.stopAfter !== undefined && !st.trial!.isPractice && answered >= opts.stopAfter) return;
       const trial = await prisma.comparisonTrial.findUniqueOrThrow({ where: { id: st.trial!.id } });
-      let choice = trial.isAttentionCheck ? "right" : choose(trial.leftClipId, trial.rightClipId);
-      if (trial.isAttentionCheck && opts.failAttention && !failedOnce) (choice = "left"), (failedOnce = true);
+      const choice = trial.isAttentionCheck ? "right" : choose(trial.leftClipId, trial.rightClipId);
       const rt = Math.round(600 + r.next() * 2400);
       const replays = r.next() < 0.1 ? 1 : 0;
       const shown = t;
@@ -162,9 +160,9 @@ async function main() {
       console.log(`  ${p.code} not started`);
       continue;
     }
-    await runComparison(a.token, rng, { failAttention: i === 5, lang });
+    await runComparison(a.token, rng, { lang });
     if (i === 5) {
-      console.log(`  ${p.code} Session 1 complete (failed attention checks)`);
+      console.log(`  ${p.code} Session 1 complete, no plan yet`);
       continue;
     }
     await savePlanFile(p.id, demoPlan(p.code, rng), "demo-plan.json");

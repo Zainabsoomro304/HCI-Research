@@ -31,7 +31,7 @@ Participants choose English or Urdu before consent; the whole study, including t
 
 The interface space has 7 settings and 432 configurations: text size (standard, large, extra large), target size (standard, large), button style (flat, outlined, raised), icon labels (icon only, icon and text), contrast (standard, high), layout (3-column grid, 2-column grid, list) and guidance (none, hints). The base is the first level of each.
 
-Session 1: 70 main trials, 10 repeats (sides swapped, at least 20 trials later) and 2 attention checks, plus practice trials. Each clip shows the base shop changing to a target config within one product category (the scene). Both clips of a trial share the scene and language; scenes are balanced within each participant (within 1), no scene runs more than 2 trials in a row, and a repeat keeps its original's scene.
+Session 1: 70 main trials and 10 repeats (sides swapped, at least 20 trials later), plus practice trials. There are no attention checks (they were removed before the main data collection; the first participants' sessions included 2, which are kept as recorded and not used). Each clip shows the base shop changing to a target config within one product category (the scene). Both clips of a trial share the scene and language; scenes are balanced within each participant (within 1), no scene runs more than 2 trials in a row, and a repeat keeps its original's scene.
 
 Session 2 conditions, ordered by balanced Latin squares: static, global, cluster5 and personalFull. The squares balance exactly in groups of 16 participants; with other numbers, position and task stay in every model.
 
@@ -62,7 +62,6 @@ Simulated TOST power at the ±5 SUS-point margin (SUS SD 12; about 0.4 SD, from 
 Every rule is reported with counts and is switchable in the analysis config.
 
 - Practice trials are dropped from all analyses.
-- Participants who fail an attention check are excluded from model building and from the primary analyses. They still receive a flagged plan, and a sensitivity analysis keeps them in.
 - Responses under 300 ms are flagged and reported, not excluded.
 - Withdrawn participants are excluded from the models and from Session 2. Their withdrawal and reason are recorded.
 - Someone who finishes Session 1 after the freeze is either excluded or receives a plan from the frozen models, flagged as late.
@@ -109,7 +108,7 @@ Frozen-model hash: [to be added when the models are frozen. The models are built
 
 Learning curves: correct ~ start * log(k) + (1|participant) + (1|test_pair), a mixed-effects logistic model fitted once per test split, with estimates and standard errors averaged across splits. Pairwise contrasts at each k with Holm correction within k. Sensitivity: (start|participant). k = 0 baselines are compared separately, by participant bootstrap. Median k90 per starting point with bootstrap CIs.
 
-Fatigue: consistent ~ half + trial_gap + (1|participant), mixed-effects logistic, with the first half being trials 1-41.
+Fatigue: consistent ~ half + trial_gap + (1|participant), mixed-effects logistic, with the first half being trials 1-40.
 
 Session 2 (RQ4): SUS, SEQ and log(task time): outcome ~ condition + position + task + language + (1|participant), with study language (English or Urdu) as a covariate; if everyone used one language the term is dropped. Task success (all items found and within budget): the same structure, mixed-effects logistic. Items found is descriptive. H4a contrasts: each adaptive condition vs static, with Holm across the contrasts within each outcome. SUS is the primary outcome.
 
@@ -117,6 +116,6 @@ H4b: cluster5 vs personalFull on SUS, using the mixed-model contrast: the estima
 
 Rankings: Friedman test, pairwise Wilcoxon with Holm correction, mean rank per condition and a Plackett-Luce model.
 
-Sensitivity analyses: attention failures kept in; participants with identical cluster5 and personalFull targets left out; participants flagged protocol = earlier-version left out.
+Sensitivity analyses: participants with identical cluster5 and personalFull targets left out; participants flagged protocol = earlier-version left out.
 
 Nuisance check (descriptive): share of Option A, median response time and agreement with each person's own weights, by scene and by language.

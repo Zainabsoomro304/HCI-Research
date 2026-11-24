@@ -356,8 +356,8 @@ def _recovery_checks(
     return pd.DataFrame(records)
 
 
-def _analyse(export_data, config: Config, *, exclude_attention: bool, work: Path, label: str) -> dict[str, Any]:
-    data = clean(export_data, config, exclude_attention=exclude_attention)
+def _analyse(export_data, config: Config, *, work: Path, label: str) -> dict[str, Any]:
+    data = clean(export_data, config)
     codes = data.codes()
     if len(codes) < 4:
         raise ValueError(f"Too few eligible participants for this analysis: {len(codes)}")
@@ -392,9 +392,7 @@ def run_preferences(export_path: Path, config: Config, *, output_root: Path | No
     work = run.directory / "work"
     work.mkdir(parents=True, exist_ok=True)
 
-    primary = _analyse(
-        export_data, config, exclude_attention=config.cleaning.exclude_attention_failures, work=work, label="primary"
-    )
+    primary = _analyse(export_data, config, work=work, label="primary")
     data: CleanData = primary["data"]
     curves: pd.DataFrame = primary["curves"]
     rows = primary["results"].rows
@@ -491,16 +489,6 @@ def run_preferences(export_path: Path, config: Config, *, output_root: Path | No
         ]
     )
 
-    # Sensitivity: attention failures kept in.
-    failed = next((e.ids for e in data.log if "attention" in e.rule), [])
-    sensitivity = None
-    if failed and config.cleaning.exclude_attention_failures:
-        sensitivity = _analyse(export_data, config, exclude_attention=False, work=work, label="attention_kept")
-        sensitivity_k90 = _k90_summary(sensitivity["k90_raw"], config)
-        sensitivity_accuracy = _accuracy_summary(
-            sensitivity["curves"], float(sensitivity["ceilings_raw"].mean()), config
-        )
-
     truth = None
     truth_path = export_path.with_suffix(".truth.json")
     recovery = None
@@ -541,9 +529,6 @@ def run_preferences(export_path: Path, config: Config, *, output_root: Path | No
         run.write_table(f"by_{name}", table, f"Nuisance check by {name} (descriptive only)")
     if slopes is not None:
         run.write_table("contrasts_slopes_sensitivity", slopes, "Sensitivity: contrasts with (start|participant)")
-    if sensitivity is not None:
-        run.write_table("contrasts_attention_kept", sensitivity["contrasts"], "Sensitivity: attention failures kept in")
-        run.write_table("k90_attention_kept", sensitivity_k90, "Sensitivity: k90 with attention failures kept in")
     if recovery is not None:
         run.write_table("recovery_checks", recovery, "Effects built into the simulation vs what the analysis recovered")
 
@@ -654,14 +639,6 @@ def run_preferences(export_path: Path, config: Config, *, output_root: Path | No
     )
     report.table(mlp)
 
-    report.h2("Sensitivity: attention failures kept in")
-    if sensitivity is None:
-        report.p("No participant failed an attention check, so this analysis would be identical to the primary one.")
-    else:
-        report.p(f"Adds back: {', '.join(failed)}.")
-        report.table(sensitivity_accuracy)
-        report.table(sensitivity_k90)
-        report.table(sensitivity["contrasts"])
 
     if recovery is not None:
         report.h2("Recovery of the effects built into the simulation")

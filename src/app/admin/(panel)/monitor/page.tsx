@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 interface Row {
   code: string;
   group: string;
-  quality: { attentionCorrect: number; attentionAnswered: number; attentionFailed: boolean; consistencyPct: number | null };
+  quality: { consistencyPct: number | null };
   sessions: { type: string; status: string; label: string; lastSeenAt: string | null; startedAt: string | null }[];
 }
 
@@ -59,7 +59,6 @@ export default function MonitorPage() {
             <th className="px-4 py-2">Session</th>
             <th className="px-4 py-2">Progress</th>
             <th className="px-4 py-2">Last seen</th>
-            <th className="px-4 py-2">Attention</th>
             <th className="px-4 py-2">Consistency</th>
           </tr>
         </thead>
@@ -70,9 +69,6 @@ export default function MonitorPage() {
               <td className="px-4 py-2">{l.type}</td>
               <td className="px-4 py-2">{l.label}</td>
               <td className="px-4 py-2">{ago(l.lastSeenAt, now)}</td>
-              <td className={`px-4 py-2 ${l.quality.attentionFailed ? "font-semibold text-[#b03a27]" : ""}`}>
-                {l.quality.attentionAnswered ? `${l.quality.attentionCorrect}/${l.quality.attentionAnswered}` : "–"}
-              </td>
               <td className="px-4 py-2">{l.quality.consistencyPct === null ? "–" : `${l.quality.consistencyPct}%`}</td>
             </tr>
           ))}

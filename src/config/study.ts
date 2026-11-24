@@ -31,14 +31,17 @@ export interface ComparisonDesign {
   practiceTrials: number;
 }
 
-/** Session 1: 70 main + 10 repeats + 2 attention checks = 82 analysis trials, breaks after 27 and 54. */
+/**
+ * Session 1: 70 main + 10 repeats = 80 analysis trials, breaks after 27 and 54. There are no attention checks (removed on
+ * 2026-11-23); sessions started before then have 82 trials, see EARLIER_COMPARISON_DESIGNS.
+ */
 export const COMPARISON_DESIGN: ComparisonDesign = {
   mainTrials: 70,
   repeatTrials: 10,
   repeatSourceMaxPosition: 50,
   repeatMinSpacing: 20,
   repeatsInFirstHalf: 5,
-  attentionChecks: 2,
+  attentionChecks: 0,
   attentionCheckMinPosition: 25,
   attentionCheckMaxPosition: 75,
   attentionCheckMinSpacing: 20,
@@ -46,12 +49,18 @@ export const COMPARISON_DESIGN: ComparisonDesign = {
   practiceTrials: 2,
 };
 
+/**
+ * Earlier versions of the Session 1 design, used only to check stored sessions (the protocol check). The 82-trial
+ * version had 2 attention checks (the same clip on both sides, "choose Option B"). Their answers are kept as recorded but
+ * are not used for anything: nobody is flagged or excluded because of them.
+ */
+export const EARLIER_COMPARISON_DESIGNS: readonly { label: string; design: ComparisonDesign }[] = [
+  { label: "82 trials with 2 attention checks (until 2026-11-23)", design: { ...COMPARISON_DESIGN, attentionChecks: 2 } },
+];
+
 export function totalAnalysisTrials(d: ComparisonDesign): number {
   return d.mainTrials + d.repeatTrials + d.attentionChecks;
 }
-
-/** A participant fails the attention criterion if more than this many attention checks are answered wrongly. */
-export const MAX_FAILED_ATTENTION_CHECKS = 0;
 
 /** Shopping-session conditions. Opaque labels: never shown to participants. */
 export const CONDITIONS = ["static", "global", "cluster5", "personalFull"] as const;

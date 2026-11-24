@@ -16,7 +16,7 @@ test("a scripted participant completes a full comparison session", async ({ page
   expect(session!.status).toBe("completed");
   expect(session!.language).toBe("en");
   expect(session!.consent).not.toBeNull();
-  expect(session!.trials.filter((t) => t.choice)).toHaveLength(84);
+  expect(session!.trials.filter((t) => t.choice)).toHaveLength(82);
   for (const t of session!.trials.filter((t) => !t.isPractice)) {
     // Choosing is allowed as soon as the clips start; RT (from both clips ending) is empty for an earlier choice.
     expect(t.clientRespondedAt!.getTime()).toBeGreaterThanOrEqual(t.clientShownAt!.getTime());
@@ -26,9 +26,9 @@ test("a scripted participant completes a full comparison session", async ({ page
     } else expect(t.rtMs).toBeNull();
     expect(t.language).toBe("en");
   }
-  for (const t of session!.trials.filter((t) => t.isAttentionCheck)) expect(t.choice).toBe("right");
+  expect(session!.trials.some((t) => t.isAttentionCheck)).toBe(false);
   expect(session!.breaks.every((b) => b.durationMs !== null)).toBe(true);
-  await expect.poll(() => prisma.event.count({ where: { sessionId: session!.id, type: "trial_shown" } })).toBeGreaterThanOrEqual(84);
+  await expect.poll(() => prisma.event.count({ where: { sessionId: session!.id, type: "trial_shown" } })).toBeGreaterThanOrEqual(82);
 });
 
 test("someone under 40 sees a polite not-eligible page and only the screening result is kept", async ({ page }) => {

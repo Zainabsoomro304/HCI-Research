@@ -66,7 +66,6 @@ test("the whole experiment runs from the admin panel, with one real and many sim
 
   // Admin creates simulated participants and simulates their Session 1.
   await page.getByLabel("How many").fill(String(SIMULATED));
-  await page.getByLabel("Attention error rate (%)").fill("0");
   await expect(page.getByRole("button", { name: "Create simulated participants" })).toBeEnabled();
   await page.getByRole("button", { name: "Create simulated participants" }).click();
   await expect(page.getByText(new RegExp(`Created ${SIMULATED}:`))).toBeVisible({ timeout: 30_000 });

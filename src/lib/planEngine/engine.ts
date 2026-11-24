@@ -33,7 +33,7 @@ export interface SharedModels {
 
 export interface ParticipantModels {
   code: string;
-  /** "loo": built without this person. "pool": they were never in the training data (attention failure or late). */
+  /** "loo": built without this person. "pool": they were never in the training data (finished Session 1 after the freeze). */
   basis: "loo" | "pool";
   sigma: number;
   nuisance: Nuisance;

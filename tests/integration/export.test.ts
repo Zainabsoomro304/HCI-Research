@@ -14,7 +14,7 @@ import type { ComparisonState } from "@/lib/session/types";
 
 import { background as bg, CONFIRMED } from "./fixtures";
 let p1Code = "";
-let p1FailCode = "";
+let p2Code = "";
 let p3Code = "";
 
 async function act(token: string, body: unknown) {
@@ -22,8 +22,8 @@ async function act(token: string, body: unknown) {
   return buildState((await getSessionByToken(token))!);
 }
 
-/** Runs a full comparison session; `wrongAttention` answers attention checks with A. */
-async function runComparison(token: string, wrongAttention = false) {
+/** Runs a full comparison session. */
+async function runComparison(token: string) {
   await act(token, { type: "language", lang: "en" });
   await act(token, { type: "consent", agreed: true, hash: loadConsent("en").hash, confirmations: CONFIRMED, clientTs: Date.now() });
   await act(token, { type: "background", answers: { ...bg, occupation: "other", occupationOther: "Sales, \"retail\"" }, clientTs: Date.now() });
@@ -32,7 +32,7 @@ async function runComparison(token: string, wrongAttention = false) {
     if (st.step === "main_intro") st = (await act(token, { type: "main_intro_done" })) as ComparisonState;
     else if (st.step === "break") st = (await act(token, { type: "break_end", clientTs: Date.now() })) as ComparisonState;
     else {
-      const choice = st.trial!.question === "chooseB" && !wrongAttention ? "right" : "left";
+      const choice = "left";
       const now = Date.now();
       st = (await act(token, { type: "trial", trialId: st.trial!.id, choice, rtMs: 700, replayCount: 0, clientShownAt: now - 5000, clientBothEndedAt: now - 700, clientRespondedAt: now })) as ComparisonState;
     }
@@ -42,9 +42,9 @@ async function runComparison(token: string, wrongAttention = false) {
 beforeAll(async () => {
   const [a, b] = await createParticipants({ count: 2, notes: "export test" });
   p1Code = a!.code;
-  p1FailCode = b!.code;
+  p2Code = b!.code;
   await runComparison(a!.sessions.find((s) => s.type === "comparison")!.token);
-  await runComparison(b!.sessions.find((s) => s.type === "comparison")!.token, true);
+  await runComparison(b!.sessions.find((s) => s.type === "comparison")!.token);
 
   const [p3] = await createParticipants({ count: 1 });
   p3Code = p3!.code;
@@ -125,7 +125,7 @@ describe("export", () => {
     }
     expect(CLIP_SCENES).toContain(row.scene);
     expect(row.language).toBe("en");
-    expect(tables["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code)).toHaveLength(84);
+    expect(tables["comparison_trials.csv"]!.filter((r) => r.participant_code === p1Code)).toHaveLength(82);
   });
 
   it("gives repeat trials the gap to their original (and leaves it empty for other trials)", async () => {
@@ -155,18 +155,16 @@ describe("export", () => {
     expect(row[parsed[0]!.indexOf("occupationOther")]).toBe('Sales, "retail"');
   });
 
-  it("filters by completion and attention, and excludes the shopping practice task by default", async () => {
+  it("filters by completion, and excludes the shopping practice task by default", async () => {
     const all = await buildTables();
     expect(all["participants.csv"]!.some((r) => r.participant_code === p3Code)).toBe(true);
     const row = all["participants.csv"]!.find((r) => r.participant_code === p1Code)!;
     expect(row).toMatchObject({ legacy_code: p1Code, protocol: "current", comparison_status: "completed", shopping_status: "not_started" });
     expect(Object.keys(row).some((k) => /phase/i.test(k))).toBe(false);
 
-    const noFail = await buildTables({ excludeFailedAttention: true });
-    const codes = noFail["participants.csv"]!.map((r) => r.participant_code);
-    expect(codes).toContain(p1Code);
-    expect(codes).not.toContain(p1FailCode);
-    expect(all["participants.csv"]!.find((r) => r.participant_code === p1FailCode)!.attention_failed).toBe(true);
+    // No attention checks any more: nobody is flagged or excluded for them.
+    expect(Object.keys(row)).not.toContain("attention_failed");
+    expect(all["participants.csv"]!.find((r) => r.participant_code === p2Code)!.attention_total).toBe(0);
 
     // Completed-only: every included participant has a completed session, and rows only come from completed sessions.
     const unfinished = await createParticipants({ count: 1 });

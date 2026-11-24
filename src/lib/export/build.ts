@@ -1,6 +1,5 @@
 import JSZip from "jszip";
 import type { Participant, Session } from "@prisma/client";
-import { MAX_FAILED_ATTENTION_CHECKS } from "@/config/study";
 import { DEFAULT_CONFIG_ID, SETTING_KEYS } from "@/config/uiSpace";
 import { prisma } from "../db";
 import { computeQuality } from "../admin/quality";
@@ -13,8 +12,6 @@ import { TABLES, configSettings, tableDef } from "./tables";
 export interface ExportFilters {
   /** Only rows from completed sessions (and participants with at least one completed session). */
   completedOnly?: boolean;
-  /** Drop participants who failed the attention criterion. */
-  excludeFailedAttention?: boolean;
   /** Include the shopping-session practice task and its events. */
   includePractice?: boolean;
   /** Include simulated participants from the test tools. They are left out by default. */
@@ -58,7 +55,6 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
 
   const keep = participants.filter((p) => {
     if (filters.completedOnly && !p.sessions.some((s) => s.status === "completed")) return false;
-    if (filters.excludeFailedAttention && computeQuality(trialsBy.get(p.id) ?? []).attentionFailed) return false;
     return true;
   });
   const pById = new Map(keep.map((p) => [p.id, p]));
@@ -93,7 +89,6 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
       created_at: p.createdAt,
       attention_total: q.attentionTotal,
       attention_correct: q.attentionCorrect,
-      attention_failed: q.attentionFailed,
       repeats_answered: q.repeatsAnswered,
       repeats_consistent: q.repeatsConsistent,
       consistency_pct: q.consistencyPct,
@@ -291,7 +286,6 @@ export async function buildTables(filters: ExportFilters = {}): Promise<Record<s
       flag_agent_mismatch: r.flags.agentMismatch,
       flag_near_tie: r.flags.nearTie.join(" "),
       flag_equals_global: r.flags.equalsGlobal.join(" "),
-      flag_attention_failed: r.attentionFailed,
       flag_late: r.late,
     }));
   const actions = await prisma.adminAction.findMany({ orderBy: { at: "asc" } });
@@ -318,7 +312,7 @@ export function codebook(filters: ExportFilters, counts: Record<string, number>)
     `Exported: ${new Date().toISOString()}  `,
     `App version: ${process.env.APP_VERSION ?? "unknown"}  `,
     `Filters: completed sessions only = ${filters.completedOnly ? "yes" : "no"}; ` +
-      `exclude failed attention = ${filters.excludeFailedAttention ? "yes" : "no"}; include shopping practice task = ${filters.includePractice ? "yes" : "no"}; include simulated = ${filters.includeSimulated ? "yes" : "no"}`,
+      `include shopping practice task = ${filters.includePractice ? "yes" : "no"}; include simulated = ${filters.includeSimulated ? "yes" : "no"}`,
     "",
     "All files are UTF-8 CSV with a header row and comma separators. Booleans are 1/0; empty cells are missing values;",
     "timestamps are ISO 8601 (UTC) unless the column name ends in `_ms` (epoch milliseconds). JSON columns hold JSON text.",
@@ -331,8 +325,7 @@ export function codebook(filters: ExportFilters, counts: Record<string, number>)
     "- SEQ (Sauro & Dumas 2009): \"Overall, how easy or difficult was this task?\", 1 (very difficult) to 7 (very easy).",
     `- Config IDs have the form \`${SETTING_KEYS.join("-")}\`; the base configuration is \`${DEFAULT_CONFIG_ID}\`.`,
     "- Each comparison trial shows one scene (product category) in one language in both clips. In Urdu the page is right to left: left_* is Option A, shown on the right.",
-    "- Attention checks show the same clip on both sides and ask the participant to choose Option B (choice = right).",
-    `- A participant fails the attention criterion if more than ${MAX_FAILED_ATTENTION_CHECKS} attention check(s) are answered wrongly.`,
+    "- Session 1 has 80 trials (70 main + 10 repeats) and no attention checks. Sessions started before 2026-11-23 had 82 trials, including 2 attention checks (the same clip on both sides, \"choose Option B\"); those trials are kept as recorded with `is_attention_check` = 1 and are not used for anything. Nobody is flagged or excluded because of them.",
     "- Repeat trials copy an earlier main trial with sides swapped; consistency compares the chosen clip, not the side.",
     "- `numChangedSettings` is the number of settings in which a clip's target differs from the base config (transition busyness).",
     "- `frozen_model.json` is the active frozen model: settings and seeds, the input-data hash, the pooled models, per-participant leave-one-out summaries (sigma, nuisance terms, weights, targets, flags), the cluster choice and its stability (`clusters`), who was eligible and excluded, and `compromised`, which is true if the freeze was ever broken. `{\"frozen\": false}` if nothing has been frozen.",

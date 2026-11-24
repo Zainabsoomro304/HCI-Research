@@ -67,7 +67,7 @@ export default async function ParticipantPage({ params }: { params: Promise<{ co
           </tbody>
         </table>
         <p className="mt-3 text-sm text-[#566070]">
-          Attention checks: {summary.quality.attentionCorrect}/{summary.quality.attentionAnswered} correct{summary.quality.attentionFailed ? " – FAILED" : ""} · Self-consistency:{" "}
+          {summary.quality.attentionTotal > 0 && `Attention checks (older 82-trial session, not used): ${summary.quality.attentionCorrect}/${summary.quality.attentionAnswered} · `}Self-consistency:{" "}
           {summary.quality.consistencyPct ?? "–"}
           {summary.quality.consistencyPct !== null ? "%" : ""} ({summary.quality.repeatsConsistent}/{summary.quality.repeatsAnswered} repeats)
         </p>

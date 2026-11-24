@@ -27,7 +27,7 @@ def test_typescript_and_python_agree_on_weights_clusters_and_targets(synthetic_z
 
 
 def test_small_groups_agree_too(synthetic_zip: Path, config):
-    all_main = clean(load_export(synthetic_zip), config, exclude_attention=False).main
+    all_main = clean(load_export(synthetic_zip), config).main
     codes = sorted(all_main["participant_code"].unique())[:5]
     report = compare(all_main[all_main["participant_code"].isin(codes)], config)
     assert report.problems == []

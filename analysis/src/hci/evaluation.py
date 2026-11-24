@@ -186,7 +186,6 @@ def run_evaluation(export_path: Path, config: Config, *, output_root: Path | Non
     run = new_run("evaluation", export_sha=export.sha256, config=config, synthetic=export.synthetic, root=output_root)
     work = run.directory / "work"
     cleaned = clean(export, config)
-    failed = next((e.ids for e in cleaned.log if "attention" in e.rule), [])
     withdrawn = next((e.ids for e in cleaned.log if "withdrawn" in e.rule), [])
     primary_people = sorted(set(finished) & set(cleaned.codes()))
     if not primary_people:
@@ -224,13 +223,6 @@ def run_evaluation(export_path: Path, config: Config, *, output_root: Path | Non
     current_only = [p for p in primary_people if p not in earlier_in]
     sensitivity_protocol = subset(current_only, "current_protocol_only") if earlier_in and len(current_only) >= 4 else None
 
-    sensitivity_attention = None
-    kept_failures = [p for p in failed if p in finished]
-    if kept_failures:
-        all_people = sorted(set(primary_people) | set(kept_failures))
-        all_blocks, _ = build_blocks(export, all_people, required_items)
-        sensitivity_attention = _run_models(all_blocks, _rank_frame(export, all_people), work / "attention_kept", margin)
-
     mean_ranks = rank_frame.groupby("condition", as_index=False)["rank"].mean().rename(columns={"rank": "mean_rank"})
     rank_counts = rank_frame.groupby(["condition", "rank"]).size().rename("count").reset_index()
     descriptives = blocks.groupby("condition", as_index=False).agg(
@@ -259,7 +251,7 @@ def run_evaluation(export_path: Path, config: Config, *, output_root: Path | Non
     report = Report(run, "Evaluation report (RQ4)")
     report.h2("Data and exclusions")
     report.p(
-        f"{n} participants completed the shopping session (Session 2) and are in the primary analysis. Left out: {len(failed)} attention-check failures, {len(withdrawn)} withdrawn."
+        f"{n} participants completed the shopping session (Session 2) and are in the primary analysis. Left out: {len(withdrawn)} withdrawn."
     )
     if n < threshold:
         report.banner(
@@ -321,13 +313,6 @@ def run_evaluation(export_path: Path, config: Config, *, output_root: Path | Non
         report.p(f"Without {', '.join(earlier_in)} (flagged protocol = earlier-version):")
         report.p(h4b_text(sensitivity_protocol["tost"].iloc[0], len(current_only), threshold))
         report.table(sensitivity_protocol["contrasts"][sensitivity_protocol["contrasts"]["outcome"] == "sus"])
-    report.h2("Sensitivity: attention failures kept in")
-    if sensitivity_attention is None:
-        report.p("No attention-check failure completed the shopping session, so this would match the primary analysis.")
-    else:
-        report.p(f"Adds back: {', '.join(kept_failures)}.")
-        report.table(sensitivity_attention["contrasts"][sensitivity_attention["contrasts"]["outcome"] == "sus"])
-        report.table(sensitivity_attention["tost"])
     path = report.write()
     write_manifest(
         run,

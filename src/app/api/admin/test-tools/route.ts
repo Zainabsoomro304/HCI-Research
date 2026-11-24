@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const Body = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("create"), count: z.number().int().min(1).max(200), urduShare: z.number().min(0).max(1), seed: z.number().int().min(0), attentionErrorRate: z.number().min(0).max(1).optional() }),
+  z.object({ action: z.literal("create"), count: z.number().int().min(1).max(200), urduShare: z.number().min(0).max(1), seed: z.number().int().min(0) }),
   z.object({ action: z.literal("simulate_comparison"), participantId: z.string() }),
   z.object({ action: z.literal("simulate_shopping"), participantId: z.string() }),
 ]);

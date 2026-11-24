@@ -4,12 +4,10 @@ import { useState } from "react";
 
 export default function ExportPage() {
   const [completed, setCompleted] = useState(false);
-  const [excludeFailed, setExcludeFailed] = useState(false);
   const [practice, setPractice] = useState(false);
   const [simulated, setSimulated] = useState(false);
   const q = new URLSearchParams();
   if (completed) q.set("completed", "1");
-  if (excludeFailed) q.set("excludeFailed", "1");
   if (practice) q.set("practice", "1");
   if (simulated) q.set("simulated", "1");
   const href = `/api/admin/export${q.size ? `?${q}` : ""}`;
@@ -24,10 +22,6 @@ export default function ExportPage() {
         <label className="flex items-center gap-3">
           <input type="checkbox" checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
           Completed sessions only
-        </label>
-        <label className="flex items-center gap-3">
-          <input type="checkbox" checked={excludeFailed} onChange={(e) => setExcludeFailed(e.target.checked)} />
-          Exclude participants who failed attention checks
         </label>
         <label className="flex items-center gap-3">
           <input type="checkbox" checked={practice} onChange={(e) => setPractice(e.target.checked)} />

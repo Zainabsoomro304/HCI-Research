@@ -37,8 +37,6 @@ class SeedsConfig(_Strict):
 class CleaningConfig(_Strict):
     drop_practice: bool
     require_completed_session: bool
-    exclude_attention_failures: bool
-    max_failed_attention_checks: int
     fast_rt_ms: int
     exclude_fast_rt: bool
     fatigue_half_boundary: int
@@ -144,7 +142,6 @@ class SimulateConfig(_Strict):
     lapse_min: float
     lapse_max: float
     fatigue_lapse_slope: float
-    attention_error_rate: float
     questionnaire_informativeness: float
     questionnaire_no_preference: float
     rt_median_ms: float

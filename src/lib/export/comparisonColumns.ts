@@ -30,7 +30,7 @@ export const COMPARISON_COLUMNS: ColumnDef[] = [
   { name: "repeat_of_trial_id", description: "trial_id of the original trial (repeats only)." },
   { name: "repeat_of_trial_index", description: "trial_index of the original trial (repeats only)." },
   { name: "repeat_gap", description: "Number of trials between the original and this repeat (trial_index - repeat_of_trial_index; repeats only, >= 20 by design)." },
-  { name: "is_attention_check", description: "1 if attention check (both clips identical; correct answer is right/B)." },
+  { name: "is_attention_check", description: "1 if attention check (only in sessions started before 2026-11-23; both clips identical, the requested answer was right/B). Not used for anything." },
   { name: "scene", description: "Product category shown in both clips of the trial (the scene)." },
   { name: "language", description: "Language of both clips: en or ur. In Urdu the layout is right to left, so Option A (left_*) is shown on the right." },
   ...clipColumns("left"),

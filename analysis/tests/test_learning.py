@@ -32,7 +32,7 @@ NEUTRAL = dict.fromkeys(
 
 @pytest.fixture(scope="module")
 def cleaned(synthetic_zip: Path, config):
-    return clean(load_export(synthetic_zip), config, exclude_attention=False)
+    return clean(load_export(synthetic_zip), config)
 
 
 @pytest.fixture(scope="module")

@@ -93,6 +93,15 @@ export async function ensureSchedule(tx: Prisma.TransactionClient, s: SessionWit
   }
 }
 
+/**
+ * Number of analysis trials in this session's stored schedule. Usually totalAnalysisTrials(COMPARISON_DESIGN), but a
+ * session started under an earlier design (82 trials with attention checks) keeps its own length.
+ */
+async function analysisTotal(sessionId: string): Promise<number> {
+  const n = await prisma.comparisonTrial.count({ where: { sessionId, isPractice: false } });
+  return n > 0 ? n : totalAnalysisTrials(COMPARISON_DESIGN);
+}
+
 async function trialView(s: SessionWithParticipant, seq: number): Promise<TrialView | undefined> {
   const [trial, next] = await Promise.all([
     prisma.comparisonTrial.findUnique({ where: { sessionId_seq: { sessionId: s.id, seq } } }),
@@ -100,10 +109,11 @@ async function trialView(s: SessionWithParticipant, seq: number): Promise<TrialV
   ]);
   if (!trial) return undefined;
   const d = COMPARISON_DESIGN;
+  const total = trial.isPractice ? d.practiceTrials : await analysisTotal(s.id);
   return {
     id: trial.id,
     trialIndex: trial.trialIndex,
-    total: trial.isPractice ? d.practiceTrials : totalAnalysisTrials(d),
+    total,
     isPractice: trial.isPractice,
     question: trial.isAttentionCheck ? "chooseB" : "normal",
     leftUrl: clipUrl(trial.leftClipId, trial.scene, trial.language),
@@ -120,7 +130,7 @@ export async function buildComparisonState(s: SessionWithParticipant): Promise<C
     step,
     lang: sessionLang(s),
   };
-  const N = totalAnalysisTrials(d);
+  const N = step === "trials" || step === "break" || step === "main_intro" ? await analysisTotal(s.id) : totalAnalysisTrials(d);
   if ((step === "language" || step === "consent") && !studyReady()) state.notReady = true;
   else if (step === "consent") state.consent = loadConsent(sessionLang(s));
   if (step === "end") state.participantCode = s.participant.code;
@@ -137,7 +147,6 @@ function expectStep(s: Session, ...steps: ComparisonStep[]) {
 
 export async function applyComparisonAction(s: SessionWithParticipant, action: ComparisonAction): Promise<void> {
   const d = COMPARISON_DESIGN;
-  const N = totalAnalysisTrials(d);
   const now = new Date();
   switch (action.type) {
     case "start": {
@@ -235,7 +244,7 @@ export async function applyComparisonAction(s: SessionWithParticipant, action: C
       const nextIndex = trial.seq + 1;
       let nextStep: ComparisonStep = s.currentStep as ComparisonStep;
       if (trial.isPractice && nextIndex >= d.practiceTrials) nextStep = "main_intro";
-      else if (!trial.isPractice && trial.trialIndex >= N) nextStep = "end";
+      else if (!trial.isPractice && trial.trialIndex >= (await analysisTotal(s.id))) nextStep = "end";
       else if (!trial.isPractice && d.breakAfter.includes(trial.trialIndex)) nextStep = "break";
       await prisma.$transaction(async (tx) => {
         const updated = await tx.comparisonTrial.updateMany({

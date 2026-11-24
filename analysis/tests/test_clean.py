@@ -26,7 +26,7 @@ def _rule(data, fragment: str):
 
 
 def test_main_trials_exclude_practice_repeats_and_attention_checks(synthetic_zip: Path, config):
-    data = clean(load_export(synthetic_zip), config, exclude_attention=False)
+    data = clean(load_export(synthetic_zip), config)
     assert data.main.groupby("participant_code").size().eq(70).all()
     assert not data.main["is_practice"].any()
     assert not data.main["is_repeat"].any()
@@ -42,7 +42,7 @@ def test_main_trials_are_chronological(synthetic_zip: Path, config):
 
 def test_repeats_match_the_original_trial_and_keep_the_gap(synthetic_zip: Path, config):
     export = load_export(synthetic_zip)
-    data = clean(export, config, exclude_attention=False)
+    data = clean(export, config)
     assert data.repeats.groupby("participant_code").size().eq(10).all()
     assert (data.repeats["repeat_gap"] >= 20).all()
     trials = export.comparison_trials.set_index("trial_id")
@@ -56,39 +56,34 @@ def test_repeats_match_the_original_trial_and_keep_the_gap(synthetic_zip: Path, 
 
 
 def test_consistency_matches_the_platform_metric(synthetic_zip: Path, config):
-    data = clean(load_export(synthetic_zip), config, exclude_attention=False)
+    data = clean(load_export(synthetic_zip), config)
     assert data.warnings == []
     expected = data.participants["consistency_pct"].astype(float) / 100
     assert ((data.participants["self_consistency"].astype(float) - expected).abs() < 0.001).all()
 
 
 def test_half_uses_the_configured_boundary(synthetic_zip: Path, config):
-    data = clean(load_export(synthetic_zip), config, exclude_attention=False)
-    assert (data.repeats.loc[data.repeats["half"] == "first", "trial_index"] <= 41).all()
-    assert (data.repeats.loc[data.repeats["half"] == "second", "trial_index"] > 41).all()
+    data = clean(load_export(synthetic_zip), config)
+    assert (data.repeats.loc[data.repeats["half"] == "first", "trial_index"] <= 40).all()
+    assert (data.repeats.loc[data.repeats["half"] == "second", "trial_index"] > 40).all()
 
 
-def test_attention_failure_is_excluded_or_kept_by_switch_and_always_logged(synthetic_zip: Path, tmp_path: Path, config):
+def test_attention_check_trials_never_exclude_anyone(synthetic_zip: Path, tmp_path: Path, config):
+    """Older sessions had 2 attention checks. A wrong answer on one must not exclude or flag anybody."""
     victim = "P-S003"
 
-    def fail(df: pd.DataFrame) -> pd.DataFrame:
-        row = df.index[(df["participant_code"] == victim) & (df["is_attention_check"] == "1")][0]
+    def mark(df: pd.DataFrame) -> pd.DataFrame:
+        row = df.index[(df["participant_code"] == victim) & (df["is_repeat"] == "0") & (df["is_practice"] == "0")][-1]
+        df.loc[row, "is_attention_check"] = "1"
+        df.loc[row, "right_clip_id"] = df.loc[row, "left_clip_id"]
         df.loc[row, "choice"] = "left"
         df.loc[row, "chosen_clip_id"] = df.loc[row, "left_clip_id"]
         return df
 
-    export = load_export(_edit_trials(synthetic_zip, tmp_path / "x.zip", fail))
-    excluded = clean(export, config)
-    assert victim not in excluded.codes()
-    assert victim in _rule(excluded, "attention").ids
-    assert _rule(excluded, "attention").action == "excluded"
-    assert any("Attention failures differ" in w for w in excluded.warnings)  # participants.csv was not edited
-
-    kept = clean(export, config, exclude_attention=False)
-    assert victim in kept.codes()
-    assert victim in _rule(kept, "attention").ids
-    assert _rule(kept, "attention").action == "flagged"
-    assert bool(kept.participants.set_index("participant_code").loc[victim, "attention_flag"]) is True
+    data = clean(load_export(_edit_trials(synthetic_zip, tmp_path / "x.zip", mark)), config)
+    assert victim in data.codes()
+    assert not any("attention" in e.rule for e in data.log)
+    assert not data.main["is_attention_check"].astype(bool).any()
 
 
 def test_fast_responses_are_flagged_and_kept_by_default(synthetic_zip: Path, tmp_path: Path, config):
@@ -103,14 +98,14 @@ def test_fast_responses_are_flagged_and_kept_by_default(synthetic_zip: Path, tmp
         return df
 
     export = load_export(_edit_trials(synthetic_zip, tmp_path / "x.zip", fast))
-    flagged = clean(export, config, exclude_attention=False)
+    flagged = clean(export, config)
     assert _rule(flagged, "RT <").action == "flagged"
     assert _rule(flagged, "RT <").count >= 5
     assert (flagged.main["participant_code"] == "P-S001").sum() == 70
 
     strict = config.model_copy(deep=True)
     strict.cleaning.exclude_fast_rt = True
-    assert (clean(export, strict, exclude_attention=False).main["participant_code"] == "P-S001").sum() <= 65
+    assert (clean(export, strict).main["participant_code"] == "P-S001").sum() <= 65
 
 
 def test_incomplete_sessions_are_counted_not_silently_dropped(tmp_path: Path, config):
@@ -120,13 +115,13 @@ def test_incomplete_sessions_are_counted_not_silently_dropped(tmp_path: Path, co
     cfg.simulate.incomplete_participants = 2
     out = tmp_path / "synthetic_incomplete.zip"
     simulate_export(cfg, n=8, seed=3, out=out)
-    data = clean(load_export(out), cfg, exclude_attention=False)
+    data = clean(load_export(out), cfg)
     entry = _rule(data, "not completed")
     assert entry.ids == ["P-S007", "P-S008"]
     assert "P-S007" not in data.codes()
     kept = cfg.model_copy(deep=True)
     kept.cleaning.require_completed_session = False
-    assert _rule(clean(load_export(out), kept, exclude_attention=False), "unanswered").count > 0
+    assert _rule(clean(load_export(out), kept), "unanswered").count > 0
 
 
 def test_earlier_protocol_participants_are_flagged_and_can_be_left_out(synthetic_zip: Path, tmp_path: Path, config):

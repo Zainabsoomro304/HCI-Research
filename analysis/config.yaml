@@ -22,11 +22,9 @@ seeds:
 cleaning:
   drop_practice: true
   require_completed_session: true
-  exclude_attention_failures: true    # primary analysis; the sensitivity analysis flips this
-  max_failed_attention_checks: 0      # must match the platform's MAX_FAILED_ATTENTION_CHECKS
   fast_rt_ms: 300
   exclude_fast_rt: false
-  fatigue_half_boundary: 41           # trials 1-41 = first half, matching the platform's floor(82 / 2)
+  fatigue_half_boundary: 40           # trials 1-40 = first half, matching the platform's floor(80 / 2)
 
 model:
   # Linear busyness is removed: numChangedSettings is the exact sum of the 8 dummies, so a linear term cannot be
@@ -110,7 +108,6 @@ simulate:
   lapse_min: 0.0
   lapse_max: 0.08
   fatigue_lapse_slope: 0.03           # added lapse rate at the end of the session
-  attention_error_rate: 0.01          # per check; one wrong answer fails the participant
   questionnaire_informativeness: 0.6
   questionnaire_no_preference: 0.15
   rt_median_ms: 1800

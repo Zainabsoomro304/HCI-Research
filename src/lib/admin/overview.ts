@@ -48,7 +48,8 @@ const STEP_LABELS: Record<string, string> = {
 /** Admin-facing names of the two sessions. */
 export const SESSION_LABEL = { comparison: "Session 1 · comparisons", shopping: "Session 2 · shopping" } as const;
 
-export function sessionLabel(s: Session, plansUploaded: number): string {
+/** `analysisTrials`: the session's stored analysis trials (82 for sessions started before 2026-11-23), if known. */
+export function sessionLabel(s: Session, plansUploaded: number, analysisTrials?: number): string {
   if (s.status === "completed") return s.type === "comparison" ? "Session 1 complete" : "Session 2 complete";
   if (s.type === "shopping") {
     if (!s.unlockedAt) return plansUploaded < CONDITIONS.length ? `Waiting for plans (${plansUploaded}/${CONDITIONS.length})` : "Ready to start";
@@ -57,7 +58,8 @@ export function sessionLabel(s: Session, plansUploaded: number): string {
   }
   if (!s.startedAt && (s.currentStep === "consent" || s.currentStep === "language")) return "Not started";
   const d = COMPARISON_DESIGN;
-  const trial = s.currentStep === "trials" || s.currentStep === "break" ? ` – trial ${Math.min(s.currentIndex - d.practiceTrials + 1, totalAnalysisTrials(d))}/${totalAnalysisTrials(d)}` : "";
+  const total = analysisTrials || totalAnalysisTrials(d);
+  const trial = s.currentStep === "trials" || s.currentStep === "break" ? ` – trial ${Math.min(s.currentIndex - d.practiceTrials + 1, total)}/${total}` : "";
   return `In progress: ${STEP_LABELS[s.currentStep] ?? s.currentStep}${trial}`;
 }
 
@@ -68,7 +70,7 @@ export async function participantOverview(filter: { code?: string; includeSimula
     include: {
       sessions: true,
       plans: { select: { condition: true } },
-      trials: { select: { id: true, isAttentionCheck: true, isRepeat: true, repeatOfTrialId: true, choice: true, chosenClipId: true } },
+      trials: { select: { id: true, sessionId: true, isPractice: true, isAttentionCheck: true, isRepeat: true, repeatOfTrialId: true, choice: true, chosenClipId: true } },
     },
   });
   const typeOrder = { comparison: 0, shopping: 1 } as const;
@@ -83,7 +85,7 @@ export async function participantOverview(filter: { code?: string; includeSimula
         id: s.id,
         type: s.type,
         status: s.status,
-        label: sessionLabel(s, plans.length),
+        label: sessionLabel(s, plans.length, trials.filter((t) => t.sessionId === s.id && !t.isPractice).length),
         link: sessionLink(s.token),
         startedAt: s.startedAt,
         completedAt: s.completedAt,

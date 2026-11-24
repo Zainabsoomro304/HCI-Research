@@ -27,7 +27,6 @@
       "shopping_app_version",
       "attention_total",
       "attention_correct",
-      "attention_failed",
       "repeats_answered",
       "repeats_consistent",
       "consistency_pct"
@@ -186,7 +185,6 @@
       "flag_agent_mismatch",
       "flag_near_tie",
       "flag_equals_global",
-      "flag_attention_failed",
       "flag_late"
     ],
     "admin_actions.csv": [
@@ -272,14 +270,13 @@
     "ur"
   ],
   "minAge": 40,
-  "maxFailedAttentionChecks": 0,
   "design": {
     "mainTrials": 70,
     "repeatTrials": 10,
     "repeatSourceMaxPosition": 50,
     "repeatMinSpacing": 20,
     "repeatsInFirstHalf": 5,
-    "attentionChecks": 2,
+    "attentionChecks": 0,
     "attentionCheckMinPosition": 25,
     "attentionCheckMaxPosition": 75,
     "attentionCheckMinSpacing": 20,

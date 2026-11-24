@@ -15,7 +15,7 @@ const primary = "rounded-md bg-[#2b6a5a] px-4 py-2 text-sm font-semibold text-wh
 const quiet = "rounded border border-[#d5dbe3] bg-white px-2 py-1 text-xs font-medium hover:bg-[#f0f2f5] disabled:opacity-60";
 const field = "rounded-md border border-[#d5dbe3] px-2 py-1.5 text-sm";
 
-export function FreezePanel(p: { ready: boolean; included: number; simulated: number; attentionFailed: string[]; withdrawn: string[]; version: number | null; testMode: boolean }) {
+export function FreezePanel(p: { ready: boolean; included: number; simulated: number; withdrawn: string[]; version: number | null; testMode: boolean }) {
   const router = useRouter();
   const hydrated = useHydrated();
   const [confirming, setConfirming] = useState(false);
@@ -64,13 +64,8 @@ export function FreezePanel(p: { ready: boolean; included: number; simulated: nu
               <li>
                 <strong>{p.included}</strong> participants are included in the models{p.testMode ? `, of which ${p.simulated} are simulated` : ""}.
               </li>
-              {p.attentionFailed.length > 0 && (
-                <li>
-                  Left out of the models for failing an attention check: {p.attentionFailed.join(", ")}. They still get a flagged plan, built from everyone included.
-                </li>
-              )}
               {p.withdrawn.length > 0 && <li>Excluded as withdrawn: {p.withdrawn.join("; ")}.</li>}
-              {p.withdrawn.length === 0 && p.attentionFailed.length === 0 && <li>Nobody is excluded.</li>}
+              {p.withdrawn.length === 0 && <li>Nobody is excluded.</li>}
             </ul>
             <p className="mt-3 rounded-md bg-[#fdf3dc] px-3 py-2 text-sm text-[#7a5a10]">The models will be frozen. They cannot be changed once any shopping session starts.</p>
             {p.version && <p className="mt-2 text-sm text-[#566070]">This replaces the computed plans from version {p.version}. Uploaded overrides are kept.</p>}
@@ -223,7 +218,6 @@ export function TestTools({ participants }: { participants: SimRow[] }) {
   const [count, setCount] = useState(31);
   const [urduShare, setUrduShare] = useState(50);
   const [seed, setSeed] = useState(1);
-  const [attention, setAttention] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -255,7 +249,7 @@ export function TestTools({ participants }: { participants: SimRow[] }) {
           setMessage(null);
           setBusy("Creating…");
           try {
-            const r = await post("/api/admin/test-tools", { action: "create", count, urduShare: urduShare / 100, seed, attentionErrorRate: attention / 100 });
+            const r = await post("/api/admin/test-tools", { action: "create", count, urduShare: urduShare / 100, seed });
             setMessage(`Created ${r.created.length}: ${r.created[0]} … ${r.created.at(-1)}`);
           } catch (err) {
             setMessage((err as Error).message);
@@ -276,10 +270,6 @@ export function TestTools({ participants }: { participants: SimRow[] }) {
         <label className="flex flex-col text-xs font-medium text-[#566070]">
           Seed
           <input type="number" min={0} value={seed} onChange={(e) => setSeed(Number(e.target.value))} className={`${field} mt-1 w-24`} />
-        </label>
-        <label className="flex flex-col text-xs font-medium text-[#566070]">
-          Attention error rate (%)
-          <input type="number" min={0} max={100} value={attention} onChange={(e) => setAttention(Number(e.target.value))} className={`${field} mt-1 w-20`} />
         </label>
         <button className={primary} disabled={!hydrated || !!busy}>
           Create simulated participants
